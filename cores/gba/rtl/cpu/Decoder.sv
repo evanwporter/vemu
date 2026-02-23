@@ -132,6 +132,14 @@ module GBA_Decoder (
 
       /// Multiply
       32'b????_0000_0???_????_????_????_1001_????: begin
+        bus.word.instr_type = ARM_INSTR_MULTIPLY;
+        bus.word.immediate.mul.opcode = multiply_opcode_t'(IR[24:21]);
+
+        bus.word.Rd = IR[19:16];
+        bus.word.Rn = IR[15:12];
+
+        bus.word.immediate.mul.S = IR[20];
+
         $display("[GBA_Decoder] Detected multiply instruction with IR=0x%08x", IR);
       end
 

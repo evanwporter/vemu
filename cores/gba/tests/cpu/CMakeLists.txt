@@ -38,6 +38,7 @@ verilate(test_cpu_adv
         ${GBA_SRC_DIR}/cpu/control_types.sv
         ${GBA_SRC_DIR}/cpu/Decoder.sv
         ${GBA_SRC_DIR}/cpu/ControlUnit.sv
+        ${GBA_SRC_DIR}/cpu/Multiplier.sv
         ${GBA_SRC_DIR}/cpu/interface.sv
         ${GBA_SRC_DIR}/cpu/types.sv
 
@@ -47,6 +48,7 @@ verilate(test_cpu_adv
         -Wall
         -Wno-fatal
         -I${GBA_SRC_DIR}
+        -I${GBA_INCLUDE_DIR}
         -I${CMAKE_CURRENT_BINARY_DIR}/
 )
 

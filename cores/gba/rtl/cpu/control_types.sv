@@ -23,26 +23,21 @@ package gba_control_types_pkg;
   } address_source_t;
 
   typedef enum logic [1:0] {
-    /// No shift, output zero
-    SHIFT_SRC_NONE,
-
-    /// Shift by immediate value
-    SHIFT_SRC_IMM,
-
-    /// Shift by register value
-    SHIFT_SRC_REG
-  } shift_source_t;
-
-  typedef enum logic {
     /// By default, the A bus uses the value from register Rn
     A_BUS_SRC_RN,
+
+    /// Load the value from register Rs onto the A bus
+    A_BUS_SRC_RS,
+
+    /// Load the value from register Rs onto the A bus
+    A_BUS_SRC_RD,
 
     /// Set the A_bus to the immediate value
     /// If set, then `A_bus_imm` must be assigned.
     A_BUS_SRC_IMM
   } A_bus_source_t;
 
-  typedef enum logic [2:0] {
+  typedef enum logic [3:0] {
     B_BUS_SRC_NONE,
 
     /// Read immediate from IR
@@ -66,7 +61,10 @@ package gba_control_types_pkg;
 
     /// Read data from register Rp (immediate value)
     /// If set, then `Rp_imm` must be assigned to specify which register to read from
-    B_BUS_SRC_REG_RP
+    B_BUS_SRC_REG_RP,
+
+    /// Read data from output of multiplier unit
+    B_BUS_SRC_MULTIPLIER
 
   } B_bus_source_t;
 
@@ -114,15 +112,6 @@ package gba_control_types_pkg;
     set_cpu_mode_t set_mode;
 
     exception_t exception;
-
-    // ======================================================
-    // Shift Bus
-    // ======================================================
-
-    /// The shift source selection.
-    /// Can be the immediate value or a register value, or none 
-    /// in which case the output is zero.
-    shift_source_t shift_source;
 
     // ======================================================
     // A Bus
@@ -176,6 +165,12 @@ package gba_control_types_pkg;
     logic memory_halfword_transfer;
 
     logic memory_signed_transfer;
+
+    // ======================================================
+    // Multiplier Module
+    // ======================================================
+
+    logic multiplier_enable;
 
     // ======================================================
     // ALU

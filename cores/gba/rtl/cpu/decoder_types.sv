@@ -31,6 +31,11 @@ package gba_cpu_decoder_types_pkg;
     ARM_LOAD_SIGNED_HALFWORD = 2'd3
   } signed_halfword_flag_t;
 
+  typedef enum logic [3:0] {
+    ARM_MULTIPLY = 4'b0000,
+    ARM_MULTIPLY_ACCUMULATE = 4'b0001
+  } multiply_opcode_t;
+
   typedef union packed {
 
     // ======================================================
@@ -230,6 +235,20 @@ package gba_cpu_decoder_types_pkg;
       // Bits 23-0
       logic [23:0] comment;
     } swi;
+
+    // ======================================================
+    // Multiply
+    // ======================================================
+
+    struct packed {
+      logic [18:0] _pad;
+
+      /// Set condition flags
+      logic S;
+
+      // Bits 24-21
+      multiply_opcode_t opcode;
+    } mul;
   } extra_t;
 
 

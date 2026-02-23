@@ -23,6 +23,8 @@ function(gba_add_rtl)
     endif()
 endfunction()
 
+set(GBA_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
+
 add_subdirectory(rtl)
 
 # target_sources(libgba PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/sim/gb.cpp)

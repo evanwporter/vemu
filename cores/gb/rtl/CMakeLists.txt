@@ -31,8 +31,10 @@ ${GB_SOURCES}
 
 string(REPLACE ";" "\n" GB_F_CONTENT "${GB_F_CONTENT}")
 
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/gb.f "${GB_F_CONTENT}\n")
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/gb.f "+incdir+${GB_INCLUDE_DIR}\n")
+set(GB_COMMAND_FILE ${CMAKE_CURRENT_BINARY_DIR}/gb.f)
+file(WRITE ${GB_COMMAND_FILE} "${GB_F_CONTENT}\n")
+file(APPEND ${GB_COMMAND_FILE} "+incdir+${CMAKE_CURRENT_SOURCE_DIR}\n")
+file(APPEND ${GB_COMMAND_FILE} "+incdir+${GB_INCLUDE_DIR}\n")
 
 verilate(libgb
     PREFIX VGameboy

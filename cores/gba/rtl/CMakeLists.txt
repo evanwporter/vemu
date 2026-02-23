@@ -25,8 +25,10 @@ ${GBA_SOURCES}
 
 string(REPLACE ";" "\n" GBA_F_CONTENT "${GBA_F_CONTENT}")
 
-file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/gba.f "${GBA_F_CONTENT}\n")
-file(APPEND ${CMAKE_CURRENT_BINARY_DIR}/gba.f "+incdir+${CMAKE_CURRENT_SOURCE_DIR}\n")
+set(GBA_COMMAND_FILE ${CMAKE_CURRENT_BINARY_DIR}/gba.f)
+file(WRITE ${GBA_COMMAND_FILE} "${GBA_F_CONTENT}\n")
+file(APPEND ${GBA_COMMAND_FILE} "+incdir+${CMAKE_CURRENT_SOURCE_DIR}\n")
+file(APPEND ${GBA_COMMAND_FILE} "+incdir+${GBA_INCLUDE_DIR}\n")
 
 verilate(libgba
     PREFIX VGameboyAdvance
@@ -41,5 +43,6 @@ verilate(libgba
         --trace-vcd
         # -Wall
         -I${CMAKE_CURRENT_SOURCE_DIR}
+        -I${GBA_INCLUDE_DIR}
         -O3
 )

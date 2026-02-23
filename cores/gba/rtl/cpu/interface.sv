@@ -81,3 +81,15 @@ interface GBA_Shifter_if (
   modport ALU_side(input op_b, input carry_out);
 
 endinterface : GBA_Shifter_if
+
+interface GBA_Multiplier_if (
+    input word_t A_bus,
+    input word_t B_bus
+);
+
+  logic  enable;
+  word_t result;
+
+  modport Multiplier_side(input A_bus, B_bus, enable, output result);
+
+endinterface : GBA_Multiplier_if

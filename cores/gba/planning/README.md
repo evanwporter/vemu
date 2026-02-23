@@ -305,3 +305,51 @@ F2
 - F2
 
 In the reset cycle we need the control word to immediately begin a flush.
+
+## Mutliplier
+
+$$
+R_d = R_m * R_s + R_n
+$$
+
+I want to start out just implementing the standard AND algorithm.
+
+For example let:
+
+```
+M = 1011 (11)
+S = 0101 (5)
+```
+
+We perform a AND on each bit of `S`.
+
+```
+1011 & 1 → 1011 (shift 0)
+1011 & 0 → 0000 (shift 1)
+1011 & 1 → 1011 (shift 2)
+1011 & 0 → 0000 (shift 3)
+```
+
+```
+      1011
++    00000
++   101100
++  0000000
+-----------
+   0110111  (55)
+```
+
+For the entirety of the instruction (minus the first cycle), writeback is set too $R_d$
+
+$R_s$ is loaded into the `Multiplier` via the `A_bus`. $R_m$ is loaded via the `B_bus`. Also the multiplier calculates how many cycles it needs (max 32).
+
+During the second cycle, $R_n$ (or $0$ if we don't accumulate) is written back to $R_d$ via the `B_bus`.
+
+After the second cycle, the `A_bus` is set to $R_d$ and the `B_bus` source comes from the output of the multiplier.
+
+TODO List
+
+- Prevent write back to register 15
+- Move Rd readback to end
+- Accumulate automatically writing back Rn
+- Change up behavior on the final cycle

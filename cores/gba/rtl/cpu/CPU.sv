@@ -3,7 +3,7 @@ import gba_cpu_types_pkg::*;
 import gba_control_types_pkg::*;
 import gba_cpu_util_pkg::*;
 
-`include "cpu/gba_util.svh"
+`include "gba/cpu/util.svh"
 
 module ARM7TMDI (
     input logic clk,
@@ -73,6 +73,10 @@ module ARM7TMDI (
 
   GBA_ALU_if alu_bus (.op_a(A_bus));
   GBA_Shifter_if shifter_bus (.R_in(B_bus));
+  GBA_Multiplier_if multiplier_bus (
+      .A_bus(A_bus),
+      .B_bus(B_bus)
+  );
 
   assign shifter_bus.shift_latch_amt = control_signals.shift_latch_amt;
   assign shifter_bus.shift_use_latch = control_signals.shift_use_latch;
@@ -90,6 +94,8 @@ module ARM7TMDI (
   assign bus.read_en = control_signals.memory_read_en;
   assign bus.write_en = control_signals.memory_write_en;
   assign bus.instruction_fetch = control_signals.memory_latch_IR;
+
+  assign multiplier_bus.enable = control_signals.multiplier_enable;
 
   always_comb begin
     bus.wdata = B_bus;
@@ -119,6 +125,12 @@ module ARM7TMDI (
       .bus  (decoder_bus)
   );
 
+  GBA_Multiplier multiplier_inst (
+      .clk  (clk),
+      .reset(reset),
+      .bus  (multiplier_bus)
+  );
+
   ControlUnit controlUnit (
       .clk(clk),
       .reset(reset),
@@ -139,18 +151,36 @@ module ARM7TMDI (
 
   // This may get more complicated in the future
   always_comb begin
-    if (control_signals.A_bus_source == A_BUS_SRC_RN) begin
-      $display("Driving A bus with value from Rn (R%d): %0d", decoder_bus.word.Rn, read_reg(
-               regs, cpu_mode, decoder_bus.word.Rn));
-      if (control_signals.pc_rn_add_4) begin
-        A_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rn) + 32'd4;
-      end else begin
-        A_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rn);
+    unique case (control_signals.A_bus_source)
+      A_BUS_SRC_RN: begin
+        $display("Driving A bus with value from Rn (R%d): %0d", decoder_bus.word.Rn, read_reg(
+                 regs, cpu_mode, decoder_bus.word.Rn));
+        if (control_signals.pc_rn_add_4) begin
+          A_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rn) + 32'd4;
+        end else begin
+          A_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rn);
+        end
       end
-    end else begin  // A_BUS_SRC_IMM
-      $display("Driving A bus with value from imm (%0d)", control_signals.A_bus_imm);
-      A_bus = word_t'(control_signals.A_bus_imm);
-    end
+
+      A_BUS_SRC_IMM: begin
+        $display("Driving A bus with value from imm (%0d)", control_signals.A_bus_imm);
+        A_bus = word_t'(control_signals.A_bus_imm);
+      end
+
+      A_BUS_SRC_RD: begin
+        $display("Driving A bus with value from Rd (R%d): %0d", decoder_bus.word.Rd, read_reg(
+                 regs, cpu_mode, decoder_bus.word.Rd));
+        A_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rd);
+      end
+
+      A_BUS_SRC_RS: begin
+        /// TODO pc_rs_add_4 heres
+        $display("Driving A bus with value from Rs (R%d): %0d", decoder_bus.word.Rs, read_reg(
+                 regs, cpu_mode, decoder_bus.word.Rs));
+        A_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rs);
+      end
+
+    endcase
   end
 
 
@@ -210,6 +240,10 @@ module ARM7TMDI (
                  regs, cpu_mode, control_signals.Rp_imm));
         B_bus = read_reg(regs, control_signals.force_user_mode ? CPU_MODE_USR : cpu_mode,
                          control_signals.Rp_imm);
+      end
+
+      B_BUS_SRC_MULTIPLIER: begin
+        B_bus = multiplier_bus.result;
       end
     endcase
   end
@@ -358,7 +392,9 @@ module ARM7TMDI (
 
       if (control_signals.ALU_set_flags && control_signals.pipeline_advance) begin
 
-        if ((decoder_bus.word.Rd == 4'd15) && mode_has_spsr(cpu_mode)) begin
+        if ((decoder_bus.word.Rd == 4'd15) && mode_has_spsr(
+                cpu_mode
+            ) && decoder_bus.word.instr_type != ARM_INSTR_MULTIPLY) begin
           regs.CPSR <= read_spsr(regs, cpu_mode);
 
           $display("Restoring CPSR from SPSR_%0d: 0x%08x", cpu_mode, read_spsr(regs, cpu_mode));
@@ -369,8 +405,16 @@ module ARM7TMDI (
 
           regs.CPSR[31] <= alu_bus.flags_out.n;
           regs.CPSR[30] <= alu_bus.flags_out.z;
-          regs.CPSR[29] <= alu_bus.flags_out.c;
-          regs.CPSR[28] <= alu_bus.flags_out.v;
+
+          if (decoder_bus.word.instr_type != ARM_INSTR_MULTIPLY) begin
+            regs.CPSR[29] <= alu_bus.flags_out.c;
+            regs.CPSR[28] <= alu_bus.flags_out.v;
+            $display("ALU op was %0d, setting C flag to %b and V flag to %b",
+                     control_signals.ALU_op, alu_bus.flags_out.c, alu_bus.flags_out.v);
+          end else begin
+            // For multiply instructions, the C flag is set to 0 (ARMV4 -- on ARMV5 and later its ignored)
+            regs.CPSR[29] <= 1'd0;
+          end
 
           $display("ALU op was %0d, setting C flag to %b", control_signals.ALU_op,
                    alu_bus.flags_out.c);
