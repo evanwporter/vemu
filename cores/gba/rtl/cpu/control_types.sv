@@ -35,6 +35,7 @@ package gba_control_types_pkg;
     /// Set the A_bus to the immediate value
     /// If set, then `A_bus_imm` must be assigned.
     A_BUS_SRC_IMM
+
   } A_bus_source_t;
 
   typedef enum logic [3:0] {

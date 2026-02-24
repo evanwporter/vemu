@@ -1,10 +1,14 @@
 import gba_types_pkg::*;
+import gba_cpu_decoder_types_pkg::*;
 
 module GBA_Multiplier (
     input logic clk,
     input logic reset,
     GBA_Multiplier_if.Multiplier_side bus
 );
+
+  word_t accum_high;
+  word_t accum_low;
 
   /// Multiplicand
   word_t M;
@@ -15,6 +19,21 @@ module GBA_Multiplier (
   /// TODO: Make three bits
   logic [7:0] cycle;
 
+  // During the shift the first (cycle - 1) bits of M will be chopped off
+  // We need to collect these bits and add it to upper_result
+
+  // 0 0 0 0 | 1 0 0 1
+  // Shift 2
+  // 0 0 1 0 | 0 1 0 0
+
+  // So we collect M[31:(cycle - 1)] and add it to upper_result
+
+  // 0 - 31:31
+  // 1 - 31:30
+  // 2 - 31:29
+  // 3 - 31:28
+
+  // TODO reset cycle counter and regs
   always_ff @(posedge clk) begin
     if (reset) begin
       cycle <= 0;
@@ -24,19 +43,79 @@ module GBA_Multiplier (
 
         $display("[Multiplier] Cycle %0d: M=%0d, S=%0d, Result=%0d", cycle, M, S, bus.result);
 
-        if (cycle == 0) begin
-          $display("[Multiplier] Starting multiplication: M=%0d, S=%0d", bus.A_bus, bus.B_bus);
-          M <= bus.A_bus;
-          S <= bus.B_bus;
-        end
+        unique case (bus.opcode)
+          ARM_MUL, ARM_MLA: begin
+            if (cycle == 0) begin
+              $display("[Multiplier] Starting multiplication: M=%0d, S=%0d", bus.B_bus, bus.A_bus);
+              S <= bus.A_bus;
+              M <= bus.B_bus;
+            end
+          end
+
+          ARM_UMULL, ARM_UMLAL: begin
+            // TODO long multiplication
+            if (cycle == 0) begin
+              $display("[Multiplier] Starting long multiplication: M=%0d, S=%0d", bus.B_bus,
+                       bus.A_bus);
+              S <= bus.A_bus;
+              M <= bus.B_bus;
+            end
+
+            if (cycle == 1) begin
+              accum_low  <= bus.B_bus;
+              accum_high <= bus.A_bus;
+              $display("[Multiplier] Initial accum_low set to %0d", accum_low);
+            end
+
+            if (cycle >= 2) begin
+              if (S[0])
+                {accum_high, accum_low} <= {accum_high, accum_low} + ({32'd0, M} << (cycle - 2));
+              S <= S >> 1;
+              $display("[Multiplier] After cycle %0d: accum_high=%0d, accum_low=%0d, S=%0d", cycle,
+                       accum_high, accum_low, S);
+            end
+          end
+
+          default: begin
+            // Handle other opcodes or do nothing
+
+          end
+        endcase
       end
     end
   end
 
   always_comb begin
     bus.result = 32'd0;
-    if (bus.enable && cycle != 0) begin
-      bus.result = S[cycle-1] ? M : 32'd0;
+    if (bus.enable) begin
+      unique case (bus.opcode)
+        ARM_MUL, ARM_MLA: begin
+          if (cycle != 0) begin
+            bus.result = S[cycle-1] ? M : 32'd0;
+          end
+        end
+
+        ARM_UMULL, ARM_UMLAL: begin
+          if (cycle == 34) begin
+            $display(
+                "[Multiplier] Long multiplication complete: Final result = {accum_high, accum_low} = %0d",
+                {accum_high, accum_low});
+            bus.result = accum_low;
+          end
+
+          if (cycle == 35) begin
+            $display(
+                "[Multiplier] Long multiplication complete: Final result = {accum_high, accum_low} = %0d",
+                {accum_high, accum_low});
+            bus.result = accum_high;
+          end
+        end
+
+        default: begin
+          // Handle other opcodes or do nothing
+
+        end
+      endcase
     end
   end
 

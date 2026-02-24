@@ -96,6 +96,9 @@ module ARM7TMDI (
   assign bus.instruction_fetch = control_signals.memory_latch_IR;
 
   assign multiplier_bus.enable = control_signals.multiplier_enable;
+  assign multiplier_bus.opcode = decoder_bus.word.instr_type == ARM_INSTR_MULTIPLY
+    ? decoder_bus.word.immediate.mul.opcode
+    : gba_cpu_decoder_types_pkg::multiply_opcode_t'(4'd0);
 
   always_comb begin
     bus.wdata = B_bus;

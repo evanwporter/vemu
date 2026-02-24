@@ -81,8 +81,14 @@ module ControlUnit (
   end
 
   always_comb begin
+    // For use in block data transfer instructions
     logic [3:0] regs_count;
+
+    // For use in multiply instruction
+    logic is_long_op;
+
     regs_count = 4'd0;
+    is_long_op = 1'd0;
 
     control_signals = '0;
 
@@ -254,61 +260,141 @@ module ControlUnit (
         // ============================
 
         ARM_INSTR_MULTIPLY: begin
-          if (cycle == 8'd0) begin
-            $display("[ControlUnit] Cycle 0 of multiply instruction, preparing for multiplication");
-            control_signals.multiplier_enable = 1'b1;
+          is_long_op = decoder_bus.word.immediate.mul.opcode == ARM_UMULL
+             || decoder_bus.word.immediate.mul.opcode == ARM_UMLAL;
 
-            control_signals.A_bus_source = A_BUS_SRC_RS;
-            control_signals.B_bus_source = B_BUS_SRC_REG_RM;
+          if (is_long_op) begin
+            if (cycle == 8'd0) begin
+              $display(
+                  "[ControlUnit] Cycle 0 of long multiply instruction, preparing for multiplication");
 
-            if (decoder_bus.word.Rm == 4'd15) begin
-              control_signals.pc_rm_add_4 = 1'b1;
+              control_signals.multiplier_enable = 1'b1;
+
+              control_signals.A_bus_source = A_BUS_SRC_RS;
+              control_signals.B_bus_source = B_BUS_SRC_REG_RM;
+
+              if (decoder_bus.word.Rm == 4'd15) begin
+                control_signals.pc_rm_add_4 = 1'b1;
+              end
+
+              control_signals |= fetch_next_instr();
+              control_signals.incrementer_writeback = 1'b1;
             end
 
-            control_signals |= fetch_next_instr();
-            control_signals.incrementer_writeback = 1'b1;
-          end
+            if (cycle == 8'd1) begin
+              control_signals.multiplier_enable = 1'b1;
 
-          if (cycle == 8'd1) begin
-            $display("[ControlUnit] Cycle 1 of multiply instruction");
-
-            control_signals.multiplier_enable = 1'b0;
-            control_signals.ALU_writeback = ALU_WB_REG_RD;
-            if (decoder_bus.word.immediate.mul.opcode == ARM_MULTIPLY) begin
-              control_signals.B_bus_source = B_BUS_SRC_IMM;
-              control_signals.B_bus_imm = 24'(0);
-            end else if (decoder_bus.word.immediate.mul.opcode == ARM_MULTIPLY_ACCUMULATE) begin
-              $display("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source",
-                       decoder_bus.word.Rn);
+              // Pass accumulator for long multiply accumulate instructions
               control_signals.B_bus_source = B_BUS_SRC_REG_RN;
+
+              control_signals.A_bus_source = A_BUS_SRC_RD;
             end
-            control_signals.ALU_op = ALU_OP_MOV;
-          end
 
-          // FYI: on cycle 33, this if statement and the following are triggered
-          if (cycle >= 8'd2) begin
-            $display("[ControlUnit] Cycle %0d of multiply instruction", cycle);
-            control_signals.multiplier_enable = 1'b1;
+            if (cycle >= 8'd2 && cycle < 8'd34) begin
+              $display("[ControlUnit] Cycle %0d of long multiply instruction", cycle);
 
-            control_signals.shift_type = SHIFT_LSL;
+              control_signals.multiplier_enable = 1'b1;
+            end
 
-            // Shift one more every cycle
-            control_signals.shift_amount = 5'(cycle - 8'd2);
+            if (cycle == 8'd34) begin
+              control_signals.multiplier_enable = 1'b1;
 
-            control_signals.ALU_writeback = ALU_WB_REG_RD;
+              control_signals.ALU_writeback = ALU_WB_REG_RN;  // Write to RdLo
+              control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
+              control_signals.ALU_op = ALU_OP_MOV;
+            end
 
-            control_signals.ALU_op = ALU_OP_ADD;
+            if (cycle == 8'd35) begin
+              control_signals.multiplier_enable = 1'b1;
 
-            control_signals.A_bus_source = A_BUS_SRC_RD;
-            control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
+              control_signals.ALU_writeback = ALU_WB_REG_RD;  // Write to RdHi
+              control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
+              control_signals.ALU_op = ALU_OP_MOV;
 
-          end
+              control_signals.pipeline_advance = 1'b1;
+              control_signals.addr_bus_src = ADDR_SRC_PC;
+            end
+          end else begin
+            if (cycle == 8'd0) begin
+              $display(
+                  "[ControlUnit] Cycle 0 of multiply instruction, preparing for multiplication");
+              control_signals.multiplier_enable = 1'b1;
 
-          if (cycle == 8'd33) begin
-            control_signals.ALU_set_flags = decoder_bus.word.immediate.mul.S;
+              control_signals.A_bus_source = A_BUS_SRC_RS;
+              control_signals.B_bus_source = B_BUS_SRC_REG_RM;
 
-            control_signals.pipeline_advance = 1'b1;
-            control_signals.addr_bus_src = ADDR_SRC_PC;
+              if (decoder_bus.word.Rm == 4'd15) begin
+                control_signals.pc_rm_add_4 = 1'b1;
+              end
+
+              control_signals |= fetch_next_instr();
+              control_signals.incrementer_writeback = 1'b1;
+            end
+
+            if (cycle == 8'd1) begin
+              // Process Accumulator
+              $display("[ControlUnit] Cycle 1 of multiply instruction");
+
+              control_signals.multiplier_enable = 1'b0;
+              control_signals.ALU_writeback = ALU_WB_REG_RD;
+              if (decoder_bus.word.immediate.mul.opcode == ARM_MUL || 
+                decoder_bus.word.immediate.mul.opcode == ARM_UMULL) begin
+                control_signals.B_bus_source = B_BUS_SRC_IMM;
+                control_signals.B_bus_imm = 24'(0);
+              end else if (decoder_bus.word.immediate.mul.opcode == ARM_MLA ||
+                         decoder_bus.word.immediate.mul.opcode == ARM_UMLAL) begin
+                $display("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source",
+                         decoder_bus.word.Rn);
+                control_signals.B_bus_source = B_BUS_SRC_REG_RN;
+              end
+              control_signals.ALU_op = ALU_OP_MOV;
+            end
+
+            // FYI: on cycle 33, this if statement and the following are triggered
+            if (cycle >= 8'd2 && !is_long_op) begin
+              $display("[ControlUnit] Cycle %0d of multiply instruction", cycle);
+              control_signals.multiplier_enable = 1'b1;
+
+              control_signals.shift_type = SHIFT_LSL;
+
+              // Shift one more every cycle
+              control_signals.shift_amount = 5'(cycle - 8'd2);
+
+              if (is_long_op) control_signals.ALU_writeback = ALU_WB_REG_RN;  // Write to RdLo
+              else control_signals.ALU_writeback = ALU_WB_REG_RD;
+
+              if (is_long_op) control_signals.A_bus_source = A_BUS_SRC_RN;  // Read from RdLo
+              else control_signals.A_bus_source = A_BUS_SRC_RD;
+
+              control_signals.ALU_op = ALU_OP_ADD;
+
+              control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
+            end
+
+            if (cycle == 8'd33 && !is_long_op) begin
+              control_signals.ALU_set_flags = decoder_bus.word.immediate.mul.S;
+
+              control_signals.pipeline_advance = 1'b1;
+              control_signals.addr_bus_src = ADDR_SRC_PC;
+            end
+
+            if (cycle == 8'd34 && is_long_op) begin
+              control_signals.ALU_writeback = ALU_WB_REG_RN;  // Write to RdLo
+              control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
+              control_signals.ALU_op = ALU_OP_MOV;
+
+              control_signals.pipeline_advance = 1'b1;
+              control_signals.addr_bus_src = ADDR_SRC_PC;
+            end
+
+            if (cycle == 8'd35 && is_long_op) begin
+              control_signals.ALU_writeback = ALU_WB_REG_RD;  // Write to RdHi
+              control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
+              control_signals.ALU_op = ALU_OP_MOV;
+
+              control_signals.pipeline_advance = 1'b1;
+              control_signals.addr_bus_src = ADDR_SRC_PC;
+            end
           end
         end
 

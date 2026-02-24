@@ -214,14 +214,12 @@ static bool apply_initial_state(Varm_cpu_top& top, const json& test) {
     return apply_instruction_memory(top, test);
 }
 
-static void check_cpsr(const string& test_name, const Varm_cpu_top_cpu_regs_t__struct__0& regs, const json& expected) {
+static void check_cpsr(const string& test_name, const Varm_cpu_top_cpu_regs_t__struct__0& regs, const json& expected, uint32_t flag_mask) {
     uint32_t actual = regs.__PVT__CPSR;
     uint32_t exp = expected["CPSR"];
 
-    constexpr uint32_t C_MASK = (1u << 29);
-
-    actual &= ~C_MASK;
-    exp &= ~C_MASK;
+    actual &= flag_mask;
+    exp &= flag_mask;
 
     if (actual != exp) {
         auto flag = [](uint32_t v, int bit) {
@@ -263,7 +261,8 @@ static void check_cpsr(const string& test_name, const Varm_cpu_top_cpu_regs_t__s
 static void verify_registers(
     const Varm_cpu_top& top,
     const json& expected,
-    const std::string& test_name) {
+    const std::string& test_name,
+    const uint32_t flag_mask) {
     const auto& regs = top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__regs;
 
 #define CHECK_REG(actual, exp, name) \
@@ -308,7 +307,7 @@ static void verify_registers(
     CHECK_REG(regs.__PVT__undefined.__PVT__r13, expected["R_und"][0], "R13_und");
     CHECK_REG(regs.__PVT__undefined.__PVT__r14, expected["R_und"][1], "R14_und");
 
-    check_cpsr(test_name, regs, expected);
+    check_cpsr(test_name, regs, expected, flag_mask);
 
 #undef CHECK_REG
 }
@@ -351,12 +350,19 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
 
     TestLogger logger(testCase);
 
+    constexpr uint32_t FULL_MASK = 0xFFFFFFFF;
+    constexpr uint32_t IGNORE_C = ~(1u << 29);
+    constexpr uint32_t IGNORE_V = ~(1u << 28);
+
+    uint32_t flag_mask = FULL_MASK;
+
     // Skip known-bad case
     if (source.filename() == "arm_mul_mla.json.bin") {
         const uint32_t opcode = testCase["opcode"].get<uint32_t>();
         if (arm_mul_rd(opcode) == 15 || arm_mul_rs(opcode) == 15) {
             GTEST_SKIP() << "Skipping MUL/MLA with Rd==PC in arm_mul_mla.json.bin (test " << index << ")";
         }
+        flag_mask = IGNORE_C;
     }
 
     VerilatedContext ctx;
@@ -435,7 +441,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
             tick(top, ctx);
         }
 
-        verify_registers(top, testCase["final"], std::to_string(index));
+        verify_registers(top, testCase["final"], std::to_string(index), flag_mask);
         verify_memory_writes(top, testCase, std::to_string(index));
     }
 }

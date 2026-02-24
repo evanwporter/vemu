@@ -87,9 +87,11 @@ interface GBA_Multiplier_if (
     input word_t B_bus
 );
 
-  logic  enable;
+  logic enable;
   word_t result;
 
-  modport Multiplier_side(input A_bus, B_bus, enable, output result);
+  multiply_opcode_t opcode;
+
+  modport Multiplier_side(input A_bus, B_bus, enable, opcode, output result);
 
 endinterface : GBA_Multiplier_if

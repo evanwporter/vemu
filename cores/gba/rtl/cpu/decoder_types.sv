@@ -32,8 +32,23 @@ package gba_cpu_decoder_types_pkg;
   } signed_halfword_flag_t;
 
   typedef enum logic [3:0] {
-    ARM_MULTIPLY = 4'b0000,
-    ARM_MULTIPLY_ACCUMULATE = 4'b0001
+    /// Multiply
+    ARM_MUL = 4'b0000,
+
+    /// Multiply and Accumulate
+    ARM_MLA = 4'b0001,
+
+    /// Unsigned Multiply Long
+    ARM_UMULL = 4'b0100,
+
+    /// Unsigned Multiply Long Accumulate
+    ARM_UMLAL = 4'b0101,
+
+    /// Signed Multiply Long
+    ARM_SMULL = 4'b0110,
+
+    /// Signed Multiply Long Accumulate
+    ARM_SMLAL = 4'b0111
   } multiply_opcode_t;
 
   typedef union packed {
