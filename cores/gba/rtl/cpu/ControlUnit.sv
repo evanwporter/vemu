@@ -1016,7 +1016,7 @@ module ControlUnit (
         end
 
         // ============================
-        // Branch & Branch with Link
+        // Branch
         // ============================
 
         ARM_INSTR_BRANCH: begin
@@ -1070,6 +1070,22 @@ module ControlUnit (
 
             control_signals.shift_type = SHIFT_LSL;
             control_signals.shift_amount = 5'd2;
+
+            control_signals.pipeline_advance = 1'b1;
+          end
+        end
+
+        ARM_INSTR_BRANCH_EX: begin
+          if (cycle == 8'd0) begin
+            control_signals.ALU_op = ALU_OP_MOV;
+            control_signals.addr_bus_src = ADDR_SRC_ALU;
+
+            // control_signals.ALU_writeback = ALU_WB_REG_RP;
+            // control_signals.Rp_imm = 4'd15;
+
+            control_signals.B_bus_source = B_BUS_SRC_REG_RN;
+
+            control_signals.set_thumb_mode = 1'b1;
 
             control_signals.pipeline_advance = 1'b1;
           end

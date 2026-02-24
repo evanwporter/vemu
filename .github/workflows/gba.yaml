@@ -66,17 +66,18 @@ jobs:
       fail-fast: true
       matrix:
         test:
-          - data_proc_immediate
-          - data_proc_immediate_shift
-          - data_proc_register_shift
-          - ldm_stm
-          - ldr_str_immediate_offset
-          - ldr_str_register_offset
-          - ldrh_strh
-          - ldrsb_ldrsh
-          - b_bl
-          - swi
-          - mul_mla
+          - arm_data_proc_immediate
+          - arm_data_proc_immediate_shift
+          - arm_data_proc_register_shift
+          - arm_ldm_stm
+          - arm_ldr_str_immediate_offset
+          - arm_ldr_str_register_offset
+          - arm_ldrh_strh
+          - arm_ldrsb_ldrsh
+          - arm_b_bl
+          - arm_bx
+          - arm_swi
+          - arm_mul_mla
 
     steps:
       - uses: actions/checkout@v4
@@ -89,4 +90,4 @@ jobs:
 
       - name: Run GBA tests
         run: |
-          .\test_gba.exe --gtest_filter=*arm_${{ matrix.test }}_json --test-dir=${{ github.workspace }}/tests/
+          .\test_gba.exe --gtest_filter=*${{ matrix.test }}_json --test-dir=${{ github.workspace }}/tests/

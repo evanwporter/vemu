@@ -114,6 +114,11 @@ package gba_cpu_types_pkg;
 
   } cpu_regs_t;
 
+  typedef enum logic {
+    MODE_ARM   = 1'b0,
+    MODE_THUMB = 1'b1
+  } execution_mode_t;
+
   // TODO: figure out priority
   typedef enum logic [2:0] {
     /// No exception

@@ -44,6 +44,8 @@ module GBA_Decoder (
     priority casez (IR)
       /// Branch and Branch Exchange
       32'b????_0001_0010_1111_1111_1111_0001_????: begin
+        bus.word.instr_type = ARM_INSTR_BRANCH_EX;
+        bus.word.Rn = IR[3:0];
         $display("[GBA_Decoder] Detected BX instruction with IR=0x%08x", IR);
       end
 

@@ -29,6 +29,9 @@ module ARM7TMDI (
   /// Data that has been latched from the read bus
   word_t read_data;
 
+  execution_mode_t execution_mode;
+  assign execution_mode = execution_mode_t'(regs.CPSR[5]);
+
   always_comb begin
     if (control_signals.exception != EXCEPTION_NONE) begin
       // TODO: think about combining with `update_cspr_mode`
@@ -378,11 +381,20 @@ module ARM7TMDI (
           $display("Setting flush_req_pending to ensure flush on next cycle.");
         end
       end else if (control_signals.incrementer_writeback) begin
-        // PC = PC + 4
+        unique case (execution_mode)
+          MODE_ARM: begin
+            // PC = PC + 4
 
-        `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd4)
-        $display("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd4);
-        $fflush();
+            `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd4)
+            $display("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd4);
+            $fflush();
+          end
+          MODE_THUMB: begin
+            `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd2)
+            $display("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd2);
+            $fflush();
+          end
+        endcase
       end
 
       $display("[CPU] Checking ALU flags writeback. ALU_set_flags=%b, restore_cpsr_from_spsr=%b",
@@ -391,6 +403,13 @@ module ARM7TMDI (
       if (control_signals.restore_cpsr_from_spsr) begin
         regs.CPSR <= read_spsr(regs, cpu_mode);
         $display("Restoring CPSR from SPSR_%0d: 0x%08x", cpu_mode, read_spsr(regs, cpu_mode));
+      end
+
+      if (control_signals.set_thumb_mode) begin
+        regs.CPSR[5] <= B_bus[0];
+        `WRITE_REG(regs, cpu_mode, 4'd15, B_bus & 32'hFFFFFFFE)
+        flush_req <= 1'b1;
+        $display("Setting Thumb mode bit in CPSR");
       end
 
       if (control_signals.ALU_set_flags && control_signals.pipeline_advance) begin
@@ -452,7 +471,6 @@ module ARM7TMDI (
           `WRITE_REG(regs, control_signals.force_user_mode ? CPU_MODE_USR : cpu_mode,
                      decoder_bus.word.Rn, alu_bus.result)
         end
-        ALU_WB_REG_14: `WRITE_REG(regs, cpu_mode, 14, alu_bus.result)
         ALU_WB_REG_RP: begin
           `WRITE_REG(regs, control_signals.force_user_mode ? CPU_MODE_USR : cpu_mode,
                      control_signals.Rp_imm, alu_bus.result)
@@ -486,7 +504,15 @@ module ARM7TMDI (
         end
 
         ADDR_SRC_INCR: begin
-          bus.addr <= bus.addr + 32'd4;
+          unique case (execution_mode)
+            MODE_ARM: begin
+              bus.addr <= bus.addr + 32'd4;
+            end
+            MODE_THUMB: begin
+              bus.addr <= bus.addr + 32'd2;
+              $display("Incrementing address bus for Thumb mode: new addr=%0d", bus.addr);
+            end
+          endcase
         end
       endcase
     end

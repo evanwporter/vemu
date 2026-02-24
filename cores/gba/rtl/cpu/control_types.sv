@@ -82,10 +82,7 @@ package gba_control_types_pkg;
     ALU_WB_REG_RN,
 
     /// If set, we need also need to set `Rp_imm`
-    ALU_WB_REG_RP,
-
-    /// Write back to register 14
-    ALU_WB_REG_14
+    ALU_WB_REG_RP
   } alu_writeback_source_t;
 
   typedef struct packed {
@@ -114,6 +111,8 @@ package gba_control_types_pkg;
 
     exception_t exception;
 
+    logic set_thumb_mode;
+
     // ======================================================
     // A Bus
     // ======================================================
@@ -127,8 +126,6 @@ package gba_control_types_pkg;
     // B Bus
     // ======================================================
 
-    /// Hello
-    /// There
     B_bus_source_t B_bus_source;
 
     /// Immediate value to place on the B bus, if selected in `B_bus_source`
