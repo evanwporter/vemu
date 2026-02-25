@@ -423,30 +423,13 @@ module GBA_ControlUnit (
             // the memory access is complete.
             control_signals.incrementer_writeback = 1'b1;
 
-            // Update the address bus to use the output of the ALU, which 
-            // will is the effective address for the memory access
-            control_signals.addr_bus_src = ADDR_SRC_ALU;
-
-            // Subtract (0) or add (1) the offset to the base register depending 
-            // on the U bit in the instruction.
-            control_signals.ALU_op = decoder_bus.word.arm.ls.U ? ALU_OP_ADD : ALU_OP_SUB;
-
-            // If its pre offset we add/subtract the offset to the base register before the memory access
-            if (decoder_bus.word.arm.ls.P == ARM_LDR_STR_PRE_OFFSET) begin
-              if (decoder_bus.word.arm.ls.wt == 1'b1) begin
-                // Updating the base register with the offset is enabled so we 
-                // latch operand b for the writeback in the next cycle
-                control_signals.ALU_latch_op_b = 1'b1;
-              end
-            end else begin
-              // Post offset, so we don't add/subtract operand b
-              // before its used to update the address bus
-              control_signals.ALU_disable_op_b = 1'b1;
-
-              // We also make sure to latch operand b so that we can 
-              // use it for the writeback in the next cycle
-              control_signals.ALU_latch_op_b   = 1'b1;
-            end
+            control_signals |= calc_ls_address(
+                decoder_bus.word.arm.ls.U,
+                decoder_bus.word.arm.ls.P,
+                decoder_bus.word.arm.ls.wt,
+                decoder_bus.word.arm.ls.I,
+                decoder_bus.word.arm.ls.offset.imm12
+            );
 
             // Depending on the instruction, operand b can either be an immediate or 
             // a register with optional shift
@@ -575,33 +558,13 @@ module GBA_ControlUnit (
             // the memory access is complete.
             control_signals.incrementer_writeback = 1'b1;
 
-            // Update the address bus to use the output of the ALU, which 
-            // will is the effective address for the memory access
-            control_signals.addr_bus_src = ADDR_SRC_ALU;
-
-            // Subtract (0) or add (1) the offset to the base register depending 
-            // on the U bit in the instruction.
-            control_signals.ALU_op = decoder_bus.word.arm.ls_half.U ? ALU_OP_ADD : ALU_OP_SUB;
-
-            $display("[ControlUnit] ALU operation for address calculation is %s",
-                     control_signals.ALU_op == ALU_OP_ADD ? "ADD" : "SUB");
-
-            // If its pre offset we add/subtract the offset to the base register before the memory access
-            if (decoder_bus.word.arm.ls_half.P == ARM_LDR_STR_PRE_OFFSET) begin
-              if (decoder_bus.word.arm.ls_half.W == 1'b1) begin
-                // Updating the base register with the offset is enabled so we 
-                // latch operand b for the writeback in the next cycle
-                control_signals.ALU_latch_op_b = 1'b1;
-              end
-            end else begin
-              // Post offset, so we don't add/subtract operand b
-              // before its used to update the address bus
-              control_signals.ALU_disable_op_b = 1'b1;
-
-              // We also make sure to latch operand b so that we can 
-              // use it for the writeback in the next cycle
-              control_signals.ALU_latch_op_b   = 1'b1;
-            end
+            control_signals |= calc_ls_address(
+                decoder_bus.word.arm.ls_half.U,
+                decoder_bus.word.arm.ls_half.P,
+                decoder_bus.word.arm.ls_half.W,
+                decoder_bus.word.arm.ls_half.I,
+                12'(decoder_bus.word.arm.ls_half.imm_offset)
+            );
 
             // Depending on the instruction, operand b can either be an immediate or 
             // a register with optional shift
