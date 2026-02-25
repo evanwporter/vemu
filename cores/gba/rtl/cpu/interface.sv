@@ -7,12 +7,31 @@ interface GBA_Decoder_if (
     input flags_t flags
 );
 
+  logic enable;
   decoded_word_t word;
+
+  decoded_regs_t decoded_regs;
+
   logic pipeline_advance;
 
-  modport Decoder_side(input IR, flags, pipeline_advance, output word);
+  arm_instr_t instr_type;
 
-  modport ControlUnit_side(input word, output pipeline_advance);
+  // Bits 31-28
+  /// Whether the condition code check passed and the 
+  /// instruction should be executed. This is computed in 
+  /// the Decoder and used in the Control Unit to determine 
+  /// whether to execute the instruction or treat it as a NOP.
+  logic condition_pass;
+
+  modport Decoder_side(
+      input IR, flags, pipeline_advance,
+      output word, condition_pass, instr_type, decoded_regs
+  );
+
+  modport ControlUnit_side(
+      input word, decoded_regs, condition_pass, instr_type,
+      output pipeline_advance
+  );
 
 endinterface : GBA_Decoder_if
 

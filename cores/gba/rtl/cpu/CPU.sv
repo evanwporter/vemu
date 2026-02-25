@@ -99,8 +99,8 @@ module ARM7TMDI (
   assign bus.instruction_fetch = control_signals.memory_latch_IR;
 
   assign multiplier_bus.enable = control_signals.multiplier_enable;
-  assign multiplier_bus.opcode = decoder_bus.word.instr_type == ARM_INSTR_MULTIPLY
-    ? decoder_bus.word.immediate.mul.opcode
+  assign multiplier_bus.opcode = decoder_bus.instr_type == ARM_INSTR_MULTIPLY
+    ? decoder_bus.word.arm.mul.opcode
     : gba_cpu_decoder_types_pkg::multiply_opcode_t'(4'd0);
 
   always_comb begin
@@ -137,10 +137,11 @@ module ARM7TMDI (
       .bus  (multiplier_bus)
   );
 
-  ControlUnit controlUnit (
+  GBA_ControlUnit controlUnit (
       .clk(clk),
       .reset(reset),
       .decoder_bus(decoder_bus),
+      .execution_mode(execution_mode),
       .control_signals(control_signals),
       .flush_req(flush_req)
   );
@@ -159,12 +160,12 @@ module ARM7TMDI (
   always_comb begin
     unique case (control_signals.A_bus_source)
       A_BUS_SRC_RN: begin
-        $display("Driving A bus with value from Rn (R%d): %0d", decoder_bus.word.Rn, read_reg(
-                 regs, cpu_mode, decoder_bus.word.Rn));
+        $display("Driving A bus with value from Rn (R%d): %0d", decoder_bus.decoded_regs.Rn,
+                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn));
         if (control_signals.pc_rn_add_4) begin
-          A_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rn) + 32'd4;
+          A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn) + 32'd4;
         end else begin
-          A_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rn);
+          A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn);
         end
       end
 
@@ -174,16 +175,16 @@ module ARM7TMDI (
       end
 
       A_BUS_SRC_RD: begin
-        $display("Driving A bus with value from Rd (R%d): %0d", decoder_bus.word.Rd, read_reg(
-                 regs, cpu_mode, decoder_bus.word.Rd));
-        A_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rd);
+        $display("Driving A bus with value from Rd (R%d): %0d", decoder_bus.decoded_regs.Rd,
+                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rd));
+        A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rd);
       end
 
       A_BUS_SRC_RS: begin
         /// TODO pc_rs_add_4 heres
-        $display("Driving A bus with value from Rs (R%d): %0d", decoder_bus.word.Rs, read_reg(
-                 regs, cpu_mode, decoder_bus.word.Rs));
-        A_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rs);
+        $display("Driving A bus with value from Rs (R%d): %0d", decoder_bus.decoded_regs.Rs,
+                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rs));
+        A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rs);
       end
 
     endcase
@@ -221,24 +222,25 @@ module ARM7TMDI (
       end
 
       B_BUS_SRC_REG_RM: begin
-        $display("Driving B bus with value from Rm (R%0d): %0d", decoder_bus.word.Rm, read_reg(
-                 regs, cpu_mode, decoder_bus.word.Rm));
-        B_bus = control_signals.pc_rm_add_4 ? (read_reg(regs, cpu_mode, decoder_bus.word.Rm) + 32'd4
-            ) : read_reg(regs, cpu_mode, decoder_bus.word.Rm);
+        $display("Driving B bus with value from Rm (R%0d): %0d", decoder_bus.decoded_regs.Rm,
+                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm));
+        B_bus = control_signals.pc_rm_add_4 ?
+            (read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm) + 32'd4) :
+            read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm);
       end
 
       B_BUS_SRC_REG_RS: begin
-        B_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rs);
+        B_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rs);
       end
 
       B_BUS_SRC_REG_RD: begin
-        B_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rd);
+        B_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rd);
       end
 
       B_BUS_SRC_REG_RN: begin
-        $display("Driving B bus with value from Rn (R%0d): %0d", decoder_bus.word.Rn, read_reg(
-                 regs, cpu_mode, decoder_bus.word.Rn));
-        B_bus = read_reg(regs, cpu_mode, decoder_bus.word.Rn);
+        $display("Driving B bus with value from Rn (R%0d): %0d", decoder_bus.decoded_regs.Rn,
+                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn));
+        B_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn);
       end
 
       B_BUS_SRC_REG_RP: begin
@@ -334,7 +336,7 @@ module ARM7TMDI (
             read_data <= bus.rdata;
 
             // Misaligned word-load rotate quirk (ARM7TDMI)
-            if (decoder_bus.word.instr_type == ARM_INSTR_LOAD) begin
+            if (decoder_bus.instr_type == ARM_INSTR_LOAD) begin
               logic [1:0] a;
               a = bus.addr[1:0];
               if (a != 2'b00) begin
@@ -366,12 +368,13 @@ module ARM7TMDI (
         flush_req <= 1'b1;
       end
 
-      if ((control_signals.ALU_writeback == ALU_WB_REG_RD && decoder_bus.word.Rd == 4'd15) ||
-          (control_signals.ALU_writeback == ALU_WB_REG_RN && decoder_bus.word.Rn == 4'd15) ||
+      if ((control_signals.ALU_writeback == ALU_WB_REG_RD && decoder_bus.decoded_regs.Rd == 4'd15) ||
+          (control_signals.ALU_writeback == ALU_WB_REG_RN && decoder_bus.decoded_regs.Rn == 4'd15) ||
           (control_signals.ALU_writeback == ALU_WB_REG_RP && control_signals.Rp_imm == 4'd15)) begin
 
         $display("ALU writeback to PC (R15) detected. ALU_writeback=%0d, Rd=%0d, Rn=%0d",
-                 control_signals.ALU_writeback, decoder_bus.word.Rd, decoder_bus.word.Rn);
+                 control_signals.ALU_writeback, decoder_bus.decoded_regs.Rd,
+                 decoder_bus.decoded_regs.Rn);
 
         if (control_signals.pipeline_advance) begin
           flush_req <= 1'b1;
@@ -384,7 +387,6 @@ module ARM7TMDI (
         unique case (execution_mode)
           MODE_ARM: begin
             // PC = PC + 4
-
             `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd4)
             $display("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd4);
             $fflush();
@@ -414,9 +416,9 @@ module ARM7TMDI (
 
       if (control_signals.ALU_set_flags && control_signals.pipeline_advance) begin
 
-        if ((decoder_bus.word.Rd == 4'd15) && mode_has_spsr(
+        if ((decoder_bus.decoded_regs.Rd == 4'd15) && mode_has_spsr(
                 cpu_mode
-            ) && decoder_bus.word.instr_type != ARM_INSTR_MULTIPLY) begin
+            ) && decoder_bus.instr_type != ARM_INSTR_MULTIPLY) begin
           regs.CPSR <= read_spsr(regs, cpu_mode);
 
           $display("Restoring CPSR from SPSR_%0d: 0x%08x", cpu_mode, read_spsr(regs, cpu_mode));
@@ -428,7 +430,7 @@ module ARM7TMDI (
           regs.CPSR[31] <= alu_bus.flags_out.n;
           regs.CPSR[30] <= alu_bus.flags_out.z;
 
-          if (decoder_bus.word.instr_type != ARM_INSTR_MULTIPLY) begin
+          if (decoder_bus.instr_type != ARM_INSTR_MULTIPLY) begin
             regs.CPSR[29] <= alu_bus.flags_out.c;
             regs.CPSR[28] <= alu_bus.flags_out.v;
             $display("ALU op was %0d, setting C flag to %b and V flag to %b",
@@ -462,14 +464,16 @@ module ARM7TMDI (
       unique case (control_signals.ALU_writeback)
         ALU_WB_NONE:   ;
         ALU_WB_REG_RD: begin
-          `WRITE_REG(regs, cpu_mode, decoder_bus.word.Rd, alu_bus.result)
-          $display("Writing back ALU result %0d to Rd (R%d)", alu_bus.result, decoder_bus.word.Rd);
+          `WRITE_REG(regs, cpu_mode, decoder_bus.decoded_regs.Rd, alu_bus.result)
+          $display("Writing back ALU result %0d to Rd (R%d)", alu_bus.result,
+                   decoder_bus.decoded_regs.Rd);
         end
-        ALU_WB_REG_RS: `WRITE_REG(regs, cpu_mode, decoder_bus.word.Rs, alu_bus.result)
+        ALU_WB_REG_RS: `WRITE_REG(regs, cpu_mode, decoder_bus.decoded_regs.Rs, alu_bus.result)
         ALU_WB_REG_RN: begin
-          $display("Writing back ALU result %0d to Rn (R%d)", alu_bus.result, decoder_bus.word.Rn);
+          $display("Writing back ALU result %0d to Rn (R%d)", alu_bus.result,
+                   decoder_bus.decoded_regs.Rn);
           `WRITE_REG(regs, control_signals.force_user_mode ? CPU_MODE_USR : cpu_mode,
-                     decoder_bus.word.Rn, alu_bus.result)
+                     decoder_bus.decoded_regs.Rn, alu_bus.result)
         end
         ALU_WB_REG_RP: begin
           `WRITE_REG(regs, control_signals.force_user_mode ? CPU_MODE_USR : cpu_mode,

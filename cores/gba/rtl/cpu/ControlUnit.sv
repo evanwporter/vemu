@@ -6,10 +6,11 @@ import control_util_pkg::*;
 
 `include "gba/cpu/util.svh"
 
-module ControlUnit (
+module GBA_ControlUnit (
     input logic clk,
     input logic reset,
     GBA_Decoder_if.ControlUnit_side decoder_bus,
+    input execution_mode_t execution_mode,
     output control_t control_signals,
     input logic flush_req
 );
@@ -58,22 +59,30 @@ module ControlUnit (
   always_ff @(posedge clk) begin
     if (reset) begin
     end else begin
-      if (decoder_bus.word.instr_type == ARM_INSTR_DATAPROC_IMM) begin
-        `DISPLAY_DECODED_DATAPROC_IMM(decoder_bus.word)
-      end else if (decoder_bus.word.instr_type == ARM_INSTR_DATAPROC_REG_IMM) begin
-        `DISPLAY_DECODED_DATAPROC_REG_IMM(decoder_bus.word)
-      end else if (decoder_bus.word.instr_type == ARM_INSTR_DATAPROC_REG_REG) begin
-        `DISPLAY_DECODED_DATAPROC_REG_REG(decoder_bus.word)
-      end else if (decoder_bus.word.instr_type == ARM_INSTR_LOAD || decoder_bus.word.instr_type == ARM_INSTR_STORE) begin
-        `DISPLAY_DECODED_LS(decoder_bus.word)
-      end else if (decoder_bus.word.instr_type == ARM_INSTR_LDM || decoder_bus.word.instr_type == ARM_INSTR_STM) begin
-        `DISPLAY_DECODED_BLOCK(decoder_bus.word)
-      end else if (decoder_bus.word.instr_type == ARM_INSTR_LDR_HALF || decoder_bus.word.instr_type == ARM_INSTR_STR_HALF) begin
-        `DISPLAY_DECODED_LS_HALF(decoder_bus.word)
-      end else if (decoder_bus.word.instr_type == ARM_INSTR_BRANCH || decoder_bus.word.instr_type == ARM_INSTR_BRANCH_LINK) begin
-        `DISPLAY_DECODED_BRANCH(decoder_bus.word)
-      end else if (decoder_bus.word.instr_type == ARM_INSTR_MULTIPLY) begin
-        `DISPLAY_DECODED_MULT(decoder_bus.word)
+      if (decoder_bus.instr_type == ARM_INSTR_DATAPROC_IMM) begin
+        `DISPLAY_DECODED_DATAPROC_IMM(decoder_bus.word.arm, decoder_bus.decoded_regs,
+                                      decoder_bus.instr_type, decoder_bus.condition_pass)
+      end else if (decoder_bus.instr_type == ARM_INSTR_DATAPROC_REG_IMM) begin
+        `DISPLAY_DECODED_DATAPROC_REG_IMM(decoder_bus.word.arm, decoder_bus.decoded_regs,
+                                          decoder_bus.instr_type, decoder_bus.condition_pass)
+      end else if (decoder_bus.instr_type == ARM_INSTR_DATAPROC_REG_REG) begin
+        `DISPLAY_DECODED_DATAPROC_REG_REG(decoder_bus.word.arm, decoder_bus.decoded_regs,
+                                          decoder_bus.instr_type, decoder_bus.condition_pass)
+      end else if (decoder_bus.instr_type == ARM_INSTR_LOAD || decoder_bus.instr_type == ARM_INSTR_STORE) begin
+        `DISPLAY_DECODED_LS(decoder_bus.word.arm, decoder_bus.decoded_regs, decoder_bus.instr_type,
+                            decoder_bus.condition_pass)
+      end else if (decoder_bus.instr_type == ARM_INSTR_LDM || decoder_bus.instr_type == ARM_INSTR_STM) begin
+        `DISPLAY_DECODED_BLOCK(decoder_bus.word.arm, decoder_bus.decoded_regs,
+                               decoder_bus.instr_type, decoder_bus.condition_pass)
+      end else if (decoder_bus.instr_type == ARM_INSTR_LDR_HALF || decoder_bus.instr_type == ARM_INSTR_STR_HALF) begin
+        `DISPLAY_DECODED_LS_HALF(decoder_bus.word.arm, decoder_bus.decoded_regs,
+                                 decoder_bus.instr_type, decoder_bus.condition_pass)
+      end else if (decoder_bus.instr_type == ARM_INSTR_BRANCH || decoder_bus.instr_type == ARM_INSTR_BRANCH_LINK) begin
+        `DISPLAY_DECODED_BRANCH(decoder_bus.word.arm, decoder_bus.decoded_regs,
+                                decoder_bus.instr_type, decoder_bus.condition_pass)
+      end else if (decoder_bus.instr_type == ARM_INSTR_MULTIPLY) begin
+        `DISPLAY_DECODED_MULT(decoder_bus.word.arm, decoder_bus.decoded_regs,
+                              decoder_bus.instr_type, decoder_bus.condition_pass)
       end else begin
         $display("[ControlUnit] Decoded instruction type is undefined");
       end
@@ -120,7 +129,7 @@ module ControlUnit (
       $display("[ControlUnit] Flush cycle 2, flushing instruction");
       $fflush();
 
-    end else if (decoder_bus.word.condition_pass == 1'b0) begin
+    end else if (decoder_bus.condition_pass == 1'b0) begin
       // If the condition check fails, we still want to advance the pipeline and fetch the next instruction
       control_signals |= fetch_next_instr();
       control_signals.incrementer_writeback = 1;
@@ -133,30 +142,30 @@ module ControlUnit (
 
     end else begin
 
-      case (decoder_bus.word.instr_type)
+      case (decoder_bus.instr_type)
 
         // ============================
         // Data Processing (Immediate)
         // ============================
 
         ARM_INSTR_DATAPROC_IMM: begin
-          $display("[ControlUnit] Decoding data processing immediate instruction with IR=0x%08x",
-                   decoder_bus.word.IR);
-          $fflush();
+          // $display("[ControlUnit] Decoding data processing immediate instruction with IR=0x%08x",
+          //          decoder_bus.word.arm.IR);
+          // $fflush();
 
           if (cycle == 8'd0) begin
             control_signals.B_bus_source = B_BUS_SRC_IMM;
-            control_signals.B_bus_imm = 24'(decoder_bus.word.immediate.data_proc_imm.imm8);
+            control_signals.B_bus_imm = 24'(decoder_bus.word.arm.data_proc_imm.imm8);
 
-            control_signals.shift_amount = {decoder_bus.word.immediate.data_proc_imm.rotate, 1'b0};
+            control_signals.shift_amount = {decoder_bus.word.arm.data_proc_imm.rotate, 1'b0};
 
             control_signals.shift_type = SHIFT_ROR;
 
-            control_signals.ALU_op = alu_op_t'(decoder_bus.word.immediate.data_proc_imm.opcode);
+            control_signals.ALU_op = alu_op_t'(decoder_bus.word.arm.data_proc_imm.opcode);
 
             control_signals.ALU_writeback = gba_cpu_util_pkg::get_alu_writeback(
-                alu_op_t'(decoder_bus.word.immediate.data_proc_imm.opcode));
-            control_signals.ALU_set_flags = decoder_bus.word.immediate.data_proc_imm.set_flags;
+                alu_op_t'(decoder_bus.word.arm.data_proc_imm.opcode));
+            control_signals.ALU_set_flags = decoder_bus.word.arm.data_proc_imm.set_flags;
             $display("[ControlUnit] ALU writeback source=%0d, set_flags=%b",
                      control_signals.ALU_writeback, control_signals.ALU_set_flags);
 
@@ -193,20 +202,20 @@ module ControlUnit (
 
             control_signals.B_bus_source = B_BUS_SRC_REG_RM;
 
-            control_signals.shift_type = decoder_bus.word.immediate.data_proc_reg_reg.shift_type;
+            control_signals.shift_type = decoder_bus.word.arm.data_proc_reg_reg.shift_type;
             control_signals.shift_use_latch = 1'b1;
 
-            control_signals.ALU_op = alu_op_t'(decoder_bus.word.immediate.data_proc_reg_reg.opcode);
+            control_signals.ALU_op = alu_op_t'(decoder_bus.word.arm.data_proc_reg_reg.opcode);
 
             control_signals.ALU_writeback = gba_cpu_util_pkg::get_alu_writeback(
-                alu_op_t'(decoder_bus.word.immediate.data_proc_reg_reg.opcode));
-            control_signals.ALU_set_flags = decoder_bus.word.immediate.data_proc_reg_reg.set_flags;
+                alu_op_t'(decoder_bus.word.arm.data_proc_reg_reg.opcode));
+            control_signals.ALU_set_flags = decoder_bus.word.arm.data_proc_reg_reg.set_flags;
 
-            if (decoder_bus.word.Rn == 4'd15) begin
+            if (decoder_bus.decoded_regs.Rn == 4'd15) begin
               control_signals.pc_rn_add_4 = 1'b1;
             end
 
-            if (decoder_bus.word.Rm == 4'd15) begin
+            if (decoder_bus.decoded_regs.Rm == 4'd15) begin
               control_signals.pc_rm_add_4 = 1'b1;
             end
 
@@ -231,17 +240,17 @@ module ControlUnit (
 
           control_signals.B_bus_source = B_BUS_SRC_REG_RM;
 
-          control_signals.shift_type = decoder_bus.word.immediate.data_proc_reg_imm.shift_type;
-          control_signals.shift_amount = decoder_bus.word.immediate.data_proc_reg_imm.shift_amount;
+          control_signals.shift_type = decoder_bus.word.arm.data_proc_reg_imm.shift_type;
+          control_signals.shift_amount = decoder_bus.word.arm.data_proc_reg_imm.shift_amount;
 
-          control_signals.ALU_op = alu_op_t'(decoder_bus.word.immediate.data_proc_reg_imm.opcode);
+          control_signals.ALU_op = alu_op_t'(decoder_bus.word.arm.data_proc_reg_imm.opcode);
 
           control_signals.ALU_writeback = gba_cpu_util_pkg::get_alu_writeback(
-              alu_op_t'(decoder_bus.word.immediate.data_proc_reg_imm.opcode));
-          control_signals.ALU_set_flags = decoder_bus.word.immediate.data_proc_reg_imm.set_flags;
+              alu_op_t'(decoder_bus.word.arm.data_proc_reg_imm.opcode));
+          control_signals.ALU_set_flags = decoder_bus.word.arm.data_proc_reg_imm.set_flags;
 
-          if (decoder_bus.word.immediate.data_proc_reg_imm.shift_type == SHIFT_ROR &&
-              decoder_bus.word.immediate.data_proc_reg_imm.shift_amount == 5'd0) begin
+          if (decoder_bus.word.arm.data_proc_reg_imm.shift_type == SHIFT_ROR &&
+              decoder_bus.word.arm.data_proc_reg_imm.shift_amount == 5'd0) begin
             // Register shift-immediate encoding: ROR #0 => RRX
             control_signals.shift_use_rxx = 1'b1;
           end
@@ -260,8 +269,8 @@ module ControlUnit (
         // ============================
 
         ARM_INSTR_MULTIPLY: begin
-          is_long_op = decoder_bus.word.immediate.mul.opcode == ARM_UMULL
-             || decoder_bus.word.immediate.mul.opcode == ARM_UMLAL;
+          is_long_op = decoder_bus.word.arm.mul.opcode == ARM_UMULL
+             || decoder_bus.word.arm.mul.opcode == ARM_UMLAL;
 
           if (is_long_op) begin
             if (cycle == 8'd0) begin
@@ -273,7 +282,7 @@ module ControlUnit (
               control_signals.A_bus_source = A_BUS_SRC_RS;
               control_signals.B_bus_source = B_BUS_SRC_REG_RM;
 
-              if (decoder_bus.word.Rm == 4'd15) begin
+              if (decoder_bus.decoded_regs.Rm == 4'd15) begin
                 control_signals.pc_rm_add_4 = 1'b1;
               end
 
@@ -323,7 +332,7 @@ module ControlUnit (
               control_signals.A_bus_source = A_BUS_SRC_RS;
               control_signals.B_bus_source = B_BUS_SRC_REG_RM;
 
-              if (decoder_bus.word.Rm == 4'd15) begin
+              if (decoder_bus.decoded_regs.Rm == 4'd15) begin
                 control_signals.pc_rm_add_4 = 1'b1;
               end
 
@@ -337,14 +346,14 @@ module ControlUnit (
 
               control_signals.multiplier_enable = 1'b0;
               control_signals.ALU_writeback = ALU_WB_REG_RD;
-              if (decoder_bus.word.immediate.mul.opcode == ARM_MUL || 
-                decoder_bus.word.immediate.mul.opcode == ARM_UMULL) begin
+              if (decoder_bus.word.arm.mul.opcode == ARM_MUL || 
+                decoder_bus.word.arm.mul.opcode == ARM_UMULL) begin
                 control_signals.B_bus_source = B_BUS_SRC_IMM;
                 control_signals.B_bus_imm = 24'(0);
-              end else if (decoder_bus.word.immediate.mul.opcode == ARM_MLA ||
-                         decoder_bus.word.immediate.mul.opcode == ARM_UMLAL) begin
+              end else if (decoder_bus.word.arm.mul.opcode == ARM_MLA ||
+                         decoder_bus.word.arm.mul.opcode == ARM_UMLAL) begin
                 $display("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source",
-                         decoder_bus.word.Rn);
+                         decoder_bus.decoded_regs.Rn);
                 control_signals.B_bus_source = B_BUS_SRC_REG_RN;
               end
               control_signals.ALU_op = ALU_OP_MOV;
@@ -372,7 +381,7 @@ module ControlUnit (
             end
 
             if (cycle == 8'd33 && !is_long_op) begin
-              control_signals.ALU_set_flags = decoder_bus.word.immediate.mul.S;
+              control_signals.ALU_set_flags = decoder_bus.word.arm.mul.S;
 
               control_signals.pipeline_advance = 1'b1;
               control_signals.addr_bus_src = ADDR_SRC_PC;
@@ -420,11 +429,11 @@ module ControlUnit (
 
             // Subtract (0) or add (1) the offset to the base register depending 
             // on the U bit in the instruction.
-            control_signals.ALU_op = decoder_bus.word.immediate.ls.U ? ALU_OP_ADD : ALU_OP_SUB;
+            control_signals.ALU_op = decoder_bus.word.arm.ls.U ? ALU_OP_ADD : ALU_OP_SUB;
 
             // If its pre offset we add/subtract the offset to the base register before the memory access
-            if (decoder_bus.word.immediate.ls.P == ARM_LDR_STR_PRE_OFFSET) begin
-              if (decoder_bus.word.immediate.ls.wt == 1'b1) begin
+            if (decoder_bus.word.arm.ls.P == ARM_LDR_STR_PRE_OFFSET) begin
+              if (decoder_bus.word.arm.ls.wt == 1'b1) begin
                 // Updating the base register with the offset is enabled so we 
                 // latch operand b for the writeback in the next cycle
                 control_signals.ALU_latch_op_b = 1'b1;
@@ -441,11 +450,11 @@ module ControlUnit (
 
             // Depending on the instruction, operand b can either be an immediate or 
             // a register with optional shift
-            if (decoder_bus.word.immediate.ls.I == ARM_LDR_STR_IMMEDIATE) begin
+            if (decoder_bus.word.arm.ls.I == ARM_LDR_STR_IMMEDIATE) begin
               // Immediate offset with an optional rotation/shift
 
               control_signals.B_bus_source = B_BUS_SRC_IMM;
-              control_signals.B_bus_imm = 24'(decoder_bus.word.immediate.ls.offset.imm12);
+              control_signals.B_bus_imm = 24'(decoder_bus.word.arm.ls.offset.imm12);
 
               // No shift
               control_signals.shift_type = SHIFT_LSL;
@@ -455,29 +464,29 @@ module ControlUnit (
               // We are using a register offset with an optional shift
 
               control_signals.B_bus_source = B_BUS_SRC_REG_RM;
-              control_signals.shift_type = decoder_bus.word.immediate.ls.offset.shifted.shift_type;
-              control_signals.shift_amount = decoder_bus.word.immediate.ls.offset.shifted.shift_amount;
+              control_signals.shift_type   = decoder_bus.word.arm.ls.offset.shifted.shift_type;
+              control_signals.shift_amount = decoder_bus.word.arm.ls.offset.shifted.shift_amount;
 
-              if (decoder_bus.word.immediate.data_proc_reg_imm.shift_type == SHIFT_ROR &&
-                  decoder_bus.word.immediate.data_proc_reg_imm.shift_amount == 5'd0) begin
+              if (decoder_bus.word.arm.data_proc_reg_imm.shift_type == SHIFT_ROR &&
+                  decoder_bus.word.arm.data_proc_reg_imm.shift_amount == 5'd0) begin
                 // Register shift-immediate encoding: ROR #0 => RRX
                 control_signals.shift_use_rxx = 1'b1;
               end
             end
           end
 
-          if (decoder_bus.word.instr_type == ARM_INSTR_LOAD) begin
+          if (decoder_bus.instr_type == ARM_INSTR_LOAD) begin
 
             if (cycle == 8'd1) begin
 
               $display(
                   "[ControlUnit] Cycle 1 of load instruction, address calculation done, preparing for memory read and writeback");
 
-              control_signals.ALU_op = decoder_bus.word.immediate.ls.U ? ALU_OP_ADD : ALU_OP_SUB;
+              control_signals.ALU_op = decoder_bus.word.arm.ls.U ? ALU_OP_ADD : ALU_OP_SUB;
 
               // Do we writeback?
-              if (decoder_bus.word.immediate.ls.P == ARM_LDR_STR_POST_OFFSET 
-                  || decoder_bus.word.immediate.ls.wt == 1'b1) begin
+              if (decoder_bus.word.arm.ls.P == ARM_LDR_STR_POST_OFFSET 
+                  || decoder_bus.word.arm.ls.wt == 1'b1) begin
                 // Since we are writing back to the base register, 
                 // we need to make sure to use the offset for the writeback
                 // which we latched in the previous cycle
@@ -485,10 +494,10 @@ module ControlUnit (
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
                 $display("[ControlUnit] Load instruction requires writeback to base register R%0d",
-                         decoder_bus.word.Rn);
+                         decoder_bus.decoded_regs.Rn);
               end
 
-              control_signals.memory_byte_transfer = decoder_bus.word.immediate.ls.B;
+              control_signals.memory_byte_transfer = decoder_bus.word.arm.ls.B;
 
               control_signals.memory_read_en = 1'b1;
 
@@ -514,7 +523,7 @@ module ControlUnit (
               // value read from memory
               control_signals.ALU_writeback = ALU_WB_REG_RD;
 
-              control_signals.memory_byte_transfer = decoder_bus.word.immediate.ls.B;
+              control_signals.memory_byte_transfer = decoder_bus.word.arm.ls.B;
 
               // Load the PC back into the address bus
               control_signals.addr_bus_src = ADDR_SRC_PC;
@@ -522,21 +531,21 @@ module ControlUnit (
             end
           end
 
-          if (decoder_bus.word.instr_type == ARM_INSTR_STORE) begin
+          if (decoder_bus.instr_type == ARM_INSTR_STORE) begin
             if (cycle == 8'd1) begin
               control_signals.pipeline_advance = 1'b1;
 
               control_signals.B_bus_source = B_BUS_SRC_REG_RD;
 
-              control_signals.ALU_op = decoder_bus.word.immediate.ls.U ? ALU_OP_ADD : ALU_OP_SUB;
+              control_signals.ALU_op = decoder_bus.word.arm.ls.U ? ALU_OP_ADD : ALU_OP_SUB;
 
-              control_signals.memory_write_en = decoder_bus.word.condition_pass;
+              control_signals.memory_write_en = 1'b1;
 
-              control_signals.memory_byte_transfer = decoder_bus.word.immediate.ls.B;
+              control_signals.memory_byte_transfer = decoder_bus.word.arm.ls.B;
 
               // Do we writeback?
-              if (decoder_bus.word.immediate.ls.P == ARM_LDR_STR_POST_OFFSET 
-                  || decoder_bus.word.immediate.ls.wt == 1'b1) begin
+              if (decoder_bus.word.arm.ls.P == ARM_LDR_STR_POST_OFFSET 
+                  || decoder_bus.word.arm.ls.wt == 1'b1) begin
                 // Since we are writing back to the base register, 
                 // we need to make sure to use the offset for the writeback
                 // which we latched in the previous cycle
@@ -544,7 +553,7 @@ module ControlUnit (
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
                 $display("[ControlUnit] Store instruction requires writeback to base register R%0d",
-                         decoder_bus.word.Rn);
+                         decoder_bus.decoded_regs.Rn);
               end
 
               // Load the PC back into the address bus
@@ -572,14 +581,14 @@ module ControlUnit (
 
             // Subtract (0) or add (1) the offset to the base register depending 
             // on the U bit in the instruction.
-            control_signals.ALU_op = decoder_bus.word.immediate.ls_half.U ? ALU_OP_ADD : ALU_OP_SUB;
+            control_signals.ALU_op = decoder_bus.word.arm.ls_half.U ? ALU_OP_ADD : ALU_OP_SUB;
 
             $display("[ControlUnit] ALU operation for address calculation is %s",
                      control_signals.ALU_op == ALU_OP_ADD ? "ADD" : "SUB");
 
             // If its pre offset we add/subtract the offset to the base register before the memory access
-            if (decoder_bus.word.immediate.ls_half.P == ARM_LDR_STR_PRE_OFFSET) begin
-              if (decoder_bus.word.immediate.ls_half.W == 1'b1) begin
+            if (decoder_bus.word.arm.ls_half.P == ARM_LDR_STR_PRE_OFFSET) begin
+              if (decoder_bus.word.arm.ls_half.W == 1'b1) begin
                 // Updating the base register with the offset is enabled so we 
                 // latch operand b for the writeback in the next cycle
                 control_signals.ALU_latch_op_b = 1'b1;
@@ -596,11 +605,11 @@ module ControlUnit (
 
             // Depending on the instruction, operand b can either be an immediate or 
             // a register with optional shift
-            if (decoder_bus.word.immediate.ls_half.I) begin
+            if (decoder_bus.word.arm.ls_half.I) begin
               // Immediate offset with an optional rotation/shift
 
               control_signals.B_bus_source = B_BUS_SRC_IMM;
-              control_signals.B_bus_imm = 24'(decoder_bus.word.immediate.ls_half.imm_offset);
+              control_signals.B_bus_imm = 24'(decoder_bus.word.arm.ls_half.imm_offset);
 
               // No shift
               control_signals.shift_type = SHIFT_LSL;
@@ -617,17 +626,17 @@ module ControlUnit (
             end
           end
 
-          if (decoder_bus.word.instr_type == ARM_INSTR_LDR_HALF) begin
+          if (decoder_bus.instr_type == ARM_INSTR_LDR_HALF) begin
             if (cycle == 8'd1) begin
 
               $display(
                   "[ControlUnit] Cycle 1 of load instruction, address calculation done, preparing for memory read and writeback");
 
-              control_signals.ALU_op = decoder_bus.word.immediate.ls_half.U ? ALU_OP_ADD : ALU_OP_SUB;
+              control_signals.ALU_op = decoder_bus.word.arm.ls_half.U ? ALU_OP_ADD : ALU_OP_SUB;
 
               // Do we writeback?
-              if (decoder_bus.word.immediate.ls_half.P == ARM_LDR_STR_POST_OFFSET 
-                  || decoder_bus.word.immediate.ls_half.W == 1'b1) begin
+              if (decoder_bus.word.arm.ls_half.P == ARM_LDR_STR_POST_OFFSET 
+                  || decoder_bus.word.arm.ls_half.W == 1'b1) begin
                 // Since we are writing back to the base register, 
                 // we need to make sure to use the offset for the writeback
                 // which we latched in the previous cycle
@@ -635,15 +644,15 @@ module ControlUnit (
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
                 $display("[ControlUnit] Load instruction requires writeback to base register R%0d",
-                         decoder_bus.word.Rn);
+                         decoder_bus.decoded_regs.Rn);
               end
 
-              if (decoder_bus.word.immediate.ls_half.opcode == ARM_LOAD_STORE_HALFWORD) begin
+              if (decoder_bus.word.arm.ls_half.opcode == ARM_LOAD_STORE_HALFWORD) begin
                 control_signals.memory_halfword_transfer = 1'b1;
-              end else if (decoder_bus.word.immediate.ls_half.opcode == ARM_LOAD_SIGNED_HALFWORD) begin
+              end else if (decoder_bus.word.arm.ls_half.opcode == ARM_LOAD_SIGNED_HALFWORD) begin
                 control_signals.memory_signed_transfer   = 1'b1;
                 control_signals.memory_halfword_transfer = 1'b1;
-              end else if (decoder_bus.word.immediate.ls_half.opcode == ARM_LOAD_SIGNED_BYTE) begin
+              end else if (decoder_bus.word.arm.ls_half.opcode == ARM_LOAD_SIGNED_BYTE) begin
                 control_signals.memory_byte_transfer   = 1'b1;
                 control_signals.memory_signed_transfer = 1'b1;
               end
@@ -672,12 +681,12 @@ module ControlUnit (
               // value read from memory
               control_signals.ALU_writeback = ALU_WB_REG_RD;
 
-              if (decoder_bus.word.immediate.ls_half.opcode == ARM_LOAD_STORE_HALFWORD) begin
+              if (decoder_bus.word.arm.ls_half.opcode == ARM_LOAD_STORE_HALFWORD) begin
                 control_signals.memory_halfword_transfer = 1'b1;
-              end else if (decoder_bus.word.immediate.ls_half.opcode == ARM_LOAD_SIGNED_HALFWORD) begin
+              end else if (decoder_bus.word.arm.ls_half.opcode == ARM_LOAD_SIGNED_HALFWORD) begin
                 control_signals.memory_signed_transfer   = 1'b1;
                 control_signals.memory_halfword_transfer = 1'b1;
-              end else if (decoder_bus.word.immediate.ls_half.opcode == ARM_LOAD_SIGNED_BYTE) begin
+              end else if (decoder_bus.word.arm.ls_half.opcode == ARM_LOAD_SIGNED_BYTE) begin
                 control_signals.memory_byte_transfer   = 1'b1;
                 control_signals.memory_signed_transfer = 1'b1;
               end
@@ -686,21 +695,21 @@ module ControlUnit (
               control_signals.addr_bus_src = ADDR_SRC_PC;
 
             end
-          end else if (decoder_bus.word.instr_type == ARM_INSTR_STR_HALF) begin
+          end else if (decoder_bus.instr_type == ARM_INSTR_STR_HALF) begin
             if (cycle == 8'd1) begin
               control_signals.pipeline_advance = 1'b1;
 
               control_signals.B_bus_source = B_BUS_SRC_REG_RD;
 
-              control_signals.ALU_op = decoder_bus.word.immediate.ls_half.U ? ALU_OP_ADD : ALU_OP_SUB;
+              control_signals.ALU_op = decoder_bus.word.arm.ls_half.U ? ALU_OP_ADD : ALU_OP_SUB;
 
               control_signals.memory_write_en = 1'b1;
 
               control_signals.memory_halfword_transfer = 1'b1;
 
               // Do we writeback?
-              if (decoder_bus.word.immediate.ls_half.P == ARM_LDR_STR_POST_OFFSET 
-                  || decoder_bus.word.immediate.ls_half.W == 1'b1) begin
+              if (decoder_bus.word.arm.ls_half.P == ARM_LDR_STR_POST_OFFSET 
+                  || decoder_bus.word.arm.ls_half.W == 1'b1) begin
                 // Since we are writing back to the base register, 
                 // we need to make sure to use the offset for the writeback
                 // which we latched in the previous cycle
@@ -708,7 +717,7 @@ module ControlUnit (
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
                 $display("[ControlUnit] Store instruction requires writeback to base register R%0d",
-                         decoder_bus.word.Rn);
+                         decoder_bus.decoded_regs.Rn);
               end
 
               // Load the PC back into the address bus
@@ -725,17 +734,17 @@ module ControlUnit (
         // ============================
 
         ARM_INSTR_LDM, ARM_INSTR_STM: begin
-          regs_count = count_ones(decoder_bus.word.immediate.block.reg_list);
+          regs_count = count_ones(decoder_bus.word.arm.block.reg_list);
 
           control_signals.force_user_mode =
-            decoder_bus.word.immediate.block.S &&
+            decoder_bus.word.arm.block.S &&
             (
-              (decoder_bus.word.instr_type == ARM_INSTR_STM) ||
-              (decoder_bus.word.instr_type == ARM_INSTR_LDM && !decoder_bus.word.immediate.block.reg_list[15])
+              (decoder_bus.instr_type == ARM_INSTR_STM) ||
+              (decoder_bus.instr_type == ARM_INSTR_LDM && !decoder_bus.word.arm.block.reg_list[15])
             );
 
           // Handle empty/invalid reg list
-          if (decoder_bus.word.immediate.block.reg_list == 16'b0) begin
+          if (decoder_bus.word.arm.block.reg_list == 16'b0) begin
 
             if (cycle == 8'd0) begin
               control_signals |= fetch_next_instr();
@@ -747,7 +756,7 @@ module ControlUnit (
 
               control_signals.B_bus_source = B_BUS_SRC_REG_RN;
 
-              control_signals.ALU_op = decoder_bus.word.immediate.block.U 
+              control_signals.ALU_op = decoder_bus.word.arm.block.U 
                 ? ALU_OP_ADD 
                 : ALU_OP_SUB_REVERSED;
 
@@ -765,18 +774,18 @@ module ControlUnit (
 
               control_signals.B_bus_source = B_BUS_SRC_REG_RN;
 
-              control_signals.ALU_op = decoder_bus.word.immediate.block.U 
+              control_signals.ALU_op = decoder_bus.word.arm.block.U 
                 ? ALU_OP_ADD 
                 : ALU_OP_SUB_REVERSED;
 
-              if (decoder_bus.word.instr_type == ARM_INSTR_LDM) begin
+              if (decoder_bus.instr_type == ARM_INSTR_LDM) begin
                 control_signals.pipeline_advance = 1'b1;
                 control_signals.addr_bus_src = ADDR_SRC_PC;
               end
             end
 
             // STM takes an extra cycle to write PC to memory
-            if (cycle == 8'd2 && decoder_bus.word.instr_type == ARM_INSTR_STM) begin
+            if (cycle == 8'd2 && decoder_bus.instr_type == ARM_INSTR_STM) begin
               control_signals.memory_write_en = 1'b1;
               control_signals.B_bus_source = B_BUS_SRC_REG_RP;
               control_signals.Rp_imm = 4'd15;
@@ -804,8 +813,8 @@ module ControlUnit (
             control_signals.A_bus_imm = regs_count * 4;
 
             // If its pre offset we add/subtract the offset to the base register before the memory access
-            if (decoder_bus.word.immediate.block.P == ARM_LDR_STR_PRE_OFFSET) begin
-              if (decoder_bus.word.immediate.block.W == 1'b1) begin
+            if (decoder_bus.word.arm.block.P == ARM_LDR_STR_PRE_OFFSET) begin
+              if (decoder_bus.word.arm.block.W == 1'b1) begin
                 // Updating the base register with the offset is enabled so we 
                 // latch operand b for the writeback in the next cycle
                 control_signals.ALU_latch_op_b = 1'b1;
@@ -814,14 +823,14 @@ module ControlUnit (
                     "[ControlUnit] Block load/store with pre-indexing and writeback, latching offset for writeback");
               end
 
-              if (decoder_bus.word.immediate.block.U == 1'b1) begin
+              if (decoder_bus.word.arm.block.U == 1'b1) begin
                 control_signals.A_bus_imm = 7'd4;
 
                 control_signals.ALU_op = ALU_OP_ADD;
 
                 $display(
                     "[ControlUnit] Block load/store with pre-indexing and writeback, adding offset to base register R%0d before memory access",
-                    decoder_bus.word.Rn);
+                    decoder_bus.decoded_regs.Rn);
               end else begin
                 control_signals.A_bus_imm = 6'(regs_count) * 4;
 
@@ -829,13 +838,13 @@ module ControlUnit (
 
                 $display(
                     "[ControlUnit] Block load/store with pre-indexing and writeback, subtracting offset from base register R%0d before memory access",
-                    decoder_bus.word.Rn);
+                    decoder_bus.decoded_regs.Rn);
               end
             end else begin  // POST OFFSET 
 
               // For block transfers, we must generate the FIRST transfer address here.
 
-              if (decoder_bus.word.immediate.block.U == 1'b1) begin
+              if (decoder_bus.word.arm.block.U == 1'b1) begin
                 // Increment After (IA)
                 control_signals.ALU_op = ALU_OP_MOV;
 
@@ -853,7 +862,7 @@ module ControlUnit (
             end
 
             $display("[ControlUnit] Cycle 0 of LDM instruction, calculating address");
-          end else if (decoder_bus.word.instr_type == ARM_INSTR_LDM) begin
+          end else if (decoder_bus.instr_type == ARM_INSTR_LDM) begin
 
             // Optionally writeback address to Rn and 
             // fetch first first word from memory
@@ -868,13 +877,13 @@ module ControlUnit (
               control_signals.A_bus_source = A_BUS_SRC_IMM;
               control_signals.A_bus_imm = regs_count * 4;
 
-              control_signals.ALU_op = decoder_bus.word.immediate.block.U ? ALU_OP_ADD : ALU_OP_SUB_REVERSED;
+              control_signals.ALU_op = decoder_bus.word.arm.block.U ? ALU_OP_ADD : ALU_OP_SUB_REVERSED;
 
               // First transfer for STMDB post-index must start at base - total + 4
               control_signals.addr_bus_src = ADDR_SRC_INCR;
 
               // Do we writeback?
-              if (decoder_bus.word.immediate.block.W == 1'b1) begin
+              if (decoder_bus.word.arm.block.W == 1'b1) begin
                 // Since we are writing back to the base register, 
                 // we need to make sure to use the offset for the writeback
                 // which we latched in the previous cycle
@@ -882,7 +891,7 @@ module ControlUnit (
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
                 $display("[ControlUnit] Load instruction requires writeback to base register R%0d",
-                         decoder_bus.word.Rn);
+                         decoder_bus.decoded_regs.Rn);
               end
 
               $display(
@@ -893,7 +902,7 @@ module ControlUnit (
             // increment address for the next memory access
             if (cycle < 8'd1 + 8'(regs_count)) begin
               control_signals.Rp_imm =
-                  get_ith_bit(4'(cycle - 8'd2), decoder_bus.word.immediate.block.reg_list);
+                  get_ith_bit(4'(cycle - 8'd2), decoder_bus.word.arm.block.reg_list);
 
               control_signals.ALU_writeback = ALU_WB_REG_RP;
 
@@ -916,7 +925,7 @@ module ControlUnit (
 
               control_signals.ALU_writeback = ALU_WB_REG_RP;
               control_signals.Rp_imm =
-                  get_ith_bit(4'(cycle - 8'd2), decoder_bus.word.immediate.block.reg_list);
+                  get_ith_bit(4'(cycle - 8'd2), decoder_bus.word.arm.block.reg_list);
 
               // Let the B_bus word pass through the ALU unmodified for the writeback
               control_signals.ALU_op = ALU_OP_MOV;
@@ -925,7 +934,7 @@ module ControlUnit (
 
               control_signals.pipeline_advance = 1'b1;
 
-              if (decoder_bus.word.immediate.block.S && decoder_bus.word.immediate.block.reg_list[15]) begin
+              if (decoder_bus.word.arm.block.S && decoder_bus.word.arm.block.reg_list[15]) begin
                 control_signals.restore_cpsr_from_spsr = 1'b1;
                 $display(
                     "[ControlUnit] Load instruction with S bit set and PC in reg list, restoring CPSR from SPSR");
@@ -935,12 +944,12 @@ module ControlUnit (
                   "[ControlUnit] Cycle %0d of LDM instruction, latching final word and preparing for next instruction",
                   cycle);
             end
-          end else if (decoder_bus.word.instr_type == ARM_INSTR_STM) begin
+          end else if (decoder_bus.instr_type == ARM_INSTR_STM) begin
             // Optionally writeback address to Rn and 
             // fetch first first word from memory
             if (cycle == 8'd1) begin
               control_signals.Rp_imm =
-                  get_ith_bit(4'(cycle - 8'd1), decoder_bus.word.immediate.block.reg_list);
+                  get_ith_bit(4'(cycle - 8'd1), decoder_bus.word.arm.block.reg_list);
 
               // Write the next register in the block to memory
               control_signals.memory_write_en = 1'b1;
@@ -953,10 +962,10 @@ module ControlUnit (
               control_signals.A_bus_source = A_BUS_SRC_IMM;
               control_signals.A_bus_imm = regs_count * 4;
 
-              control_signals.ALU_op = decoder_bus.word.immediate.block.U ? ALU_OP_ADD : ALU_OP_SUB_REVERSED;
+              control_signals.ALU_op = decoder_bus.word.arm.block.U ? ALU_OP_ADD : ALU_OP_SUB_REVERSED;
 
               // Do we writeback?
-              if (decoder_bus.word.immediate.block.W == 1'b1) begin
+              if (decoder_bus.word.arm.block.W == 1'b1) begin
                 // Since we are writing back to the base register, 
                 // we need to make sure to use the offset for the writeback
                 // which we latched in the previous cycle
@@ -964,7 +973,7 @@ module ControlUnit (
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
                 $display("[ControlUnit] Store instruction requires writeback to base register R%0d",
-                         decoder_bus.word.Rn);
+                         decoder_bus.decoded_regs.Rn);
               end
 
               $display(
@@ -975,7 +984,7 @@ module ControlUnit (
             // increment address for the next memory access
             if (cycle < 8'd1 + 8'(regs_count)) begin
               control_signals.Rp_imm =
-                  get_ith_bit(4'(cycle - 8'd1), decoder_bus.word.immediate.block.reg_list);
+                  get_ith_bit(4'(cycle - 8'd1), decoder_bus.word.arm.block.reg_list);
 
               control_signals.B_bus_source = B_BUS_SRC_REG_RP;
 
@@ -994,7 +1003,7 @@ module ControlUnit (
             if (cycle == 8'd1 + 8'(regs_count)) begin
 
               control_signals.Rp_imm =
-                  get_ith_bit(4'(cycle - 8'd1), decoder_bus.word.immediate.block.reg_list);
+                  get_ith_bit(4'(cycle - 8'd1), decoder_bus.word.arm.block.reg_list);
 
               control_signals.B_bus_source = B_BUS_SRC_REG_RP;
 
@@ -1030,7 +1039,7 @@ module ControlUnit (
             control_signals.ALU_writeback = ALU_WB_REG_RN;
 
             control_signals.B_bus_source = B_BUS_SRC_IMM;
-            control_signals.B_bus_imm = decoder_bus.word.immediate.branch.imm24;
+            control_signals.B_bus_imm = decoder_bus.word.arm.branch.imm24;
             control_signals.B_bus_sign_extend = 1'b1;
 
             control_signals.shift_type = SHIFT_LSL;
@@ -1053,7 +1062,7 @@ module ControlUnit (
             control_signals.B_bus_imm = 24'd4;
 
             $display("[ControlUnit] Branch with Link instruction, writing return address to R%0d",
-                     decoder_bus.word.Rd);
+                     decoder_bus.decoded_regs.Rd);
           end
 
           if (cycle == 8'd1) begin
@@ -1065,7 +1074,7 @@ module ControlUnit (
             control_signals.ALU_writeback = ALU_WB_REG_RN;
 
             control_signals.B_bus_source = B_BUS_SRC_IMM;
-            control_signals.B_bus_imm = decoder_bus.word.immediate.branch.imm24;
+            control_signals.B_bus_imm = decoder_bus.word.arm.branch.imm24;
             control_signals.B_bus_sign_extend = 1'b1;
 
             control_signals.shift_type = SHIFT_LSL;
@@ -1106,7 +1115,7 @@ module ControlUnit (
 
             $display(
                 "[ControlUnit] Software Interrupt instruction, writing return address to R%0d and preparing for exception handling",
-                decoder_bus.word.Rd);
+                decoder_bus.decoded_regs.Rd);
 
             control_signals.pipeline_advance = 1'b1;
           end
@@ -1116,4 +1125,4 @@ module ControlUnit (
     end
   end
 
-endmodule : ControlUnit
+endmodule : GBA_ControlUnit

@@ -51,6 +51,7 @@ package gba_cpu_decoder_types_pkg;
     ARM_SMLAL = 4'b0111
   } multiply_opcode_t;
 
+  // TODO: make into a union
   typedef union packed {
 
     // ======================================================
@@ -267,32 +268,37 @@ package gba_cpu_decoder_types_pkg;
   } extra_t;
 
 
-  typedef struct {
-    arm_instr_t instr_type;
+  typedef union packed {extra_t arm;} decoded_word_t;
 
-    // Bits 31-28
-    /// Whether the condition code check passed and the 
-    /// instruction should be executed. This is computed in 
-    /// the Decoder and used in the Control Unit to determine 
-    /// whether to execute the instruction or treat it as a NOP.
-    logic condition_pass;
-
-    // Bits 15-12
+  typedef struct packed {
+    // ARM: Bits 15-12
+    // THUMB: 2-0
     logic [3:0] Rd;
 
-    // Bits 19-16
+    // ARM: Bits 19-16
+    // THUMB: 8-6 (aka Ro)
     logic [3:0] Rn;
 
     // Bits 3-0
     logic [3:0] Rm;
 
-    // Bits 11-8
+    // ARM: Bits 11-8
+    // THUMB: 5-3 (aka Rb)
     logic [3:0] Rs;
+  } decoded_regs_t;
 
-    /// TODO Debug only
-    word_t IR;
+  typedef struct packed {
+    logic [2:0] Rs;
+    logic [2:0] Rd;
+    logic [2:0] Ro;
+    logic [2:0] Rb;
 
-    extra_t immediate;
-  } decoded_word_t;
+    union packed {
+      struct packed {
+        shift_type_t shift_type;
+        logic [4:0]  offset;
+      } shifted;
+    } immediate;
+  } thumb_decoded_word_t;
 
 endpackage : gba_cpu_decoder_types_pkg

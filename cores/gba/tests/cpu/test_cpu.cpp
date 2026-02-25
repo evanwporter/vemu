@@ -99,6 +99,11 @@ static inline u8 read_u8(const json& j) {
     return j.get<u8>();
 }
 
+template <typename T>
+static inline bool get_bit(T value, unsigned bit) {
+    return static_cast<bool>((value >> bit) & 1u);
+}
+
 static inline u16 read_u16(const json& j) {
     if (j.is_string()) {
         return static_cast<u16>(std::stoul(j.get<std::string>(), nullptr, 16));
@@ -378,6 +383,9 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
     tick(top, ctx);
     top.reset = 0;
 
+    // If bit 5 (T) is 0, it's ARM mode; if it's 1, it's Thumb mode.
+    const bool thumb_mode = get_bit(testCase["initial"]["CPSR"].get<uint32_t>(), 5);
+
     std::cout << "\nCycle 1: Reset Phase 2:" << std::endl;
 
     if (apply_initial_state(top, testCase)) {
@@ -401,12 +409,22 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
         // The IR should be latched
         ASSERT_EQ(IR, testCase["opcode"]);
 
-        std::cout << "\nCycle 3: Start flush and decode" << std::endl;
+        if (thumb_mode) // THUMB mode
+            ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__regs.__PVT__user.__PVT__r15, testCase["base_addr"].get<uint32_t>() + 2);
+        else // ARM mode
+            ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__regs.__PVT__user.__PVT__r15, testCase["base_addr"].get<uint32_t>() + 4);
 
         ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__controlUnit__DOT__flush_cnt, 1);
 
+        std::cout << "\nCycle 3: Start flush and decode" << std::endl;
+
         // Fetch and Decode
         tick(top, ctx);
+
+        if (thumb_mode) // THUMB mode
+            ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__regs.__PVT__user.__PVT__r15, testCase["base_addr"].get<uint32_t>() + 4);
+        else // ARM mode
+            ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__regs.__PVT__user.__PVT__r15, testCase["base_addr"].get<uint32_t>() + 8);
 
         ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__decoder_inst__DOT__IR, testCase["opcode"]);
 
