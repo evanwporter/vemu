@@ -71,6 +71,7 @@ module ARM7TMDI (
 
   GBA_Decoder_if decoder_bus (
       .IR(IR),
+      .execution_mode(execution_mode),
       .flags(regs.CPSR[31:28])
   );
 

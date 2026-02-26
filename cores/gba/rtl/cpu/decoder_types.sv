@@ -63,7 +63,7 @@ package gba_cpu_decoder_types_pkg;
       logic [6:0] _pad;
 
       // Bits 24-21
-      logic [3:0] opcode;
+      alu_op_t opcode;
 
       // Bit 20
       logic set_flags;
@@ -80,7 +80,7 @@ package gba_cpu_decoder_types_pkg;
       logic [11:0] _pad;
 
       // Bits 24-21
-      logic [3:0] opcode;
+      alu_op_t opcode;
 
       // Bit 20
       logic set_flags;
@@ -97,7 +97,7 @@ package gba_cpu_decoder_types_pkg;
       logic [16:0] _pad;
 
       // Bits 24-21
-      logic [3:0] opcode;
+      alu_op_t opcode;
 
       // Bit 20
       logic set_flags;
@@ -265,10 +265,20 @@ package gba_cpu_decoder_types_pkg;
       // Bits 24-21
       multiply_opcode_t opcode;
     } mul;
-  } extra_t;
+  } arm_t;
 
+  typedef union packed {
+    struct packed {
+      logic [16:0] _pad;
+      shift_type_t shift_type;
+      logic [4:0]  offset;
+    } shifted;
+  } thumb_t;
 
-  typedef union packed {extra_t arm;} decoded_word_t;
+  typedef union packed {
+    arm_t   arm;
+    thumb_t thumb;
+  } decoded_word_t;
 
   typedef struct packed {
     // ARM: Bits 15-12
@@ -286,19 +296,5 @@ package gba_cpu_decoder_types_pkg;
     // THUMB: 5-3 (aka Rb)
     logic [3:0] Rs;
   } decoded_regs_t;
-
-  typedef struct packed {
-    logic [2:0] Rs;
-    logic [2:0] Rd;
-    logic [2:0] Ro;
-    logic [2:0] Rb;
-
-    union packed {
-      struct packed {
-        shift_type_t shift_type;
-        logic [4:0]  offset;
-      } shifted;
-    } immediate;
-  } thumb_decoded_word_t;
 
 endpackage : gba_cpu_decoder_types_pkg

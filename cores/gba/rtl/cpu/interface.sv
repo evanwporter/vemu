@@ -3,7 +3,8 @@ import gba_cpu_types_pkg::*;
 import gba_cpu_decoder_types_pkg::*;
 
 interface GBA_Decoder_if (
-    input word_t  IR,
+    input word_t IR,
+    input execution_mode_t execution_mode,
     input flags_t flags
 );
 
@@ -24,7 +25,7 @@ interface GBA_Decoder_if (
   logic condition_pass;
 
   modport Decoder_side(
-      input IR, flags, pipeline_advance,
+      input IR, flags, pipeline_advance, execution_mode,
       output word, condition_pass, instr_type, decoded_regs
   );
 
