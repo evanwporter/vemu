@@ -79,6 +79,7 @@ jobs:
           - arm_swi
           - arm_mul_mla
           - thumb_add_sub
+          - thumb_mov_cmp_add_sub
 
     steps:
       - uses: actions/checkout@v4

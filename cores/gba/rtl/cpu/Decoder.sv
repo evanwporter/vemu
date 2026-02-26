@@ -349,6 +349,45 @@ module GBA_Decoder (
             $display(
                 "[Decoder] Detected THUMB move/compare/add/subtract immediate instruction with IR=0x%08x",
                 IR_THUMB);
+
+            // Performs
+            // Rd = Rd op imm8
+
+            // Need to be manually overwritten to match up with ALU unit
+            bus.decoded_regs.Rn = 4'(IR_THUMB[10:8]);
+            bus.decoded_regs.Rd = 4'(IR_THUMB[10:8]);
+
+            bus.word.arm.data_proc_imm.rotate = 0;
+            bus.word.arm.data_proc_imm.set_flags = 1'b1;
+            bus.word.arm.data_proc_imm.imm8 = IR_THUMB[7:0];
+
+            unique case (IR_THUMB[12:11])
+              2'b00: begin
+                $display("[Decoder] Detected THUMB MOV immediate instruction with IR=0x%08x",
+                         IR_THUMB);
+                bus.word.arm.data_proc_imm.opcode = ALU_OP_MOV;
+                bus.instr_type = ARM_INSTR_DATAPROC_IMM;
+              end
+              2'b01: begin
+                $display(
+                    "[Decoder] Detected THUMB CMP instruction with register operand with IR=0x%08x",
+                    IR_THUMB);
+                bus.word.arm.data_proc_imm.opcode = ALU_OP_CMP;
+                bus.instr_type = ARM_INSTR_DATAPROC_IMM;
+              end
+              2'b10: begin
+                $display("[Decoder] Detected THUMB add immediate instruction with IR=0x%08x",
+                         IR_THUMB);
+                bus.word.arm.data_proc_imm.opcode = ALU_OP_ADD;
+                bus.instr_type = ARM_INSTR_DATAPROC_IMM;
+              end
+              2'b11: begin
+                $display("[Decoder] Detected THUMB subtract immediate instruction with IR=0x%08x",
+                         IR_THUMB);
+                bus.word.arm.data_proc_imm.opcode = ALU_OP_SUB;
+                bus.instr_type = ARM_INSTR_DATAPROC_IMM;
+              end
+            endcase
           end
 
           // Add / Subtract
