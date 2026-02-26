@@ -78,6 +78,7 @@ jobs:
           - arm_bx
           - arm_swi
           - arm_mul_mla
+          - thumb_add_sub
 
     steps:
       - uses: actions/checkout@v4

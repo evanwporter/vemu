@@ -100,7 +100,7 @@ static inline u8 read_u8(const json& j) {
 }
 
 template <typename T>
-static inline bool get_bit(T value, unsigned bit) {
+static inline bool get_bit(const T value, const unsigned bit) {
     return static_cast<bool>((value >> bit) & 1u);
 }
 
@@ -162,7 +162,7 @@ static bool apply_instruction_memory(Varm_cpu_top& top, const json& test) {
     return true;
 }
 
-static bool apply_initial_state(Varm_cpu_top& top, const json& test) {
+static bool apply_initial_state(Varm_cpu_top& top, const json& test, const bool thumb_mode) {
     auto& regs = top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__regs;
 
     const auto& init = test["initial"];
@@ -186,7 +186,10 @@ static bool apply_initial_state(Varm_cpu_top& top, const json& test) {
     regs.__PVT__user.__PVT__r13 = init["R"][13];
     regs.__PVT__user.__PVT__r14 = init["R"][14];
 
-    regs.__PVT__user.__PVT__r15 = init["R"][15].get<uint32_t>() - 8;
+    if (thumb_mode)
+        regs.__PVT__user.__PVT__r15 = init["R"][15].get<uint32_t>() - 4;
+    else
+        regs.__PVT__user.__PVT__r15 = init["R"][15].get<uint32_t>() - 8;
 
     regs.__PVT__CPSR = init["CPSR"];
 
@@ -388,7 +391,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
 
     std::cout << "\nCycle 1: Reset Phase 2:" << std::endl;
 
-    if (apply_initial_state(top, testCase)) {
+    if (apply_initial_state(top, testCase, thumb_mode)) {
 
         ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__controlUnit__DOT__flush_cnt, 3);
 

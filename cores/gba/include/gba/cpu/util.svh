@@ -2,7 +2,7 @@
 `define CPU_UTIL_SVH
 
 `define TRACE_CPU \
-  $display("[%0t] PC=%0d IR=%h instr=%0d addr=%0d flush=%b cycle=%0d WB=%0d Rd=%0d A_bus=%0d B_bus=%0d ALU=%0d LatchedReadData=%0d mode=%s", \
+  $display("[%0t] PC=%0d IR=%h instr=%0d addr=%0d flush=%b cycle=%0d WB=%0d Rd=%0d A_bus=%0d B_bus=%0d ALU=%0d LatchedReadData=%0d mode=%s exec_mode=%s", \
     $time, \
     regs.user.r15, \
     IR, \
@@ -16,7 +16,8 @@
     B_bus, \
     alu_bus.result, \
     read_data, \
-    cpu_mode.name() \
+    cpu_mode.name(), \
+    execution_mode.name() \
   );
 
 `define DISPLAY_CONTROL(ctrl) \
