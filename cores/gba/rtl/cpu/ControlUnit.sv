@@ -68,7 +68,7 @@ module GBA_ControlUnit (
       end else if (decoder_bus.instr_type == ARM_INSTR_DATAPROC_REG_REG) begin
         `DISPLAY_DECODED_DATAPROC_REG_REG(decoder_bus.word.arm, decoder_bus.decoded_regs,
                                           decoder_bus.instr_type, decoder_bus.condition_pass)
-      end else if (decoder_bus.instr_type == ARM_INSTR_LOAD || decoder_bus.instr_type == ARM_INSTR_STORE) begin
+      end else if (decoder_bus.instr_type == ARM_INSTR_LOAD || decoder_bus.instr_type == ARM_INSTR_STORE || decoder_bus.instr_type == THUMB_INSTR_LDR_PC) begin
         `DISPLAY_DECODED_LS(decoder_bus.word.arm, decoder_bus.decoded_regs, decoder_bus.instr_type,
                             decoder_bus.condition_pass)
       end else if (decoder_bus.instr_type == ARM_INSTR_LDM || decoder_bus.instr_type == ARM_INSTR_STM) begin
@@ -411,7 +411,7 @@ module GBA_ControlUnit (
         // Load / Store (Single)
         // ============================
 
-        ARM_INSTR_STORE, ARM_INSTR_LOAD: begin
+        ARM_INSTR_STORE, ARM_INSTR_LOAD, THUMB_INSTR_LDR_PC: begin
           if (cycle == 8'd0) begin
             $display("[ControlUnit] Cycle 0 of load/store instruction, calculating address");
 
@@ -430,6 +430,11 @@ module GBA_ControlUnit (
                 decoder_bus.word.arm.ls.I,
                 decoder_bus.word.arm.ls.offset.imm12
             );
+
+            if (decoder_bus.instr_type == THUMB_INSTR_LDR_PC) begin
+              // control_signals.pc_rn_add_4 = 1'b1;
+              control_signals.a_bus_align = 1'b1;
+            end
 
             // Depending on the instruction, operand b can either be an immediate or 
             // a register with optional shift
@@ -458,7 +463,7 @@ module GBA_ControlUnit (
             end
           end
 
-          if (decoder_bus.instr_type == ARM_INSTR_LOAD) begin
+          if (decoder_bus.instr_type == ARM_INSTR_LOAD || decoder_bus.instr_type == THUMB_INSTR_LDR_PC) begin
 
             if (cycle == 8'd1) begin
 

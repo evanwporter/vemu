@@ -334,6 +334,9 @@ package gba_cpu_types_pkg;
     /// STRH
     ARM_INSTR_STR_HALF,
 
+    /// LDR PC
+    THUMB_INSTR_LDR_PC,
+
     // ======================================================
     // Multiple Data Transfer
     // ======================================================

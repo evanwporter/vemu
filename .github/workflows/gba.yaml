@@ -81,6 +81,7 @@ jobs:
           - thumb_add_sub
           - thumb_mov_cmp_add_sub
           - thumb_data_proc
+          - thumb_ldr_pc_rel
 
     steps:
       - uses: actions/checkout@v4

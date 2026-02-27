@@ -330,6 +330,19 @@ module GBA_Decoder (
           16'b0100_1???_????_????: begin
             $display("[Decoder] Detected THUMB PC-relative load instruction with IR=0x%08x",
                      IR_THUMB);
+
+            bus.word.arm.ls.I = ARM_LDR_STR_IMMEDIATE;
+            bus.word.arm.ls.P = ARM_LDR_STR_PRE_OFFSET;
+            bus.word.arm.ls.U = 1'b1;  // ADD
+            bus.word.arm.ls.B = ARM_LDR_STR_WORD;
+            bus.word.arm.ls.wt = 1'b0;  // No writeback
+
+            bus.instr_type = THUMB_INSTR_LDR_PC;
+
+            bus.word.arm.ls.offset.imm12 = 12'(IR_THUMB[7:0] << 2);
+
+            bus.decoded_regs.Rn = 4'd15;  // PC
+            bus.decoded_regs.Rd = 4'(IR_THUMB[10:8]);
           end
 
           // Hi Register Operations / Branch Exchange

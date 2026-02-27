@@ -163,8 +163,17 @@ module ARM7TMDI (
       A_BUS_SRC_RN: begin
         $display("Driving A bus with value from Rn (R%d): %0d", decoder_bus.decoded_regs.Rn,
                  read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn));
-        if (control_signals.pc_rn_add_4) begin
+        if (control_signals.a_bus_align) begin
+          $display("Aligning A bus address by masking off lower 2 bits: %0d", (read_reg(
+                   regs, cpu_mode, decoder_bus.decoded_regs.Rn) + 32'd4) & ~32'd2);
+          A_bus = (read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn)) & ~32'd3;
+        end else if (control_signals.pc_rn_add_4) begin
+          // if (control_signals.a_bus_align) begin
+          //   $display("Aligning A bus address by masking off lower 2 bits");
+          //   A_bus = (read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn) + 32'd4) & ~32'd3;
+          // end else begin
           A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn) + 32'd4;
+          // end
         end else begin
           A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn);
         end
