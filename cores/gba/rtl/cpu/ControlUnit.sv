@@ -711,59 +711,6 @@ module GBA_ControlUnit (
               (decoder_bus.instr_type == ARM_INSTR_LDM && !decoder_bus.word.arm.block.reg_list[15])
             );
 
-          // Handle empty/invalid reg list
-          if (decoder_bus.word.arm.block.reg_list == 16'b0) begin
-
-            if (cycle == 8'd0) begin
-              control_signals |= fetch_next_instr();
-
-              control_signals.incrementer_writeback = 1'b1;
-
-              control_signals.A_bus_source = A_BUS_SRC_IMM;
-              control_signals.A_bus_imm = 7'h40;
-
-              control_signals.B_bus_source = B_BUS_SRC_REG_RN;
-
-              control_signals.ALU_op = decoder_bus.word.arm.block.U 
-                ? ALU_OP_ADD 
-                : ALU_OP_SUB_REVERSED;
-
-              $display(
-                  "[ControlUnit] Block transfer with no registers, calculating address for memory access");
-
-              control_signals.addr_bus_src = ADDR_SRC_ALU;
-            end
-
-            if (cycle == 8'd1) begin
-              control_signals.ALU_writeback = ALU_WB_REG_RN;
-
-              control_signals.A_bus_source = A_BUS_SRC_IMM;
-              control_signals.A_bus_imm = 7'h40;
-
-              control_signals.B_bus_source = B_BUS_SRC_REG_RN;
-
-              control_signals.ALU_op = decoder_bus.word.arm.block.U 
-                ? ALU_OP_ADD 
-                : ALU_OP_SUB_REVERSED;
-
-              if (decoder_bus.instr_type == ARM_INSTR_LDM) begin
-                control_signals.pipeline_advance = 1'b1;
-                control_signals.addr_bus_src = ADDR_SRC_PC;
-              end
-            end
-
-            // STM takes an extra cycle to write PC to memory
-            if (cycle == 8'd2 && decoder_bus.instr_type == ARM_INSTR_STM) begin
-              control_signals.memory_write_en = 1'b1;
-              control_signals.B_bus_source = B_BUS_SRC_REG_RP;
-              control_signals.Rp_imm = 4'd15;
-
-              control_signals.pipeline_advance = 1'b1;
-
-              control_signals.addr_bus_src = ADDR_SRC_PC;
-            end
-          end else  // Not empty reg list
-
           // First cycle: Prefetch and calculate first address
           if (cycle == 8'd0) begin
             // Perform a prefetch
@@ -792,7 +739,8 @@ module GBA_ControlUnit (
               end
 
               if (decoder_bus.word.arm.block.U == 1'b1) begin
-                control_signals.A_bus_imm = 7'd4;
+                if (regs_count == 0) control_signals.A_bus_imm = 7'h40;
+                else control_signals.A_bus_imm = 7'd4;
 
                 control_signals.ALU_op = ALU_OP_ADD;
 
@@ -800,7 +748,8 @@ module GBA_ControlUnit (
                     "[ControlUnit] Block load/store with pre-indexing and writeback, adding offset to base register R%0d before memory access",
                     decoder_bus.decoded_regs.Rn);
               end else begin
-                control_signals.A_bus_imm = 6'(regs_count) * 4;
+                if (regs_count == 0) control_signals.A_bus_imm = 7'h40;
+                else control_signals.A_bus_imm = 6'(regs_count) * 4;
 
                 control_signals.ALU_op = ALU_OP_SUB_REVERSED;
 
@@ -850,6 +799,12 @@ module GBA_ControlUnit (
               // First transfer for STMDB post-index must start at base - total + 4
               control_signals.addr_bus_src = ADDR_SRC_INCR;
 
+              if (regs_count == 0) begin
+                control_signals.ALU_use_op_b_latch = 1'b1;
+                control_signals.ALU_writeback = ALU_WB_REG_RN;
+                control_signals.A_bus_imm = 7'h40;
+              end else
+
               // Do we writeback?
               // We do so if the base register is not in the register list
               if (decoder_bus.word.arm.block.reg_list[decoder_bus.decoded_regs.Rn] == 1'b0 &&
@@ -889,7 +844,7 @@ module GBA_ControlUnit (
 
             // Latch the final fetched word into the register file and 
             // update the address bus back to PC for the next instruction
-            if (cycle == 8'd1 + 8'(regs_count)) begin
+            if (cycle == 8'd1 + 8'(regs_count) && regs_count != 0) begin
 
               control_signals.addr_bus_src = ADDR_SRC_PC;
 
@@ -914,7 +869,49 @@ module GBA_ControlUnit (
                   "[ControlUnit] Cycle %0d of LDM instruction, latching final word and preparing for next instruction",
                   cycle);
             end
+
+            if (cycle == 8'd2 && regs_count == 0) begin
+              control_signals.addr_bus_src = ADDR_SRC_PC;
+
+              control_signals.ALU_writeback = ALU_WB_REG_RP;
+              control_signals.Rp_imm = 4'd15;
+
+              // Let the B_bus word pass through the ALU unmodified for the writeback
+              control_signals.ALU_op = ALU_OP_MOV;
+
+              control_signals.B_bus_source = B_BUS_SRC_READ_DATA;
+
+              control_signals.pipeline_advance = 1'b1;
+
+              $display(
+                  "[ControlUnit] Cycle %0d of LDM instruction, reg list is empty latching final word and preparing for next instruction",
+                  cycle);
+            end
           end else if (decoder_bus.instr_type == ARM_INSTR_STM) begin
+            if (cycle == 8'd1 && regs_count == 0) begin
+              control_signals.Rp_imm = 4'd15;
+
+              // Write the next register in the block to memory
+              control_signals.memory_write_en = 1'b1;
+
+              control_signals.B_bus_source = B_BUS_SRC_REG_RP;
+
+              control_signals.A_bus_source = A_BUS_SRC_IMM;
+              control_signals.A_bus_imm = 7'h40;
+
+              control_signals.ALU_op = decoder_bus.word.arm.block.U ? ALU_OP_ADD : ALU_OP_SUB_REVERSED;
+
+              control_signals.ALU_use_op_b_latch = 1'b1;
+              control_signals.ALU_writeback = ALU_WB_REG_RN;
+
+              control_signals.addr_bus_src = ADDR_SRC_PC;
+
+              control_signals.pipeline_advance = 1'b1;
+
+              $display(
+                  "[ControlUnit] Cycle 1 of STM instruction, address calculation done, preparing for memory write");
+            end else
+
             // Optionally writeback address to Rn and 
             // fetch first first word from memory
             if (cycle == 8'd1) begin
