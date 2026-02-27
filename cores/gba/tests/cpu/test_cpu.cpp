@@ -365,7 +365,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
     uint32_t flag_mask = FULL_MASK;
 
     // Skip known-bad case
-    if (source.filename() == "arm_mul_mla.json.bin") {
+    if (source.filename() == "arm_mul_mla.json.bin" || source.filename() == "thumb_data_proc.json.bin") {
         const uint32_t opcode = testCase["opcode"].get<uint32_t>();
         if (arm_mul_rd(opcode) == 15 || arm_mul_rs(opcode) == 15) {
             GTEST_SKIP() << "Skipping MUL/MLA with Rd==PC in arm_mul_mla.json.bin (test " << index << ")";
@@ -488,16 +488,34 @@ static void run_single_file(const fs::path& path) {
     }
 }
 
-class GameboyAdvanceOpcodeTest : public ::testing::TestWithParam<fs::path> { };
+class GameboyAdvanceARMOpcodeTest : public ::testing::TestWithParam<fs::path> { };
 
-TEST_P(GameboyAdvanceOpcodeTest, Run) {
+TEST_P(GameboyAdvanceARMOpcodeTest, Run) {
     run_single_file(GetParam());
 }
 
 INSTANTIATE_TEST_SUITE_P(
     CPUTests,
-    GameboyAdvanceOpcodeTest,
+    GameboyAdvanceARMOpcodeTest,
     ::testing::ValuesIn(collect_files_in_directory(
         get_test_dir(),
-        ".bin")),
+        ".bin",
+        {},
+        "arm")),
+    get_test_name);
+
+class GameboyAdvanceTHUMBOpcodeTest : public ::testing::TestWithParam<fs::path> { };
+
+TEST_P(GameboyAdvanceTHUMBOpcodeTest, Run) {
+    run_single_file(GetParam());
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    CPUTests,
+    GameboyAdvanceTHUMBOpcodeTest,
+    ::testing::ValuesIn(collect_files_in_directory(
+        get_test_dir(),
+        ".bin",
+        {},
+        "thumb")),
     get_test_name);

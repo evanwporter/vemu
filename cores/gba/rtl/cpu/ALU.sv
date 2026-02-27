@@ -46,8 +46,8 @@ module ALU (
     bus.flags_out.c = bus.flags_in.c;
     bus.flags_out.v = bus.flags_in.v;
 
-    $display("ALU operation: op_a=0x%08x op_b=0x%08x alu_op=%0d carry_in=%b, bus.result=0x%08x",
-             bus.op_a, op_b, bus.alu_op, carry_in, bus.result);
+    $display("ALU operation: op_a=0x%08x op_b=0x%08x alu_op=%s carry_in=%b, bus.result=0x%08x",
+             bus.op_a, op_b, bus.alu_op.name(), carry_in, bus.result);
 
     temp = 33'h0;
 

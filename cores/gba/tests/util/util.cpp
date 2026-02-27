@@ -8,7 +8,12 @@
 
 namespace fs = std::filesystem;
 
-std::vector<fs::path> collect_files_in_directory(const fs::path& dir, const std::string& extension, std::unordered_set<std::string> exclude) {
+std::vector<fs::path> collect_files_in_directory(
+    const fs::path& dir,
+    const std::string& extension,
+    const std::unordered_set<std::string> exclude,
+    const std::string& prefix) {
+
     std::vector<fs::path> roms;
 
     if (!fs::exists(dir) || !fs::is_directory(dir))
@@ -19,7 +24,11 @@ std::vector<fs::path> collect_files_in_directory(const fs::path& dir, const std:
             continue;
 
         if (entry.path().extension() == extension) {
-            if (exclude.find(entry.path().filename().string()) != exclude.end())
+            const std::string filename = entry.path().filename().string();
+
+            if (exclude.find(filename) != exclude.end())
+                continue;
+            if (!prefix.empty() && !filename.starts_with(prefix))
                 continue;
             roms.push_back(entry.path());
         }

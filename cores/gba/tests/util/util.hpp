@@ -11,7 +11,8 @@
 std::vector<std::filesystem::path> collect_files_in_directory(
     const std::filesystem::path& dir,
     const std::string& extension,
-    std::unordered_set<std::string> exclude = {});
+    const std::unordered_set<std::string> exclude = {},
+    const std::string& prefix = "");
 
 std::string get_test_name(const ::testing::TestParamInfo<std::filesystem::path>& info);
 

@@ -80,6 +80,7 @@ jobs:
           - arm_mul_mla
           - thumb_add_sub
           - thumb_mov_cmp_add_sub
+          - thumb_data_proc
 
     steps:
       - uses: actions/checkout@v4
