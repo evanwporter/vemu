@@ -271,8 +271,25 @@ module GBA_Decoder (
             $display("[Decoder] Detected THUMB B<cond> instruction with IR=0x%08x", IR_THUMB);
           end
 
-          // Multiple Load / Store
+          // Block Data Transfer
           16'b1100_????_????_????: begin
+            // Increment After
+            bus.word.arm.block.P = ARM_LDR_STR_POST_OFFSET;
+            bus.word.arm.block.U = 1'b1;
+            bus.word.arm.block.W = 1'b1;
+
+            bus.word.arm.block.S = 1'b0;
+
+            bus.word.arm.block.reg_list = {8'd0, IR_THUMB[7:0]};
+
+            if (IR_THUMB[11] == 1'b1) begin
+              bus.instr_type = ARM_INSTR_LDM;
+            end else begin
+              bus.instr_type = ARM_INSTR_STM;
+            end
+
+            bus.decoded_regs.Rn = 4'(IR_THUMB[10:8]);
+
             $display("[Decoder] Detected THUMB LDM/STM instruction with IR=0x%08x", IR_THUMB);
           end
 

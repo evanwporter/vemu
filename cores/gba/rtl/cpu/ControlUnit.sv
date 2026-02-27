@@ -762,7 +762,7 @@ module GBA_ControlUnit (
 
               control_signals.addr_bus_src = ADDR_SRC_PC;
             end
-          end else
+          end else  // Not empty reg list
 
           // First cycle: Prefetch and calculate first address
           if (cycle == 8'd0) begin
@@ -851,7 +851,9 @@ module GBA_ControlUnit (
               control_signals.addr_bus_src = ADDR_SRC_INCR;
 
               // Do we writeback?
-              if (decoder_bus.word.arm.block.W == 1'b1) begin
+              // We do so if the base register is not in the register list
+              if (decoder_bus.word.arm.block.reg_list[decoder_bus.decoded_regs.Rn] == 1'b0 &&
+                  decoder_bus.word.arm.block.W == 1'b1) begin
                 // Since we are writing back to the base register, 
                 // we need to make sure to use the offset for the writeback
                 // which we latched in the previous cycle
