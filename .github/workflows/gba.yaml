@@ -78,6 +78,7 @@ jobs:
           - arm_bx
           - arm_swi
           - arm_mul_mla
+          - arm_swp
           - thumb_add_sub
           - thumb_mov_cmp_add_sub
           - thumb_data_proc

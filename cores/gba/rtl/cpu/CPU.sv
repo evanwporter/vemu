@@ -346,7 +346,7 @@ module ARM7TMDI (
             read_data <= bus.rdata;
 
             // Misaligned word-load rotate quirk (ARM7TDMI)
-            if (decoder_bus.instr_type == ARM_INSTR_LOAD) begin
+            if (decoder_bus.instr_type == ARM_INSTR_LOAD || decoder_bus.instr_type == ARM_INSTR_SWAP) begin
               logic [1:0] a;
               a = bus.addr[1:0];
               if (a != 2'b00) begin

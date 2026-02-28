@@ -207,6 +207,22 @@
     $fflush(); \
   end
 
+`define DISPLAY_DECODED_SWAP(word, regs, instr_type, condition_pass) \
+  begin \
+    $display("---- DECODED WORD (LOAD / STORE) ----"); \
+    // $display("IR           = 0x%08x", (word).IR); \
+    $display("instr_type   = %s", instr_type.name()); \
+    $display("cond pass    = %0d", condition_pass); \
+    $display("Rn           = R%0d", (regs).Rn); \
+    $display("Rd           = R%0d", (regs).Rd); \
+    $display("Rm           = R%0d", (regs).Rm); \
+    $display(""); \
+    $display("Addressing:"); \
+    $display("  B (size)   = %s", (word).swap.B.name()); \
+    $display("------------------------------------"); \
+    $fflush(); \
+  end
+
 `define DISPLAY_DECODED_BRANCH(word, regs, instr_type, condition_pass) \
   begin \
     logic signed [31:0] signed_imm; \

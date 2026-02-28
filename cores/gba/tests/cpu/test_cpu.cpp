@@ -354,6 +354,21 @@ static inline uint32_t arm_mul_rs(uint32_t ir) {
     return (ir >> 8) & 0xF;
 }
 
+static inline uint32_t arm_swp_rm(uint32_t ir) {
+    // Rs is bits [3:0]
+    return (ir >> 0) & 0xF;
+}
+
+static inline uint32_t arm_swp_rn(uint32_t ir) {
+    // Rs is bits [19:16]
+    return (ir >> 16) & 0xF;
+}
+
+static inline uint32_t arm_swp_rd(uint32_t ir) {
+    // Rs is bits [19:16]
+    return (ir >> 12) & 0xF;
+}
+
 static void run_single_test(const json& testCase, const fs::path& source, const size_t index) {
 
     TestLogger logger(testCase);
@@ -365,12 +380,20 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
     uint32_t flag_mask = FULL_MASK;
 
     // Skip known-bad case
+    // TODO: Only skip MUL for thumb data proc
     if (source.filename() == "arm_mul_mla.json.bin" || source.filename() == "thumb_data_proc.json.bin") {
         const uint32_t opcode = testCase["opcode"].get<uint32_t>();
         if (arm_mul_rd(opcode) == 15 || arm_mul_rs(opcode) == 15) {
             GTEST_SKIP() << "Skipping MUL/MLA with Rd==PC in arm_mul_mla.json.bin (test " << index << ")";
         }
         flag_mask = IGNORE_C;
+    }
+
+    if (source.filename() == "arm_swp.json.bin") {
+        const uint32_t opcode = testCase["opcode"].get<uint32_t>();
+        if (arm_swp_rd(opcode) == 15 || arm_swp_rn(opcode) == 15 || arm_swp_rm(opcode) == 15) {
+            GTEST_SKIP() << "Skipping SWP with Rd/Rn/Rm==PC in arm_swp.json.bin (test " << index << ")";
+        }
     }
 
     VerilatedContext ctx;

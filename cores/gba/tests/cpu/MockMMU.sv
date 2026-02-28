@@ -25,7 +25,8 @@ module MockMMU (
     end else if (cpu_bus.read_en) begin
       if (memory.exists(cpu_bus.addr)) begin
         cpu_bus.rdata = memory[cpu_bus.addr];
-        $display("[MMU] Found match for read transaction at addr=%0d", cpu_bus.addr);
+        $display("[MMU] Found match for read transaction at addr=%0d, data=%0d", cpu_bus.addr,
+                 memory[cpu_bus.addr]);
         $fflush();
       end else begin
         cpu_bus.rdata = cpu_bus.addr;

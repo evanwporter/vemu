@@ -138,6 +138,8 @@ module GBA_Decoder (
 
           /// Single Data Swap
           32'b????_0001_0???_????_????_0000_1001_????: begin
+            bus.instr_type = ARM_INSTR_SWAP;
+            bus.word.arm.swap.B = bit_length_flag_t'(IR[22]);
             $display("[GBA_Decoder] Detected single data swap instruction with IR=0x%08x", IR);
           end
 

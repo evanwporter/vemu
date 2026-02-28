@@ -77,6 +77,9 @@ module GBA_ControlUnit (
       end else if (decoder_bus.instr_type == ARM_INSTR_LDR_HALF || decoder_bus.instr_type == ARM_INSTR_STR_HALF) begin
         `DISPLAY_DECODED_LS_HALF(decoder_bus.word.arm, decoder_bus.decoded_regs,
                                  decoder_bus.instr_type, decoder_bus.condition_pass)
+      end else if (decoder_bus.instr_type == ARM_INSTR_SWAP) begin
+        `DISPLAY_DECODED_SWAP(decoder_bus.word.arm, decoder_bus.decoded_regs,
+                              decoder_bus.instr_type, decoder_bus.condition_pass)
       end else if (decoder_bus.instr_type == ARM_INSTR_BRANCH || decoder_bus.instr_type == ARM_INSTR_BRANCH_LINK) begin
         `DISPLAY_DECODED_BRANCH(decoder_bus.word.arm, decoder_bus.decoded_regs,
                                 decoder_bus.instr_type, decoder_bus.condition_pass)
@@ -693,8 +696,55 @@ module GBA_ControlUnit (
             end
           end
 
-          $display(
-              "[ControlUnit] Detected halfword load/store instruction, handling as normal load/store for now");
+          $display("[ControlUnit] Detected halfword load/store instruction");
+        end
+
+        // TODO: Only make byte_transfer high when its needed
+        ARM_INSTR_SWAP: begin
+          $display("[ControlUnit] Detected SWP instruction");
+          if (cycle == 8'd0) begin
+            control_signals |= fetch_next_instr();
+
+            // Save address so we can return to it
+            control_signals.incrementer_writeback = 1'b1;
+
+            // We don't need to modify Rn in any way
+            control_signals.ALU_disable_op_b = 1'b1;
+
+            // Update address with Rn
+            control_signals.A_bus_source = A_BUS_SRC_RN;
+            control_signals.addr_bus_src = ADDR_SRC_ALU;
+            control_signals.ALU_op = ALU_OP_ADD;
+
+            control_signals.memory_byte_transfer = decoder_bus.word.arm.swap.B;
+          end
+
+          if (cycle == 8'd1) begin
+            control_signals.memory_read_en = 1'b1;
+            control_signals.memory_byte_transfer = decoder_bus.word.arm.swap.B;
+          end
+
+          if (cycle == 8'd2) begin
+            control_signals.B_bus_source   = B_BUS_SRC_READ_DATA;
+            control_signals.ALU_latch_op_b = 1'b1;
+          end
+
+          if (cycle == 8'd3) begin
+            control_signals.A_bus_source = A_BUS_SRC_RD;
+            control_signals.ALU_use_op_b_latch = 1'b1;
+            control_signals.ALU_op = ALU_OP_MOV;
+
+            control_signals.memory_byte_transfer = decoder_bus.word.arm.swap.B;
+
+            control_signals.B_bus_source = B_BUS_SRC_REG_RM;
+            control_signals.ALU_writeback = ALU_WB_REG_RD;
+            control_signals.memory_write_en = 1'b1;
+
+            control_signals.pipeline_advance = 1'b1;
+
+            // Restore address from PC
+            control_signals.addr_bus_src = ADDR_SRC_PC;
+          end
         end
 
         // ============================

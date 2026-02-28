@@ -187,6 +187,13 @@ package gba_cpu_decoder_types_pkg;
       // Uses Rm as offset register
     } ls_half;
 
+    struct packed {
+      logic [22:0] _pad;
+
+      // Bits 22
+      bit_length_flag_t B;
+    } swap;
+
     // ======================================================
     // Block Data Transfer
     // ======================================================
