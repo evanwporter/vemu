@@ -424,7 +424,7 @@ module GBA_Decoder (
               4'hD: begin
                 $display("[Decoder] Detected THUMB MUL instruction with IR=0x%08x", IR_THUMB);
                 bus.instr_type = ARM_INSTR_MULTIPLY;
-                bus.word.arm.mul.opcode = multiply_opcode_t'(IR[24:21]);
+                bus.word.arm.mul.opcode = ARM_MUL;
 
                 bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
                 bus.decoded_regs.Rs = 4'(IR_THUMB[2:0]);
