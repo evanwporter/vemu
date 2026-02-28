@@ -377,9 +377,9 @@ module GBA_Decoder (
             $display("[Decoder] Detected THUMB ALU operation instruction with IR=0x%08x", IR_THUMB);
 
             unique case (IR_THUMB[9:6])
-              4'h0: begin
+              4'h0, 4'h1, 4'h5, 4'h6, 4'h8, 4'hA, 4'hB, 4'hC, 4'hE, 4'hF: begin
                 $display("[Decoder] Detected THUMB AND instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_AND;
+                bus.word.arm.data_proc_reg_imm.opcode = decoder_util_pkg::THUMB_ALU_LUT[IR_THUMB[9:6]];
 
                 bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
 
@@ -393,116 +393,18 @@ module GBA_Decoder (
                 bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
               end
 
-              4'h1: begin
-                $display("[Decoder] Detected THUMB XOR instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_XOR;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
-
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rn = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_imm.shift_type = SHIFT_LSL;
-                bus.word.arm.data_proc_reg_imm.shift_amount = 0;
-
-                bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
-              end
-
-              4'h2: begin
-                $display("[Decoder] Detected THUMB LSL instruction with IR=0x%08x", IR_THUMB);
+              4'h2, 4'h3, 4'h4, 4'h7: begin
+                $display("[Decoder] Detected THUMB LSL/LSR/ASR/ROR instruction with IR=0x%08x",
+                         IR_THUMB);
                 bus.word.arm.data_proc_reg_reg.opcode = ALU_OP_MOV;
                 bus.instr_type = ARM_INSTR_DATAPROC_REG_REG;
 
-                bus.word.arm.data_proc_reg_reg.shift_type = SHIFT_LSL;
+                bus.word.arm.data_proc_reg_reg.shift_type = decoder_util_pkg::THUMB_SHIFT_LUT[IR_THUMB[9:6]];
                 bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
                 bus.decoded_regs.Rm = 4'(IR_THUMB[2:0]);  // Rd
                 bus.decoded_regs.Rs = 4'(IR_THUMB[5:3]);
 
                 bus.word.arm.data_proc_reg_reg.set_flags = 1'b1;
-              end
-
-              4'h3: begin
-                $display("[Decoder] Detected THUMB LSR instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_reg.opcode = ALU_OP_MOV;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_REG;
-
-                bus.word.arm.data_proc_reg_reg.shift_type = SHIFT_LSR;
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[2:0]);  // Rd
-                bus.decoded_regs.Rs = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_reg.set_flags = 1'b1;
-              end
-
-              4'h4: begin
-                $display("[Decoder] Detected THUMB ASR instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_reg.opcode = ALU_OP_MOV;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_REG;
-
-                bus.word.arm.data_proc_reg_reg.shift_type = SHIFT_ASR;
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[2:0]);  // Rd
-                bus.decoded_regs.Rs = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_reg.set_flags = 1'b1;
-              end
-
-              4'h5: begin
-                $display("[Decoder] Detected THUMB ADC instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_ADC;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
-
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rn = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_imm.shift_type = SHIFT_LSL;
-                bus.word.arm.data_proc_reg_imm.shift_amount = 0;
-
-                bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
-              end
-
-              4'h6: begin
-                $display("[Decoder] Detected THUMB SBC instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_SBC;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
-
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rn = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_imm.shift_type = SHIFT_LSL;
-                bus.word.arm.data_proc_reg_imm.shift_amount = 0;
-
-                bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
-              end
-
-              4'h7: begin
-                $display("[Decoder] Detected THUMB ROR instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_reg.opcode = ALU_OP_MOV;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_REG;
-
-                bus.word.arm.data_proc_reg_reg.shift_type = SHIFT_ROR;
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[2:0]);  // Rd
-                bus.decoded_regs.Rs = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_reg.set_flags = 1'b1;
-              end
-
-              4'h8: begin
-                $display("[Decoder] Detected THUMB TST instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_TEST;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
-
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rn = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_imm.shift_type = SHIFT_LSL;
-                bus.word.arm.data_proc_reg_imm.shift_amount = 0;
-
-                bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
               end
 
               4'h9: begin
@@ -519,51 +421,6 @@ module GBA_Decoder (
                 bus.word.arm.data_proc_imm.set_flags = 1'b1;
               end
 
-              4'hA: begin
-                $display("[Decoder] Detected THUMB CMP instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_CMP;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
-
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rn = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_imm.shift_type = SHIFT_LSL;
-                bus.word.arm.data_proc_reg_imm.shift_amount = 0;
-
-                bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
-              end
-
-              4'hB: begin
-                $display("[Decoder] Detected THUMB CMN instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_CMP_NEG;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
-
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rn = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_imm.shift_type = SHIFT_LSL;
-                bus.word.arm.data_proc_reg_imm.shift_amount = 0;
-
-                bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
-              end
-
-              4'hC: begin
-                $display("[Decoder] Detected THUMB OR instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_OR;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
-
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rn = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_imm.shift_type = SHIFT_LSL;
-                bus.word.arm.data_proc_reg_imm.shift_amount = 0;
-
-                bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
-              end
-
               4'hD: begin
                 $display("[Decoder] Detected THUMB MUL instruction with IR=0x%08x", IR_THUMB);
                 bus.instr_type = ARM_INSTR_MULTIPLY;
@@ -574,30 +431,6 @@ module GBA_Decoder (
                 bus.decoded_regs.Rm = 4'(IR_THUMB[5:3]);
 
                 bus.word.arm.mul.S = 1'b1;
-              end
-
-              4'hE: begin
-                $display("[Decoder] Detected THUMB BIC instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_BIT_CLEAR;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
-
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rn = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
-              end
-
-              4'hF: begin
-                $display("[Decoder] Detected THUMB NOT instruction with IR=0x%08x", IR_THUMB);
-                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_NOT;
-                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
-
-                bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rn = 4'(IR_THUMB[2:0]);
-                bus.decoded_regs.Rm = 4'(IR_THUMB[5:3]);
-
-                bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
               end
             endcase
           end
