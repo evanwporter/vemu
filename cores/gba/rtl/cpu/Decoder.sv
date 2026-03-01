@@ -348,6 +348,17 @@ module GBA_Decoder (
 
           // Load / Store with Register Offset
           16'b0101_??0?_????_????: begin
+            bus.instr_type = IR_THUMB[11] ? ARM_INSTR_LOAD : ARM_INSTR_STORE;
+            bus.word.arm.ls.B = IR_THUMB[10] ? ARM_LDR_STR_BYTE : ARM_LDR_STR_WORD;
+            bus.word.arm.ls.I = ARM_LDR_STR_REGISTER;
+            bus.word.arm.ls.P = ARM_LDR_STR_PRE_OFFSET;
+            bus.word.arm.ls.U = 1'b1;  // ADD
+            bus.word.arm.ls.wt = 1'b0;  // No writeback
+
+            bus.decoded_regs.Rn = 4'(IR_THUMB[5:3]);
+            bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
+            bus.decoded_regs.Rm = 4'(IR_THUMB[10:6]);
+
             $display(
                 "[Decoder] Detected THUMB LDR/STR with register offset instruction with IR=0x%08x",
                 IR_THUMB);
