@@ -428,8 +428,9 @@ module GBA_Decoder (
             bus.word.arm.ls.U = 1'b1;  // ADD
             bus.word.arm.ls.B = ARM_LDR_STR_WORD;
             bus.word.arm.ls.wt = 1'b0;  // No writeback
+            bus.word.arm.ls.align_flag = 1'b1;  // PC-relative loads are word-aligned
 
-            bus.instr_type = THUMB_INSTR_LDR_PC;
+            bus.instr_type = ARM_INSTR_LOAD;
 
             bus.word.arm.ls.offset.imm12 = 12'(IR_THUMB[7:0] << 2);
 

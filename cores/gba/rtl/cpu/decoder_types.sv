@@ -117,7 +117,11 @@ package gba_cpu_decoder_types_pkg;
 
     /// ARM_INSTR_LOAD / ARM_INSTR_STORE
     struct packed {
-      logic [6:0] _pad;
+      logic [5:0] _pad;
+
+      // Some THUMB instructions involving the use of PC require PC 
+      // to be word-aligned
+      logic align_flag;
 
       // Bit 25
       mem_offset_flag_t I;
