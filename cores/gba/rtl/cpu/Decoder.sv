@@ -335,6 +335,20 @@ module GBA_Decoder (
 
           // SP Relative Load / Store
           16'b1001_????_????_????: begin
+
+            bus.word.arm.ls.I = ARM_LDR_STR_IMMEDIATE;
+            bus.word.arm.ls.P = ARM_LDR_STR_PRE_OFFSET;
+            bus.word.arm.ls.U = 1'b1;  // ADD
+            bus.word.arm.ls.B = ARM_LDR_STR_WORD;
+            bus.word.arm.ls.wt = 1'b0;  // No writeback
+
+            bus.instr_type = IR_THUMB[11] ? ARM_INSTR_LOAD : ARM_INSTR_STORE;
+
+            bus.word.arm.ls.offset.imm12 = 12'(IR_THUMB[7:0] << 2);
+
+            bus.decoded_regs.Rn = 4'd13;  // SP
+            bus.decoded_regs.Rd = 4'(IR_THUMB[10:8]);
+
             $display("[Decoder] Detected THUMB LDR/STR SP instruction with IR=0x%08x", IR_THUMB);
           end
 
