@@ -384,7 +384,31 @@ module GBA_Decoder (
 
           // Load / Store Sign-Extended Byte / Halfword
           16'b0101_??1?_????_????: begin
-            $display("[Decoder] Detected THUMB LDRSB/LDRSH instruction with IR=0x%08x", IR_THUMB);
+
+            bus.word.arm.ls_half.P = ARM_LDR_STR_PRE_OFFSET;
+
+            bus.word.arm.ls_half.U = 1'b1;  // Add
+
+            bus.word.arm.ls_half.I = ARM_LDR_STR_IMMEDIATE;
+
+            bus.word.arm.ls_half.W = 1'b0;  // No writeback
+
+            bus.word.arm.ls_half.imm_offset = 8'(IR_THUMB[10:6] << 1);
+
+            if (IR_THUMB[11:10] == 2'b00) begin
+              bus.instr_type = ARM_INSTR_STR_HALF;
+              bus.word.arm.ls_half.opcode = ARM_LOAD_STORE_HALFWORD;
+            end else begin
+              bus.instr_type = ARM_INSTR_LDR_HALF;
+              bus.word.arm.ls_half.opcode = signed_halfword_flag_t'(IR_THUMB[11:10]);
+            end
+
+            bus.decoded_regs.Rn = 4'(IR_THUMB[5:3]);
+            bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
+            bus.decoded_regs.Rm = 4'(IR_THUMB[10:6]);
+
+            $display("[Decoder] Detected THUMB STRH/LDSB/LDRSB/LDRSH instruction with IR=0x%08x",
+                     IR_THUMB);
           end
 
           // PC Relative Load
