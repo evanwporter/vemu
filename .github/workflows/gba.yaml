@@ -90,6 +90,7 @@ jobs:
           - thumb_ldr_strb_imm_offset
           - thumb_ldrsh_ldrsb_reg_offset
           - thumb_ldrsb_strb_reg_offset
+          - thumb_ldrh_strh_imm_offset
 
     steps:
       - uses: actions/checkout@v4

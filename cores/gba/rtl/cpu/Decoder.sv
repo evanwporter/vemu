@@ -319,7 +319,7 @@ module GBA_Decoder (
 
             bus.word.arm.ls_half.U = 1'b1;  // Add
 
-            bus.word.arm.ls_half.I = ARM_LDR_STR_IMMEDIATE;
+            bus.word.arm.ls_half.I = 1'b1;
 
             bus.word.arm.ls_half.W = 1'b0;  // No writeback
 
