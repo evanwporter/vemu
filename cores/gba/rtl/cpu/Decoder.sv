@@ -312,6 +312,24 @@ module GBA_Decoder (
 
           // Load / Store Halfword
           16'b1000_????_????_????: begin
+            if (IR_THUMB[11]) bus.instr_type = ARM_INSTR_LDR_HALF;
+            else bus.instr_type = ARM_INSTR_STR_HALF;
+
+            bus.word.arm.ls_half.P = ARM_LDR_STR_PRE_OFFSET;
+
+            bus.word.arm.ls_half.U = 1'b1;  // Add
+
+            bus.word.arm.ls_half.I = ARM_LDR_STR_IMMEDIATE;
+
+            bus.word.arm.ls_half.W = 1'b0;  // No writeback
+
+            bus.word.arm.ls_half.imm_offset = 8'(IR_THUMB[10:6] << 1);
+
+            bus.word.arm.ls_half.opcode = ARM_LOAD_STORE_HALFWORD;
+
+            bus.decoded_regs.Rn = 4'(IR_THUMB[5:3]);
+            bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
+
             $display("[Decoder] Detected THUMB LDRH/STRH instruction with IR=0x%08x", IR_THUMB);
           end
 

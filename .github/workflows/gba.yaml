@@ -86,6 +86,7 @@ jobs:
           - thumb_ldm_stm
           - thumb_ldr_str_imm_offset
           - thumb_ldr_str_reg_offset
+          - thumb_ldrsb_strb_reg_offset
 
     steps:
       - uses: actions/checkout@v4
