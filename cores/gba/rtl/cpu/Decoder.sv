@@ -389,23 +389,30 @@ module GBA_Decoder (
 
             bus.word.arm.ls_half.U = 1'b1;  // Add
 
-            bus.word.arm.ls_half.I = ARM_LDR_STR_IMMEDIATE;
+            bus.word.arm.ls_half.I = 1'b0;  // Use Register Offset
 
             bus.word.arm.ls_half.W = 1'b0;  // No writeback
 
             bus.word.arm.ls_half.imm_offset = 8'(IR_THUMB[10:6] << 1);
 
-            if (IR_THUMB[11:10] == 2'b00) begin
+            if (IR_THUMB[11:10] == 2'd0) begin
               bus.instr_type = ARM_INSTR_STR_HALF;
+              bus.word.arm.ls_half.opcode = ARM_LOAD_STORE_HALFWORD;
+            end else if (IR_THUMB[11:10] == 2'd1) begin
+              bus.instr_type = ARM_INSTR_LDR_HALF;
+              bus.word.arm.ls_half.opcode = ARM_LOAD_SIGNED_BYTE;
+            end else if (IR_THUMB[11:10] == 2'd2) begin
+              bus.instr_type = ARM_INSTR_LDR_HALF;
+              bus.instr_type = ARM_INSTR_LDR_HALF;
               bus.word.arm.ls_half.opcode = ARM_LOAD_STORE_HALFWORD;
             end else begin
               bus.instr_type = ARM_INSTR_LDR_HALF;
-              bus.word.arm.ls_half.opcode = signed_halfword_flag_t'(IR_THUMB[11:10]);
+              bus.word.arm.ls_half.opcode = ARM_LOAD_SIGNED_HALFWORD;
             end
 
+            bus.decoded_regs.Rm = 4'(IR_THUMB[8:6]);  // Offset register
             bus.decoded_regs.Rn = 4'(IR_THUMB[5:3]);
             bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
-            bus.decoded_regs.Rm = 4'(IR_THUMB[10:6]);
 
             $display("[Decoder] Detected THUMB STRH/LDSB/LDRSB/LDRSH instruction with IR=0x%08x",
                      IR_THUMB);
