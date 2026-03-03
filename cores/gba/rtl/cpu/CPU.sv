@@ -167,13 +167,6 @@ module ARM7TMDI (
           $display("Aligning A bus address by masking off lower 2 bits: %0d", (read_reg(
                    regs, cpu_mode, decoder_bus.decoded_regs.Rn) + 32'd4) & ~32'd2);
           A_bus = (read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn)) & ~32'd3;
-        end else if (control_signals.pc_rn_add_4) begin
-          // if (control_signals.a_bus_align) begin
-          //   $display("Aligning A bus address by masking off lower 2 bits");
-          //   A_bus = (read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn) + 32'd4) & ~32'd3;
-          // end else begin
-          A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn) + 32'd4;
-          // end
         end else begin
           A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn);
         end
@@ -234,9 +227,7 @@ module ARM7TMDI (
       B_BUS_SRC_REG_RM: begin
         $display("Driving B bus with value from Rm (R%0d): %0d", decoder_bus.decoded_regs.Rm,
                  read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm));
-        B_bus = control_signals.pc_rm_add_4 ?
-            (read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm) + 32'd4) :
-            read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm);
+        B_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm);
       end
 
       B_BUS_SRC_REG_RS: begin

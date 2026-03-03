@@ -192,6 +192,12 @@ module GBA_ControlUnit (
           if (cycle == 8'd0) begin
             // decoder_bus.enable = 1'b0;
 
+            control_signals |= fetch_next_instr();
+
+            control_signals.incrementer_writeback = 1'b1;
+
+            control_signals.addr_bus_src = ADDR_SRC_INCR;
+
             control_signals.B_bus_source = B_BUS_SRC_REG_RS;
 
             control_signals.shift_latch_amt = 1'b1;
@@ -214,20 +220,8 @@ module GBA_ControlUnit (
                 alu_op_t'(decoder_bus.word.arm.data_proc_reg_reg.opcode));
             control_signals.ALU_set_flags = decoder_bus.word.arm.data_proc_reg_reg.set_flags;
 
-            if (decoder_bus.decoded_regs.Rn == 4'd15) begin
-              control_signals.pc_rn_add_4 = 1'b1;
-            end
-
-            if (decoder_bus.decoded_regs.Rm == 4'd15) begin
-              control_signals.pc_rm_add_4 = 1'b1;
-            end
-
             $display("[ControlUnit] 2 Instr done is %b, cycle is %0d",
                      control_signals.pipeline_advance, cycle);
-
-            control_signals |= fetch_next_instr();
-
-            control_signals.incrementer_writeback = 1'b1;
 
             control_signals.addr_bus_src = ADDR_SRC_PC;
 
@@ -285,10 +279,6 @@ module GBA_ControlUnit (
               control_signals.A_bus_source = A_BUS_SRC_RS;
               control_signals.B_bus_source = B_BUS_SRC_REG_RM;
 
-              if (decoder_bus.decoded_regs.Rm == 4'd15) begin
-                control_signals.pc_rm_add_4 = 1'b1;
-              end
-
               control_signals |= fetch_next_instr();
               control_signals.incrementer_writeback = 1'b1;
             end
@@ -335,10 +325,6 @@ module GBA_ControlUnit (
               control_signals.A_bus_source = A_BUS_SRC_RS;
               control_signals.B_bus_source = B_BUS_SRC_REG_RM;
 
-              if (decoder_bus.decoded_regs.Rm == 4'd15) begin
-                control_signals.pc_rm_add_4 = 1'b1;
-              end
-
               control_signals |= fetch_next_instr();
               control_signals.incrementer_writeback = 1'b1;
             end
@@ -372,11 +358,9 @@ module GBA_ControlUnit (
               // Shift one more every cycle
               control_signals.shift_amount = 5'(cycle - 8'd2);
 
-              if (is_long_op) control_signals.ALU_writeback = ALU_WB_REG_RN;  // Write to RdLo
-              else control_signals.ALU_writeback = ALU_WB_REG_RD;
+              control_signals.ALU_writeback = ALU_WB_REG_RD;
 
-              if (is_long_op) control_signals.A_bus_source = A_BUS_SRC_RN;  // Read from RdLo
-              else control_signals.A_bus_source = A_BUS_SRC_RD;
+              control_signals.A_bus_source = A_BUS_SRC_RD;
 
               control_signals.ALU_op = ALU_OP_ADD;
 
@@ -435,7 +419,6 @@ module GBA_ControlUnit (
             );
 
             if (decoder_bus.word.arm.ls.align_flag) begin
-              // control_signals.pc_rn_add_4 = 1'b1;
               control_signals.a_bus_align = 1'b1;
             end
 

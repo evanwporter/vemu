@@ -191,8 +191,6 @@ package gba_control_types_pkg;
     alu_op_t ALU_op;
 
     // TODO: Refactor these into something cleaner
-    logic pc_rn_add_4;
-    logic pc_rm_add_4;
     logic a_bus_align;
 
     // ======================================================

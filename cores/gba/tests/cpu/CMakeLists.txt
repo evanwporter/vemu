@@ -50,6 +50,7 @@ verilate(test_cpu_adv
         -I${GBA_SRC_DIR}
         -I${GBA_INCLUDE_DIR}
         -I${CMAKE_CURRENT_BINARY_DIR}/
+        -O3
 )
 
 target_compile_definitions(test_cpu_adv PUBLIC

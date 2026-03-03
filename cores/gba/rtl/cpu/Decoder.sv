@@ -51,14 +51,14 @@ module GBA_Decoder (
         $display("[GBA_Decoder] Decoding instruction 0x%08x", IR);
 
         priority casez (IR)
-          /// Branch and Branch Exchange
+          // Branch and Branch Exchange
           32'b????_0001_0010_1111_1111_1111_0001_????: begin
             bus.instr_type = ARM_INSTR_BRANCH_EX;
             bus.decoded_regs.Rn = IR[3:0];
             $display("[GBA_Decoder] Detected BX instruction with IR=0x%08x", IR);
           end
 
-          /// Block Data Transfer
+          // Block Data Transfer
           32'b????_100?_????_????_????_????_????_????: begin
             bus.word.arm.block.P = pre_post_offset_flag_t'(IR[24]);
             bus.word.arm.block.U = IR[23];
@@ -75,7 +75,7 @@ module GBA_Decoder (
             $display("[GBA_Decoder] Detected block data transfer instruction with IR=0x%08x", IR);
           end
 
-          /// Branch
+          // Branch
           32'b????_1010_????_????_????_????_????_????: begin
             bus.instr_type = ARM_INSTR_BRANCH;
             bus.word.arm.branch.imm24 = IR[23:0];
@@ -87,7 +87,7 @@ module GBA_Decoder (
             $display("[GBA_Decoder] Detected B instruction with IR=0x%08x", IR);
           end
 
-          /// Branch with Link
+          // Branch with Link
           32'b????_1011_????_????_????_????_????_????: begin
             bus.instr_type = ARM_INSTR_BRANCH_LINK;
             bus.word.arm.branch.imm24 = IR[23:0];
@@ -99,7 +99,7 @@ module GBA_Decoder (
             $display("[GBA_Decoder] Detected BL instruction with IR=0x%08x", IR);
           end
 
-          /// Software Interrupt
+          // Software Interrupt
           32'b????_1111_????_????_????_????_????_????: begin
             // TODO: Decode comments from ARM SWI IR.
 
@@ -112,7 +112,7 @@ module GBA_Decoder (
             $display("[GBA_Decoder] Detected SWI instruction with IR=0x%08x", IR);
           end
 
-          /// Single Data Transfer
+          // Single Data Transfer
           32'b????_01??_????_????_????_????_????_????: begin
             bus.word.arm.ls.I  = mem_offset_flag_t'(IR[25]);
             bus.word.arm.ls.P  = pre_post_offset_flag_t'(IR[24]);
@@ -136,14 +136,14 @@ module GBA_Decoder (
             $display("[GBA_Decoder] Detected single data transfer instruction with IR=0x%08x", IR);
           end
 
-          /// Single Data Swap
+          // Single Data Swap
           32'b????_0001_0???_????_????_0000_1001_????: begin
             bus.instr_type = ARM_INSTR_SWAP;
             bus.word.arm.swap.B = bit_length_flag_t'(IR[22]);
             $display("[GBA_Decoder] Detected single data swap instruction with IR=0x%08x", IR);
           end
 
-          /// Multiply
+          // Multiply
           32'b????_0000_????_????_????_????_1001_????: begin
             bus.instr_type = ARM_INSTR_MULTIPLY;
             bus.word.arm.mul.opcode = multiply_opcode_t'(IR[24:21]);
@@ -156,7 +156,7 @@ module GBA_Decoder (
             $display("[GBA_Decoder] Detected multiply instruction with IR=0x%08x", IR);
           end
 
-          // /// Multiply Long
+          // // Multiply Long
           // 32'b????_0000_1???_????_????_????_1001_????: begin
           //   $display("[GBA_Decoder] Detected multiply long instruction with IR=0x%08x", IR);
           // end
@@ -183,17 +183,17 @@ module GBA_Decoder (
                 IR);
           end
 
-          /// PSR Transfer MSR
+          // PSR Transfer MSR
           32'b????_0001_0?00_1111_????_????_????_????: begin
             $display("[GBA_Decoder] Detected MSR instruction with IR=0x%08x", IR);
           end
 
-          /// PSR Transfer MRS
+          // PSR Transfer MRS
           32'b????_00?1_0?10_????_1111_????_????_????: begin
             $display("[GBA_Decoder] Detected MRS instruction with IR=0x%08x", IR);
           end
 
-          /// Data Processing
+          // Data Processing
           32'b????_00??_????_????_????_????_????_????: begin
 
             $display("[GBA_Decoder] Detected data processing instruction with IR=0x%08x", IR);
