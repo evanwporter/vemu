@@ -164,8 +164,8 @@ module ARM7TMDI (
         $display("Driving A bus with value from Rn (R%d): %0d", decoder_bus.decoded_regs.Rn,
                  read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn));
         if (control_signals.a_bus_align) begin
-          $display("Aligning A bus address by masking off lower 2 bits: %0d", (read_reg(
-                   regs, cpu_mode, decoder_bus.decoded_regs.Rn) + 32'd4) & ~32'd2);
+          $display("Aligning A bus address by masking off lower 2 bits: %0d", read_reg(
+                   regs, cpu_mode, decoder_bus.decoded_regs.Rn) & ~32'd3);
           A_bus = (read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn)) & ~32'd3;
         end else begin
           A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn);
@@ -403,48 +403,39 @@ module ARM7TMDI (
       $display("[CPU] Checking ALU flags writeback. ALU_set_flags=%b, restore_cpsr_from_spsr=%b",
                control_signals.ALU_set_flags, control_signals.restore_cpsr_from_spsr);
 
-      if (control_signals.restore_cpsr_from_spsr) begin
-        regs.CPSR <= read_spsr(regs, cpu_mode);
-        $display("Restoring CPSR from SPSR_%0d: 0x%08x", cpu_mode, read_spsr(regs, cpu_mode));
-      end
-
       if (control_signals.set_thumb_mode) begin
         regs.CPSR[5] <= B_bus[0];
-        `WRITE_REG(regs, cpu_mode, 4'd15, B_bus & 32'hFFFFFFFE)
+        `WRITE_REG(regs, cpu_mode, 4'd15, B_bus & ~32'd1)
         flush_req <= 1'b1;
         $display("Setting Thumb mode bit in CPSR");
       end
 
-      if (control_signals.ALU_set_flags && control_signals.pipeline_advance) begin
+      if (execution_mode == MODE_ARM && mode_has_spsr(
+              cpu_mode
+          ) && control_signals.restore_cpsr_from_spsr) begin
+        regs.CPSR <= read_spsr(regs, cpu_mode);
+        $display("Restoring CPSR from SPSR_%0d: 0x%08x", cpu_mode, read_spsr(regs, cpu_mode));
+      end else if (control_signals.ALU_set_flags) begin
 
-        if ((decoder_bus.decoded_regs.Rd == 4'd15) && mode_has_spsr(
-                cpu_mode
-            ) && decoder_bus.instr_type != ARM_INSTR_MULTIPLY) begin
-          regs.CPSR <= read_spsr(regs, cpu_mode);
+        $display("Setting flags: N=%b, Z=%b, C=%b, V=%b", alu_bus.flags_out.n, alu_bus.flags_out.z,
+                 alu_bus.flags_out.c, alu_bus.flags_out.v);
 
-          $display("Restoring CPSR from SPSR_%0d: 0x%08x", cpu_mode, read_spsr(regs, cpu_mode));
-          $fflush();
+        regs.CPSR[31] <= alu_bus.flags_out.n;
+        regs.CPSR[30] <= alu_bus.flags_out.z;
+
+        if (decoder_bus.instr_type != ARM_INSTR_MULTIPLY) begin
+          regs.CPSR[29] <= alu_bus.flags_out.c;
+          regs.CPSR[28] <= alu_bus.flags_out.v;
+          $display("ALU op was %0d, setting C flag to %b and V flag to %b", control_signals.ALU_op,
+                   alu_bus.flags_out.c, alu_bus.flags_out.v);
         end else begin
-          $display("Setting flags: N=%b, Z=%b, C=%b, V=%b", alu_bus.flags_out.n,
-                   alu_bus.flags_out.z, alu_bus.flags_out.c, alu_bus.flags_out.v);
-
-          regs.CPSR[31] <= alu_bus.flags_out.n;
-          regs.CPSR[30] <= alu_bus.flags_out.z;
-
-          if (decoder_bus.instr_type != ARM_INSTR_MULTIPLY) begin
-            regs.CPSR[29] <= alu_bus.flags_out.c;
-            regs.CPSR[28] <= alu_bus.flags_out.v;
-            $display("ALU op was %0d, setting C flag to %b and V flag to %b",
-                     control_signals.ALU_op, alu_bus.flags_out.c, alu_bus.flags_out.v);
-          end else begin
-            // For multiply instructions, the C flag is set to 0 (ARMV4 -- on ARMV5 and later its ignored)
-            regs.CPSR[29] <= 1'd0;
-          end
-
-          $display("ALU op was %0d, setting C flag to %b", control_signals.ALU_op,
-                   alu_bus.flags_out.c);
-          $fflush();
+          // For multiply instructions, the C flag is set to 0 (ARMV4 -- on ARMV5 and later its ignored)
+          regs.CPSR[29] <= 1'd0;
         end
+
+        $display("ALU op was %0d, setting C flag to %b", control_signals.ALU_op,
+                 alu_bus.flags_out.c);
+        $fflush();
       end
 
       if (control_signals.exception != EXCEPTION_NONE) begin
@@ -505,7 +496,10 @@ module ARM7TMDI (
 
         ADDR_SRC_PC: begin
           $display("Setting address bus to PC value: 0x%08x", read_reg(regs, cpu_mode, 15));
-          bus.addr <= read_reg(regs, cpu_mode, 15);
+          unique case (execution_mode)
+            MODE_ARM:   bus.addr <= read_reg(regs, cpu_mode, 15) & ~32'd3;
+            MODE_THUMB: bus.addr <= read_reg(regs, cpu_mode, 15) & ~32'd1;
+          endcase
         end
 
         ADDR_SRC_INCR: begin

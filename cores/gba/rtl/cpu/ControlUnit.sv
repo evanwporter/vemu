@@ -178,6 +178,9 @@ module GBA_ControlUnit (
             control_signals |= fetch_next_instr();
             control_signals.incrementer_writeback = 1'b1;
 
+            control_signals.restore_cpsr_from_spsr = decoder_bus.decoded_regs.Rd == 4'd15 & 
+                                                   decoder_bus.word.arm.data_proc_imm.set_flags;
+
             $display("[ControlUnit] Decoding complete, preparing for next instruction");
           end
         end
@@ -225,6 +228,9 @@ module GBA_ControlUnit (
 
             control_signals.addr_bus_src = ADDR_SRC_PC;
 
+            control_signals.restore_cpsr_from_spsr = decoder_bus.decoded_regs.Rd == 4'd15 & 
+                                                   decoder_bus.word.arm.data_proc_reg_reg.set_flags;
+
             control_signals.pipeline_advance = 1'b1;
           end
         end
@@ -257,6 +263,9 @@ module GBA_ControlUnit (
           control_signals.incrementer_writeback = 1'b1;
 
           control_signals.addr_bus_src = ADDR_SRC_PC;
+
+          control_signals.restore_cpsr_from_spsr = decoder_bus.decoded_regs.Rd == 4'd15 & 
+                                                   decoder_bus.word.arm.data_proc_reg_imm.set_flags;
 
           control_signals.pipeline_advance = 1'b1;
         end
