@@ -103,12 +103,12 @@ package gba_control_types_pkg;
     /// TODO: Refactor
     logic force_user_mode;
 
-    /// TODO: Refactor
+    /// Dataproc and LDM instruction can optionally restore the CPSR from the 
+    /// SPSR when writing back to the PC provided that certain conditions are met.
     logic restore_cpsr_from_spsr;
 
-    // TODO: Refactor
-    set_cpu_mode_t set_mode;
-
+    /// TODO: If the only exception that the Controlunit can raise is undefined instruction, 
+    /// then we can get away with just a boolean here.
     exception_t exception;
 
     logic set_thumb_mode;
@@ -121,6 +121,11 @@ package gba_control_types_pkg;
 
     /// Immediate value to place on the A bus, if selected in `A_bus_source`
     logic [6:0] A_bus_imm;
+
+    // TODO: Refactor these into something cleaner
+    /// Whether to align the A bus value by masking off the lower 2 bits. 
+    /// This is used for load/store instructions and ADD instructions.
+    logic A_bus_align;
 
     // ======================================================
     // B Bus
@@ -189,9 +194,6 @@ package gba_control_types_pkg;
 
     /// The ALU operation to perform in the current cycle
     alu_op_t ALU_op;
-
-    // TODO: Refactor these into something cleaner
-    logic a_bus_align;
 
     // ======================================================
     // Barrel Shifter

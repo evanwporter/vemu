@@ -163,7 +163,7 @@ module ARM7TMDI (
       A_BUS_SRC_RN: begin
         $display("Driving A bus with value from Rn (R%d): %0d", decoder_bus.decoded_regs.Rn,
                  read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn));
-        if (control_signals.a_bus_align) begin
+        if (control_signals.A_bus_align) begin
           $display("Aligning A bus address by masking off lower 2 bits: %0d", read_reg(
                    regs, cpu_mode, decoder_bus.decoded_regs.Rn) & ~32'd3);
           A_bus = (read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn)) & ~32'd3;
@@ -429,7 +429,7 @@ module ARM7TMDI (
           $display("ALU op was %0d, setting C flag to %b and V flag to %b", control_signals.ALU_op,
                    alu_bus.flags_out.c, alu_bus.flags_out.v);
         end else begin
-          // For multiply instructions, the C flag is set to 0 (ARMV4 -- on ARMV5 and later its ignored)
+          // For multiply instructions, the C flag is set to destroyed (ARMV4 only -- on ARMV5 and later its ignored)
           regs.CPSR[29] <= 1'd0;
         end
 

@@ -428,7 +428,7 @@ module GBA_ControlUnit (
             );
 
             if (decoder_bus.word.arm.ls.align_flag) begin
-              control_signals.a_bus_align = 1'b1;
+              control_signals.A_bus_align = 1'b1;
             end
 
             // Depending on the instruction, operand b can either be an immediate or 
