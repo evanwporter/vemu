@@ -1,0 +1,210 @@
+{
+  "main": {
+    "id": "973ad140d57bf25d",
+    "type": "split",
+    "children": [
+      {
+        "id": "ecfba158be014f4f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "aa0e89f04edeaeb7",
+            "type": "leaf",
+            "state": {
+              "type": "pdf",
+              "state": {
+                "file": "gba/resources/arm7tmdi_data_sheet.pdf",
+                "page": 29,
+                "left": -13,
+                "top": 244,
+                "zoom": 1.2555555555555555
+              },
+              "icon": "lucide-file-text",
+              "title": "arm7tmdi_data_sheet"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "bdfbb46a0abe122f",
+    "type": "split",
+    "children": [
+      {
+        "id": "90fd4729ac689428",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "7fc8fa482466ca58",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "f7b489f8c4db9a42",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "4359f932ce112c14",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "6b811fb9ad64e932",
+    "type": "split",
+    "children": [
+      {
+        "id": "c3952417ada7941a",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3992a61e886b6813",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "gba/resources/arm7tmdi_data_sheet.pdf",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for arm7tmdi_data_sheet"
+            }
+          },
+          {
+            "id": "c092f6c8c887d7c9",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "gba/resources/arm7tmdi_data_sheet.pdf",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from arm7tmdi_data_sheet"
+            }
+          },
+          {
+            "id": "6626d2dd38e74a5f",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "dc19adef75b81380",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "09dddb68cab781d8",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "gba/resources/arm7tmdi_data_sheet.pdf",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of arm7tmdi_data_sheet"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false,
+      "obsidian-excalidraw-plugin:New drawing": false,
+      "pdf-plus:PDF++: Toggle auto-copy": false,
+      "pdf-plus:PDF++: Toggle auto-focus": false,
+      "pdf-plus:PDF++: Toggle auto-paste": false
+    }
+  },
+  "active": "aa0e89f04edeaeb7",
+  "lastOpenFiles": [
+    "gba/resources/Stephen B. Furber - VLSI Risc Architecture and Organization.pdf",
+    "gba/resources/UT_Texas_ARM.pdf",
+    "gba/resources/arm7tmdi_data_sheet.pdf",
+    "gba/resources/arm7tdmi_instruction_set_reference.pdf",
+    "gba/resources/arm-architecture.pdf",
+    "gba/Data Processing.md",
+    "gba/resources",
+    "gba/New folder",
+    "gba/Stephen B. Furber - VLSI Risc Architecture and Organization.pdf",
+    "gba/arm-architecture.pdf",
+    "gba/arm7tmdi_data_sheet.pdf",
+    "gba/ARM CPU Diagram.png",
+    "Welcome.md",
+    "gba/Swap.md",
+    "gba/Multiplier.md"
+  ]
+}
