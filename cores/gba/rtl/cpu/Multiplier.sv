@@ -86,12 +86,38 @@ module GBA_Multiplier (
   end
 
   always_comb begin
+    /// Chunk is built from {S[2i + 1], S[2i], S[2i - 1]} where i = cycle - 1
+    logic [2:0] chunk;
+    word_t addend;
+
+    chunk = 3'd0;
+    addend = 32'd0;
+
     bus.result = 32'd0;
     if (bus.enable) begin
       unique case (bus.opcode)
         ARM_MUL, ARM_MLA: begin
           if (cycle != 0) begin
-            bus.result = S[cycle-1] ? M : 32'd0;
+            if (cycle == 1) begin
+              chunk = {S[1], S[0], 1'b0};
+            end else begin
+              chunk = {S[2*(cycle-1)+1], S[2*(cycle-1)], S[2*(cycle-1)-1]};
+            end
+
+            unique case (chunk)
+              3'b000: addend = 32'd0;
+              3'b001: addend = M;
+              3'b010: addend = M;
+              3'b011: addend = (M << 1);
+              3'b100: addend = (M << 1);
+              3'b101: addend = M;
+              3'b110: addend = M;
+              3'b111: addend = 32'd0;
+            endcase
+
+            if (chunk[2])  // negative 
+              bus.result = ~addend + 1;
+            else bus.result = addend;
           end
         end
 

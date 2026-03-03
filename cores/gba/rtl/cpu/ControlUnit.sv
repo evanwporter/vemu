@@ -356,7 +356,7 @@ module GBA_ControlUnit (
               control_signals.shift_type = SHIFT_LSL;
 
               // Shift one more every cycle
-              control_signals.shift_amount = 5'(cycle - 8'd2);
+              control_signals.shift_amount = 5'((cycle - 8'd2) << 1);
 
               control_signals.ALU_writeback = ALU_WB_REG_RD;
 
@@ -367,7 +367,7 @@ module GBA_ControlUnit (
               control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
             end
 
-            if (cycle == 8'd33 && !is_long_op) begin
+            if (cycle == 8'd17 && !is_long_op) begin
               control_signals.ALU_set_flags = decoder_bus.word.arm.mul.S;
 
               control_signals.pipeline_advance = 1'b1;
