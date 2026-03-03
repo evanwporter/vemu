@@ -453,7 +453,80 @@ module GBA_Decoder (
           end
 
           // Hi Register Operations / Branch Exchange
+          // TODO: PC add 4?
           16'b0100_01??_????_????: begin
+            unique case (IR_THUMB[9:8])
+              2'd0: begin
+                $display("[Decoder] Detected THUMB ADD Rd, Hs instruction with IR=0x%08x",
+                         IR_THUMB);
+                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
+
+                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_ADD;
+
+                bus.word.arm.data_proc_reg_imm.shift_type = SHIFT_LSL;
+                bus.word.arm.data_proc_reg_imm.shift_amount = 0;
+
+                // bus.word.arm.data_proc_reg_imm.pc_add_4 = 1'b1;
+
+                bus.decoded_regs.Rd = {IR_THUMB[7], IR_THUMB[2:0]};
+                bus.decoded_regs.Rn = {IR_THUMB[7], IR_THUMB[2:0]};
+                bus.decoded_regs.Rm = {IR_THUMB[6], IR_THUMB[5:3]};
+
+                bus.word.arm.data_proc_reg_imm.set_flags = 1'b0;
+              end
+
+              2'd1: begin
+                $display("[Decoder] Detected THUMB CMP Rd, Hs instruction with IR=0x%08x",
+                         IR_THUMB);
+                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
+
+                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_CMP;
+
+                bus.word.arm.data_proc_reg_imm.shift_type = SHIFT_LSL;
+                bus.word.arm.data_proc_reg_imm.shift_amount = 0;
+
+                bus.decoded_regs.Rn = {IR_THUMB[7], IR_THUMB[2:0]};
+                bus.decoded_regs.Rm = {IR_THUMB[6], IR_THUMB[5:3]};
+
+                bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
+              end
+
+              2'd2: begin
+                // TODO: Nop if R8 == R8
+                $display("[Decoder] Detected THUMB MOV Rd, Hs instruction with IR=0x%08x",
+                         IR_THUMB);
+                bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
+
+                bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_MOV;
+
+                bus.word.arm.data_proc_reg_imm.shift_type = SHIFT_LSL;
+                bus.word.arm.data_proc_reg_imm.shift_amount = 0;
+
+                bus.decoded_regs.Rd = {IR_THUMB[7], IR_THUMB[2:0]};
+                bus.decoded_regs.Rn = {IR_THUMB[7], IR_THUMB[2:0]};
+                bus.decoded_regs.Rm = {IR_THUMB[6], IR_THUMB[5:3]};
+
+                bus.word.arm.data_proc_reg_imm.set_flags = 1'b0;
+              end
+
+              2'd3: begin
+                $display(
+                    "[Decoder] Detected THUMB BX instruction with Hs as operand instruction with IR=0x%08x",
+                    IR_THUMB);
+
+                if (IR_THUMB[7] == 1'b0) begin
+                  bus.instr_type = ARM_INSTR_BRANCH_EX;
+                end else begin
+                  // TODO
+                end
+
+                // For BX Rn (ARM) == Rs (THUMB)
+                bus.decoded_regs.Rn = {IR_THUMB[6], IR_THUMB[5:3]};
+                // bus.word.arm.data_proc_reg_reg.opcode = ALU_OP_BX;
+                // bus.instr_type = ARM_INSTR_DATAPROC_REG_REG;
+              end
+            endcase
+
             $display(
                 "[Decoder] Detected THUMB Hi register operation or branch exchange instruction with IR=0x%08x",
                 IR_THUMB);

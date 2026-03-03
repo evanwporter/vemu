@@ -260,7 +260,7 @@
     $fflush(); \
   end
 
-`define WRITE_REG(REGS, MODE, REGNUM, VALUE) \
+`define WRITE_REG(REGS, MODE, REGNUM, VALUE, EXEC_MODE) \
   begin \
     unique case (REGNUM) \
       4'd0:  (REGS).common.r0  <= (VALUE); \
@@ -311,7 +311,12 @@
           CPU_MODE_UND: (REGS).undefined.r14 <= (VALUE); \
         endcase \
       end \
-      4'd15: (REGS).user.r15 <= (VALUE); \
+      4'd15: begin \
+        unique case (EXEC_MODE) \
+          MODE_ARM: (REGS).user.r15 <= (VALUE); \
+          MODE_THUMB: (REGS).user.r15 <= ((VALUE) & ~32'd1); \
+        endcase \
+      end \
     endcase \
   end
 
