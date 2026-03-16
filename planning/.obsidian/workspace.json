@@ -4,37 +4,24 @@
     "type": "split",
     "children": [
       {
-        "id": "ecfba158be014f4f",
+        "id": "d7890e47a14d7dbe",
         "type": "tabs",
         "children": [
           {
-            "id": "aa0e89f04edeaeb7",
-            "type": "leaf",
-            "state": {
-              "type": "excalidraw",
-              "state": {
-                "file": "gba/Swap.md"
-              },
-              "icon": "excalidraw-icon",
-              "title": "Swap"
-            }
-          },
-          {
-            "id": "e7706e553a548134",
+            "id": "a5d6a489ae166551",
             "type": "leaf",
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Exceptions.md",
+                "file": "gba/Thumb.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "Exceptions"
+              "title": "Thumb"
             }
           }
-        ],
-        "currentTab": 1
+        ]
       }
     ],
     "direction": "vertical"
@@ -200,23 +187,32 @@
       "pdf-plus:PDF++: Toggle auto-paste": false
     }
   },
-  "active": "e7706e553a548134",
+  "active": "a5d6a489ae166551",
   "lastOpenFiles": [
-    "gba/Swap.md",
+    "gba/Data Processing.md",
+    "gba/Thumb.md",
+    "gba/Pipeline.md",
+    "gba/GBA.base",
+    "gba/Exceptions.md",
+    "gba/Block Transfer.md",
+    "gba/Untitled.base",
     "Exceptions.md",
+    "Untitled.base",
+    "Excalidraw/Drawing 2026-03-08 09.20.23.excalidraw.md",
+    "gba/Multiplier.md",
+    "gba/ARM CPU Diagram.png",
+    "gba/Swap.md",
+    "Untitled.canvas",
+    "Excalidraw/Drawing 2026-03-05 20.33.59.excalidraw.md",
+    "Excalidraw/Drawing 2026-03-05 20.34.23.excalidraw.md",
+    "Excalidraw/Drawing 2026-03-05 20.34.38.excalidraw.md",
+    "Excalidraw",
     "gba/resources/arm7tmdi_data_sheet.pdf",
-    "gba/resources/Stephen B. Furber - VLSI Risc Architecture and Organization.pdf",
     "gba/resources/UT_Texas_ARM.pdf",
+    "gba/resources/Stephen B. Furber - VLSI Risc Architecture and Organization.pdf",
     "gba/resources/arm7tdmi_instruction_set_reference.pdf",
     "gba/resources/arm-architecture.pdf",
-    "gba/Data Processing.md",
     "gba/resources",
-    "gba/New folder",
-    "gba/Stephen B. Furber - VLSI Risc Architecture and Organization.pdf",
-    "gba/arm-architecture.pdf",
-    "gba/arm7tmdi_data_sheet.pdf",
-    "gba/ARM CPU Diagram.png",
-    "Welcome.md",
-    "gba/Multiplier.md"
+    "Welcome.md"
   ]
 }
