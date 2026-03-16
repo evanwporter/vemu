@@ -311,12 +311,7 @@
           CPU_MODE_UND: (REGS).undefined.r14 <= (VALUE); \
         endcase \
       end \
-      4'd15: begin \
-        unique case (EXEC_MODE) \
-          MODE_ARM: (REGS).user.r15 <= (VALUE); \
-          MODE_THUMB: (REGS).user.r15 <= ((VALUE) & ~32'd1); \
-        endcase \
-      end \
+      4'd15: (REGS).user.r15 <= (VALUE); \
     endcase \
   end
 
