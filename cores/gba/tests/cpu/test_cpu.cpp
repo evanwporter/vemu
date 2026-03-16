@@ -7,6 +7,7 @@
 #include <Varm_cpu_top_GBA_Bus_if.h>
 #include <Varm_cpu_top___024root.h>
 #include <verilated.h>
+#include <verilated_vcd_c.h>
 
 #include "util/test_config.hpp"
 #include "util/util.hpp"
@@ -22,10 +23,74 @@ using u16 = uint16_t;
 
 static const fs::path kTestDir = fs::path(TEST_DIR) / "GameboyAdvanceCPUTests/v1";
 
+static std::string hex32(uint32_t v) {
+    std::ostringstream oss;
+    oss << "0x"
+        << std::uppercase
+        << std::hex
+        << std::setw(8)
+        << std::setfill('0')
+        << v;
+    return oss.str();
+}
+
+static bool should_hex_array(const std::string& key) {
+    return key == "R" || key == "R_fiq" || key == "R_svc" || key == "R_abt" || key == "R_irq" || key == "R_und" || key == "SPSR" || key == "pipeline";
+}
+
+static bool should_hex_key(const std::string& key) {
+    return key == "opcode" || key == "base_addr" || key == "addr" || key == "data" || key == "cycle" || key == "access" || key == "CPSR";
+}
+
+static json hexify_json(const json& j, const std::string& parent_key = "") {
+
+    if (j.is_object()) {
+        json out = json::object();
+
+        for (auto it = j.begin(); it != j.end(); ++it) {
+            out[it.key()] = hexify_json(it.value(), it.key());
+        }
+
+        return out;
+    }
+
+    if (j.is_array()) {
+        json out = json::array();
+
+        for (const auto& item : j) {
+            if (should_hex_array(parent_key) && item.is_number()) {
+                out.push_back(hex32(item.get<uint32_t>()));
+            } else {
+                out.push_back(hexify_json(item, parent_key));
+            }
+        }
+
+        return out;
+    }
+
+    if (j.is_number_unsigned()) {
+        if (should_hex_key(parent_key))
+            return hex32(j.get<uint32_t>());
+        return j;
+    }
+
+    if (j.is_number_integer()) {
+        if (should_hex_key(parent_key))
+            return hex32(static_cast<uint32_t>(j.get<int64_t>()));
+        return j;
+    }
+
+    return j;
+}
+
 class TestLogger {
     const fs::path log_path = fs::current_path() / "failed_test.log";
 
     const json& testCase;
+
+    const bool enable_trace;
+
+    std::unique_ptr<VerilatedVcdC> trace = nullptr;
 
     static void dump_failed_test_to_file(const json& test) {
         fs::path out = fs::current_path() / "failed_test.json";
@@ -34,15 +99,19 @@ class TestLogger {
         if (!f.is_open())
             return;
 
-        f << test.dump(2);
+        f << hexify_json(test).dump(2);
         f << std::endl;
 
         std::cerr << "Wrote failing test to: " << out.string() << "\n";
     }
 
 public:
-    TestLogger(const json& testCase) :
-        testCase(testCase) {
+    TestLogger(const json& testCase, const bool enable_trace = false) :
+        testCase(testCase), enable_trace(enable_trace) {
+        if (enable_trace) {
+            trace = std::make_unique<VerilatedVcdC>();
+        }
+
         testing::internal::CaptureStdout();
         testing::internal::CaptureStderr();
     };
@@ -68,12 +137,27 @@ public:
 
             dump_failed_test_to_file(testCase);
         }
+
+        if (enable_trace) {
+            trace->close();
+            trace.reset();
+        }
     }
 
     TestLogger(TestLogger&&) = delete;
     TestLogger(const TestLogger&) = delete;
     TestLogger& operator=(const TestLogger&) = delete;
     TestLogger& operator=(TestLogger&&) = delete;
+
+    const std::unique_ptr<VerilatedVcdC>& get_trace() const {
+        return trace;
+    }
+
+    void open_waveform(const std::string& filename) {
+        if (enable_trace && trace) {
+            trace->open(filename.c_str());
+        }
+    }
 };
 
 static fs::path get_test_dir() {
@@ -111,7 +195,7 @@ static inline u16 read_u16(const json& j) {
     return j.get<u16>();
 }
 
-static void tick(Varm_cpu_top& top, VerilatedContext& ctx) {
+static void tick(Varm_cpu_top& top, VerilatedVcdC& tfp, VerilatedContext& ctx) {
     std::cout << "PC: "
               << top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__regs
                      .__PVT__user.__PVT__r15
@@ -119,10 +203,12 @@ static void tick(Varm_cpu_top& top, VerilatedContext& ctx) {
 
     top.clk = 0;
     top.eval();
+    tfp.dump(ctx.time());
     ctx.timeInc(5);
 
     top.clk = 1;
     top.eval();
+    tfp.dump(ctx.time());
     ctx.timeInc(5);
 }
 
@@ -273,9 +359,11 @@ static void verify_registers(
     const uint32_t flag_mask) {
     const auto& regs = top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__regs;
 
-#define CHECK_REG(actual, exp, name) \
-    ASSERT_EQ((actual), (exp))       \
-        << name << " mismatch in test " << test_name;
+#define CHECK_REG(actual, exp, name)                 \
+    ASSERT_EQ((actual), (exp))                       \
+        << name << " mismatch in test " << test_name \
+        << "\nactual:   " << hex32(actual)           \
+        << "\nexpected: " << hex32(exp);
 
     CHECK_REG(regs.__PVT__common.__PVT__r0, expected["R"][0], "R0");
     CHECK_REG(regs.__PVT__common.__PVT__r1, expected["R"][1], "R1");
@@ -371,7 +459,7 @@ static inline uint32_t arm_swp_rd(uint32_t ir) {
 
 static void run_single_test(const json& testCase, const fs::path& source, const size_t index) {
 
-    TestLogger logger(testCase);
+    TestLogger logger(testCase, true);
 
     constexpr uint32_t FULL_MASK = 0xFFFFFFFF;
     constexpr uint32_t IGNORE_C = ~(1u << 29);
@@ -402,11 +490,18 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
 
     Varm_cpu_top top(&ctx);
 
+    Verilated::traceEverOn(true);
+    VerilatedVcdC& tfp = *logger.get_trace();
+
+    top.trace(&tfp, 99);
+
+    logger.open_waveform("wave.vcd");
+
     std::cout << "Cycle 0: Reset Phase 1" << std::endl;
 
     // Reset
     top.reset = 1;
-    tick(top, ctx);
+    tick(top, tfp, ctx);
     top.reset = 0;
 
     // If bit 5 (T) is 0, it's ARM mode; if it's 1, it's Thumb mode.
@@ -419,7 +514,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
         ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__controlUnit__DOT__flush_cnt, 3);
 
         // Fetch
-        tick(top, ctx);
+        tick(top, tfp, ctx);
 
         std::cout << "\nCycle 2: Start flush" << std::endl;
 
@@ -428,7 +523,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
         // Check if it reset correctly and is now starting a flush.
         ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__controlUnit__DOT__flush_cnt, 2);
 
-        tick(top, ctx);
+        tick(top, tfp, ctx);
 
         const auto& IR = top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__IR;
 
@@ -445,7 +540,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
         std::cout << "\nCycle 3: Start flush and decode" << std::endl;
 
         // Fetch and Decode
-        tick(top, ctx);
+        tick(top, tfp, ctx);
 
         if (thumb_mode) // THUMB mode
             ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__regs.__PVT__user.__PVT__r15, testCase["base_addr"].get<uint32_t>() + 4);
@@ -470,7 +565,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
         int cycles = 0;
         while (top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__instr_boundary == 0 && max_ticks-- > 0) {
             std::cout << "\nCycle " << (cycles + 4) << ": Execute" << std::endl;
-            tick(top, ctx);
+            tick(top, tfp, ctx);
             cycles++;
         }
 
@@ -480,9 +575,9 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
 
         if (top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__flush_req) {
             std::cout << "\n2 cycles of flush remaining" << std::endl;
-            tick(top, ctx);
+            tick(top, tfp, ctx);
             std::cout << "\n1 cycles of flush remaining" << std::endl;
-            tick(top, ctx);
+            tick(top, tfp, ctx);
         }
 
         verify_registers(top, testCase["final"], std::to_string(index), flag_mask);
