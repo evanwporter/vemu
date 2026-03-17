@@ -354,6 +354,23 @@ module GBA_Decoder (
 
           // Load Address
           16'b1010_????_????_????: begin
+            bus.instr_type = ARM_INSTR_DATAPROC_IMM;
+            bus.word.arm.data_proc_imm.opcode = ALU_OP_ADD;
+            bus.word.arm.data_proc_imm.set_flags = 1'b0;
+
+            bus.decoded_regs.Rd = 4'(IR_THUMB[10:8]);
+
+            if (IR_THUMB[11]) begin
+              bus.decoded_regs.Rn = 4'd13;  // SP
+            end else begin
+              bus.word.arm.data_proc_imm.align_flag = 1'b1;  // PC-relative loads are word-aligned
+              bus.decoded_regs.Rn = 4'd15;  // PC
+            end
+
+            bus.word.arm.data_proc_imm.imm8 = IR_THUMB[7:0];
+            bus.word.arm.data_proc_imm.rotate = 4'd1;
+            bus.word.arm.data_proc_imm.use_lsl = 1'b1;
+
             $display("[Decoder] Detected THUMB ADD Rd, PC, #imm instruction with IR=0x%08x",
                      IR_THUMB);
           end

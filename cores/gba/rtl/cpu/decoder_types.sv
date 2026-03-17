@@ -60,7 +60,12 @@ package gba_cpu_decoder_types_pkg;
 
     /// Data Processing Immediate (ARM_INSTR_DATAPROC_IMM)
     struct packed {
-      logic [6:0] _pad;
+      logic [4:0] _pad;
+
+      // Required for thumb
+      logic align_flag;
+
+      logic use_lsl;
 
       // Bits 24-21
       alu_op_t opcode;

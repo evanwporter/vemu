@@ -162,7 +162,8 @@ module GBA_ControlUnit (
 
             control_signals.shift_amount = {decoder_bus.word.arm.data_proc_imm.rotate, 1'b0};
 
-            control_signals.shift_type = SHIFT_ROR;
+            if (decoder_bus.word.arm.data_proc_imm.use_lsl) control_signals.shift_type = SHIFT_LSL;
+            else control_signals.shift_type = SHIFT_ROR;
 
             control_signals.ALU_op = alu_op_t'(decoder_bus.word.arm.data_proc_imm.opcode);
 
@@ -173,6 +174,10 @@ module GBA_ControlUnit (
                      control_signals.ALU_writeback, control_signals.ALU_set_flags);
 
             control_signals.pipeline_advance = 1'b1;
+
+            if (decoder_bus.word.arm.data_proc_imm.align_flag) begin
+              control_signals.A_bus_align = 1'b1;
+            end
 
             control_signals.addr_bus_src = ADDR_SRC_PC;
             control_signals |= fetch_next_instr();

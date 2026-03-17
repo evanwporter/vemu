@@ -93,6 +93,7 @@ jobs:
           - thumb_ldrh_strh_imm_offset
           - thumb_ldr_str_sp_rel_offset
           - thumb_add_cmp_mov_hi
+          - thumb_add_sub_sp_json
 
     steps:
       - uses: actions/checkout@v4
