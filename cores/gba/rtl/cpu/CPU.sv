@@ -388,12 +388,14 @@ module ARM7TMDI (
         unique case (execution_mode)
           MODE_ARM: begin
             // PC = PC + 4
-            `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd4, execution_mode)
+            `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd4, execution_mode,
+                       !control_signals.force_no_align_pc)
             $display("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd4);
             $fflush();
           end
           MODE_THUMB: begin
-            `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd2, execution_mode)
+            `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd2, execution_mode,
+                       !control_signals.force_no_align_pc)
             $display("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd2);
             $fflush();
           end
@@ -405,7 +407,8 @@ module ARM7TMDI (
 
       if (control_signals.set_thumb_mode) begin
         regs.CPSR[5] <= B_bus[0];
-        `WRITE_REG(regs, cpu_mode, 4'd15, B_bus & ~32'd1, execution_mode)
+        `WRITE_REG(regs, cpu_mode, 4'd15, B_bus & ~32'd1, execution_mode,
+                   !control_signals.force_no_align_pc)
         flush_req <= 1'b1;
         $display("Setting Thumb mode bit in CPSR");
       end
@@ -456,21 +459,25 @@ module ARM7TMDI (
       unique case (control_signals.ALU_writeback)
         ALU_WB_NONE: ;
         ALU_WB_REG_RD: begin
-          `WRITE_REG(regs, cpu_mode, decoder_bus.decoded_regs.Rd, alu_bus.result, execution_mode)
+          `WRITE_REG(regs, cpu_mode, decoder_bus.decoded_regs.Rd, alu_bus.result, execution_mode,
+                     !control_signals.force_no_align_pc)
           $display("Writing back ALU result %0d to Rd (R%d)", alu_bus.result,
                    decoder_bus.decoded_regs.Rd);
         end
         ALU_WB_REG_RS:
-        `WRITE_REG(regs, cpu_mode, decoder_bus.decoded_regs.Rs, alu_bus.result, execution_mode)
+        `WRITE_REG(regs, cpu_mode, decoder_bus.decoded_regs.Rs, alu_bus.result, execution_mode,
+                   !control_signals.force_no_align_pc)
         ALU_WB_REG_RN: begin
           $display("Writing back ALU result %0d to Rn (R%d)", alu_bus.result,
                    decoder_bus.decoded_regs.Rn);
           `WRITE_REG(regs, control_signals.force_user_mode ? CPU_MODE_USR : cpu_mode,
-                     decoder_bus.decoded_regs.Rn, alu_bus.result, execution_mode)
+                     decoder_bus.decoded_regs.Rn, alu_bus.result, execution_mode,
+                     !control_signals.force_no_align_pc)
         end
         ALU_WB_REG_RP: begin
           `WRITE_REG(regs, control_signals.force_user_mode ? CPU_MODE_USR : cpu_mode,
-                     control_signals.Rp_imm, alu_bus.result, execution_mode)
+                     control_signals.Rp_imm, alu_bus.result, execution_mode,
+                     !control_signals.force_no_align_pc)
         end
       endcase
     end

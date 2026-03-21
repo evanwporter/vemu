@@ -99,7 +99,6 @@ package gba_cpu_util_pkg;
     endcase
   endfunction
 
-
   function automatic alu_writeback_source_t get_alu_writeback(input alu_op_t opcode);
     case (opcode)
       ALU_OP_CMP, ALU_OP_CMP_NEG, ALU_OP_TEST, ALU_OP_TEST_EXCLUSIVE: begin

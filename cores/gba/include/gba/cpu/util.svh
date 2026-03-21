@@ -260,7 +260,7 @@
     $fflush(); \
   end
 
-`define WRITE_REG(REGS, MODE, REGNUM, VALUE, EXEC_MODE) \
+`define WRITE_REG(REGS, MODE, REGNUM, VALUE, EXEC_MODE, ALIGN_PC) \
   begin \
     unique case (REGNUM) \
       4'd0:  (REGS).common.r0  <= (VALUE); \
@@ -314,7 +314,10 @@
       4'd15: begin \
         unique case (EXEC_MODE) \
           MODE_ARM: (REGS).user.r15 <= (VALUE); \
-          MODE_THUMB: (REGS).user.r15 <= (VALUE) & ~32'd1; \
+          MODE_THUMB: begin \
+              if (ALIGN_PC) (REGS).user.r15 <= (VALUE) & ~32'd1; \
+              else (REGS).user.r15 <= (VALUE) & ~32'd1; \
+          end \
         endcase \
       end \
     endcase \

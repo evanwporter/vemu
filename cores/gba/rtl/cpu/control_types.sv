@@ -127,6 +127,8 @@ package gba_control_types_pkg;
     /// This is used for load/store instructions and ADD instructions.
     logic A_bus_align;
 
+    logic force_no_align_pc;
+
     // ======================================================
     // B Bus
     // ======================================================

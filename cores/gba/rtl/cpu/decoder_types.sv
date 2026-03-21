@@ -210,7 +210,9 @@ package gba_cpu_decoder_types_pkg;
     /// ARM_INSTR_LDM / ARM_INSTR_STM
     // https://mgba-emu.github.io/gbatek/#opcode-format-5
     struct packed {
-      logic [3:0] _pad;
+      logic [2:0] _pad;
+
+      logic force_no_align_pc;
 
       // Bit 24
       pre_post_offset_flag_t P;

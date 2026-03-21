@@ -758,6 +758,8 @@ module GBA_ControlUnit (
               (decoder_bus.instr_type == ARM_INSTR_LDM && !decoder_bus.word.arm.block.reg_list[15])
             );
 
+          control_signals.force_no_align_pc = decoder_bus.word.arm.block.force_no_align_pc;
+
           // First cycle: Prefetch and calculate first address
           if (cycle == 8'd0) begin
             // Perform a prefetch
