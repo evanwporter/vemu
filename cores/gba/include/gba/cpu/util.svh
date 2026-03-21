@@ -37,6 +37,7 @@
   $display("memory_half_transfer  : %0b", ctrl.memory_halfword_transfer); \
   $display("memory_signed_transfer: %0b", ctrl.memory_signed_transfer); \
   $display("multiplier_enable     : %0b", ctrl.multiplier_enable); \
+  $display("force_no_align_pc     : %0b", ctrl.force_no_align_pc); \
   $display("ALU_latch_op_b        : %0b", ctrl.ALU_latch_op_b); \
   $display("ALU_use_op_b_latch    : %0b", ctrl.ALU_use_op_b_latch); \
   $display("ALU_disable_op_b      : %0b", ctrl.ALU_disable_op_b); \
@@ -316,7 +317,10 @@
           MODE_ARM: (REGS).user.r15 <= (VALUE); \
           MODE_THUMB: begin \
               if (ALIGN_PC) (REGS).user.r15 <= (VALUE) & ~32'd1; \
-              else (REGS).user.r15 <= (VALUE); \
+              else begin \
+                (REGS).user.r15 <= (VALUE); \
+                $display("Warning: writing unaligned value 0x%08x to PC in THUMB mode", (VALUE)); \
+              end \
           end \
         endcase \
       end \

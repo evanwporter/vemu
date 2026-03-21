@@ -389,13 +389,13 @@ module ARM7TMDI (
           MODE_ARM: begin
             // PC = PC + 4
             `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd4, execution_mode,
-                       !control_signals.force_no_align_pc)
+                       1'b0)
             $display("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd4);
             $fflush();
           end
           MODE_THUMB: begin
             `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd2, execution_mode,
-                       !control_signals.force_no_align_pc)
+                       1'b0)
             $display("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd2);
             $fflush();
           end
