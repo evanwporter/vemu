@@ -316,7 +316,7 @@
           MODE_ARM: (REGS).user.r15 <= (VALUE); \
           MODE_THUMB: begin \
               if (ALIGN_PC) (REGS).user.r15 <= (VALUE) & ~32'd1; \
-              else (REGS).user.r15 <= (VALUE) & ~32'd1; \
+              else (REGS).user.r15 <= (VALUE); \
           end \
         endcase \
       end \
