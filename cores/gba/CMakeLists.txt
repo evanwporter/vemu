@@ -40,7 +40,7 @@ target_compile_definitions(libgba PUBLIC
     TEST_DIR="${CMAKE_SOURCE_DIR}/tests/"
     SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
 )
-
+add_subdirectory(sim)
 add_subdirectory(tests)
 
 find_package(Verilator REQUIRED HINTS $ENV{VERILATOR_ROOT})

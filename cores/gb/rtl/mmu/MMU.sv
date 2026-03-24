@@ -1,7 +1,5 @@
 import gb_mmu_addresses_pkg::*;
 
-import ppu_types_pkg::*;
-
 `include "gb/util/logger.svh"
 
 /// MMU: Memory Mapper Unit

@@ -10,3 +10,6 @@
 [submodule "tests/GameboyAdvanceCPUTests"]
 	path = tests/GameboyAdvanceCPUTests
 	url = https://github.com/evanwporter/ARM7TDMI.git
+[submodule "tests/GBA-Logs"]
+	path = tests/GBA-Logs
+	url = https://github.com/skylersaleh/GBA-Logs

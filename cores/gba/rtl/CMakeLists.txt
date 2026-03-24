@@ -8,6 +8,7 @@ gba_add_rtl(
     INTERFACES
     SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/GameboyAdvance.sv
+        ${CMAKE_CURRENT_SOURCE_DIR}/Memory.sv
 )
 
 add_subdirectory(cpu)
@@ -36,7 +37,6 @@ verilate(libgba
         ${GBA_PACKAGES}
         ${GBA_INTERFACES}
         ${GBA_SOURCES}
-        ${CMAKE_CURRENT_SOURCE_DIR}/GameboyAdvance.sv
     TOP_MODULE GameboyAdvance
     VERILATOR_ARGS
         --sv

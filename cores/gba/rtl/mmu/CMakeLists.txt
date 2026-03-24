@@ -1,7 +1,9 @@
 gba_add_rtl(
     PACKAGES
         ${CMAKE_CURRENT_SOURCE_DIR}/types.sv
+        ${CMAKE_CURRENT_SOURCE_DIR}/addresses.sv
     INTERFACES
         ${CMAKE_CURRENT_SOURCE_DIR}/interface.sv
     SOURCES
+        ${CMAKE_CURRENT_SOURCE_DIR}/MMU.sv
 )

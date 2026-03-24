@@ -51,6 +51,8 @@ verilate(test_cpu_adv
         -I${GBA_INCLUDE_DIR}
         -I${CMAKE_CURRENT_BINARY_DIR}/
         -O3
+        --trace-params
+        --trace-structs
 )
 
 target_compile_definitions(test_cpu_adv PUBLIC
