@@ -2,10 +2,11 @@
 `define CPU_UTIL_SVH
 
 `define TRACE_CPU \
-  $display("[%0t] PC=%0d IR=%h instr=%0d addr=%0d flush=%b cycle=%0d WB=%0d Rd=%0d A_bus=%0d B_bus=%0d ALU=%0d LatchedReadData=%0d mode=%s exec_mode=%s", \
+  $display("[%0t] PC=%0d Fetch-IR=%h Decoder-IR=%h instr=%0d addr=%0d flush=%b cycle=%0d WB=%0d Rd=%0d A_bus=%0d B_bus=%0d ALU=%0d LatchedReadData=%0d mode=%s exec_mode=%s", \
     $time, \
     regs.user.r15, \
     IR, \
+    decoder_inst.IR, \
     decoder_bus.instr_type, \
     bus.addr, \
     controlUnit.flush_cnt != 3'd0, \

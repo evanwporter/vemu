@@ -395,3 +395,63 @@ constexpr std::string_view ToString(ThumbInstruction instr) {
         return "UnimplementedTHUMBInstruction";
     }
 }
+
+enum class CpuMode {
+    User,
+    FIQ,
+    IRQ,
+    Supervisor,
+    Abort,
+    Undefined,
+    System,
+    Unknown
+};
+
+static CpuMode decode_cpu_mode(uint32_t cpsr) {
+    uint32_t m = cpsr & 0x1F;
+
+    switch (m) {
+    case 0x10:
+        return CpuMode::User;
+    case 0x11:
+        return CpuMode::FIQ;
+    case 0x12:
+        return CpuMode::IRQ;
+    case 0x13:
+        return CpuMode::Supervisor;
+    case 0x17:
+        return CpuMode::Abort;
+    case 0x1B:
+        return CpuMode::Undefined;
+    case 0x1F:
+        return CpuMode::System;
+    default:
+        return CpuMode::Unknown;
+    }
+}
+
+static const char* cpu_mode_to_string(CpuMode mode) {
+    switch (mode) {
+    case CpuMode::User:
+        return "USR";
+    case CpuMode::FIQ:
+        return "FIQ";
+    case CpuMode::IRQ:
+        return "IRQ";
+    case CpuMode::Supervisor:
+        return "SVC";
+    case CpuMode::Abort:
+        return "ABT";
+    case CpuMode::Undefined:
+        return "UND";
+    case CpuMode::System:
+        return "SYS";
+    default:
+        return "UNK";
+    }
+}
+
+static const char* exec_mode_to_string(uint32_t cpsr) {
+    bool thumb = (cpsr >> 5) & 1;
+    return thumb ? "THUMB" : "ARM";
+}

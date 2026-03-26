@@ -1,5 +1,7 @@
 set(GBA_TESTS_CPP_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
+add_subdirectory(golden/nba/src/nba)
+
 add_subdirectory(cpu)
 add_subdirectory(arm.gba)
 

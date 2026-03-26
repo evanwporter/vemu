@@ -13,3 +13,6 @@
 [submodule "tests/GBA-Logs"]
 	path = tests/GBA-Logs
 	url = https://github.com/skylersaleh/GBA-Logs
+[submodule "cores/gba/tests/golden/nba"]
+	path = cores/gba/tests/golden/nba
+	url = https://github.com/nba-emu/NanoBoyAdvance.git

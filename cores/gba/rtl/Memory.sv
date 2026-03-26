@@ -27,15 +27,18 @@ module GBA_Memory #(
     if (reset) begin
       // TODO
     end else if (bus.write_en && selected) begin
-      mem[index] <= bus.wdata[7:0];
+      mem[index+0] <= bus.wdata[7:0];
+      mem[index+1] <= bus.wdata[15:8];
+      mem[index+2] <= bus.wdata[23:16];
+      mem[index+3] <= bus.wdata[31:24];
     end
   end
 
   // Read
   always_comb begin
-    bus.rdata = 32'hFFFFFFFF;
+    bus.rdata = 32'hFFFF_FFFF;
     if (bus.read_en && selected) begin
-      bus.rdata = {24'h0, mem[index]};
+      bus.rdata = {mem[index+3], mem[index+2], mem[index+1], mem[index+0]};
     end
   end
 

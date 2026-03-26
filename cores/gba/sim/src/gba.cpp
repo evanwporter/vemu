@@ -1,4 +1,5 @@
 #include "gba.hpp"
+#include "verilated_vcd_c.h"
 
 #include <VGameboyAdvance.h>
 #include <VGameboyAdvance___024root.h>
@@ -31,6 +32,12 @@ void GameboyAdvanceHarness::load_bios(const std::filesystem::path& filename) {
 
 bool GameboyAdvanceHarness::setup(const std::filesystem::path& rom_path) {
     top = std::make_unique<VGameboyAdvance>(&ctx);
+    tfp = std::make_unique<VerilatedVcdC>();
+
+    Verilated::traceEverOn(true);
+
+    top->trace(tfp.get(), 99);
+    tfp->open("wave.vcd");
 
     cpu.emplace(*top);
 
@@ -53,20 +60,22 @@ bool GameboyAdvanceHarness::setup(const std::filesystem::path& rom_path) {
 
     tick();
 
-    std::cout << "\nCycle 2: Start flush" << std::endl;
+    // std::cout << "\nCycle 2: Start flush" << std::endl;
 
-    tick();
+    // tick();
 
-    std::cout << "\nCycle 3: Start flush and decode" << std::endl;
+    // std::cout << "\nCycle 3: Start flush and decode" << std::endl;
 
-    // Fetch and Decode
-    tick();
+    // // Fetch and Decode
+    // tick();
 
-    top->rootp->GameboyAdvance__DOT__cpu_inst__DOT__instr_boundary = 0;
+    // top->rootp->GameboyAdvance__DOT__cpu_inst__DOT__instr_boundary = 0;
 
-    // while (began_instruction()) {
-    //     tick();
-    // }
+    // // while (began_instruction()) {
+    // //     tick();
+    // // }
+
+    // std::cout << "\n\nBeginning Execution of First Instruction\n";
 
     return true;
 }
@@ -231,10 +240,12 @@ bool GameboyAdvanceHarness::began_instruction() const {
 bool GameboyAdvanceHarness::tick() {
     top->clk = 0;
     top->eval();
+    tfp->dump(ctx.time());
     ctx.timeInc(5);
 
     top->clk = 1;
     top->eval();
+    tfp->dump(ctx.time());
     ctx.timeInc(5);
 
     cycles++;

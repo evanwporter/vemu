@@ -10,6 +10,8 @@
 
 #include "types.hpp"
 
+#include <verilated_vcd_c.h>
+
 struct ArmTraceState {
     std::array<u32, 16> r {}; // r0-r15
     u32 cpsr = 0;
@@ -82,6 +84,7 @@ public:
 
 private:
     VerilatedContext ctx;
+    std::unique_ptr<VerilatedVcdC> tfp;
 
     std::unique_ptr<VGameboyAdvance> top;
 

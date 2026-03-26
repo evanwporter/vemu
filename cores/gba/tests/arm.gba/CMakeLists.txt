@@ -10,6 +10,7 @@ target_sources(test_arm_gba
 
 target_link_libraries(test_arm_gba PUBLIC
     libgba
+    nba
     GameboyAdvanceHarness
     GTest::gtest
     nlohmann_json::nlohmann_json
@@ -18,6 +19,9 @@ target_link_libraries(test_arm_gba PUBLIC
 target_include_directories(test_arm_gba
     PRIVATE
         ${GBA_TESTS_CPP_DIR}
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/cores/gba/tests/golden/nba/src/nba/include
+        ${CMAKE_SOURCE_DIR}/cores/gba/tests/golden/nba/src/
 )
 
 target_compile_definitions(test_arm_gba PUBLIC
