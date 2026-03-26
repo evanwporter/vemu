@@ -50,7 +50,6 @@
   $display("shift_type            : %s", ctrl.shift_type.name()); \
   $display("shift_use_rxx         : %0b", ctrl.shift_use_rxx); \
   $display("shift_amount          : %0d", ctrl.shift_amount); \
-  $display("pipeline_flush        : %0b", ctrl.pipeline_flush); \
   $display("pipeline_advance      : %0b", ctrl.pipeline_advance); \
   $display("----------------------"); \
   $fflush();

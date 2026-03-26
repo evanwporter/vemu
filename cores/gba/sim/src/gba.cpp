@@ -237,6 +237,15 @@ bool GameboyAdvanceHarness::began_instruction() const {
     }
 };
 
+bool GameboyAdvanceHarness::half_tick() {
+    top->clk = 0;
+    top->eval();
+    tfp->dump(ctx.time());
+    ctx.timeInc(5);
+
+    return true;
+}
+
 bool GameboyAdvanceHarness::tick() {
     top->clk = 0;
     top->eval();

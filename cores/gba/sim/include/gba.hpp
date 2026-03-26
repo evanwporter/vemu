@@ -64,6 +64,8 @@ public:
     /// Advances the simulation by one tick (clock).
     bool tick();
 
+    bool half_tick();
+
     /// Advance the simulation by one SM83 instruction.
     bool step();
 

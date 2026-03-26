@@ -238,7 +238,7 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
     testing::internal::CaptureStdout();
     testing::internal::CaptureStderr();
 
-    GameboyAdvanceHarness harness;
+    GameboyAdvanceHarness harness({ true, fs::path(__FILE__).parent_path() / "arm.vcd" });
     ASSERT_TRUE(harness.setup(rom_path)) << "Failed to set up Gameboy Advance harness with ROM: " << rom_path;
 
     size_t step_index = 0;
@@ -358,6 +358,7 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
                 << " actual=" << hex32(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__IR);
 
             if (::testing::Test::HasFailure()) {
+                harness.half_tick();
                 break;
             }
         }
@@ -401,7 +402,7 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
             //     << " actual=" << hex32(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__IR);
 
             if (::testing::Test::HasFailure()) {
-                harness.tick();
+                harness.half_tick();
                 print_debug_mismatch(last_good, expected, actual);
                 break;
             }
