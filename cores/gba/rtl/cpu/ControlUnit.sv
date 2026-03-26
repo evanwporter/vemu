@@ -126,7 +126,7 @@ module GBA_ControlUnit (
     end else if (flush_cnt == 3'd1) begin
       control_signals |= fetch_next_instr();
       control_signals.incrementer_writeback = 1;
-      control_signals.addr_bus_src = ADDR_SRC_PC;
+      control_signals.addr_bus_src = ADDR_SRC_INCR;
       control_signals.pipeline_advance = 1'b1;
 
       $display("[ControlUnit] Flush cycle 2, flushing instruction");
@@ -136,7 +136,7 @@ module GBA_ControlUnit (
       // If the condition check fails, we still want to advance the pipeline and fetch the next instruction
       control_signals |= fetch_next_instr();
       control_signals.incrementer_writeback = 1;
-      control_signals.addr_bus_src = ADDR_SRC_PC;
+      control_signals.addr_bus_src = ADDR_SRC_INCR;
       control_signals.pipeline_advance = 1'b1;
 
       $display(
@@ -762,10 +762,12 @@ module GBA_ControlUnit (
 
           // First cycle: Prefetch and calculate first address
           if (cycle == 8'd0) begin
-            // Perform a prefetch
-            control_signals |= fetch_next_instr();
+            // // Perform a prefetch
+            // control_signals |= fetch_next_instr();
 
-            // Stash address + 4 in PC so we can return later
+            // // Stash address in PC so we can return later
+            // control_signals.stash_addr = 1'b1;
+
             control_signals.incrementer_writeback = 1'b1;
 
             // Update address for next cycle
@@ -962,7 +964,7 @@ module GBA_ControlUnit (
             end else
 
             // Optionally writeback address to Rn and 
-            // fetch first first word from memory
+            // write first first word to memory
             if (cycle == 8'd1) begin
               control_signals.Rp_imm =
                   get_ith_bit(4'(cycle - 8'd1), decoder_bus.word.arm.block.reg_list);
@@ -996,9 +998,9 @@ module GBA_ControlUnit (
                   "[ControlUnit] Cycle 1 of STM instruction, address calculation done, preparing for memory write");
             end else
 
-            // Latch the last fetched word into the register file and 
+            // Write the current register into memory and 
             // increment address for the next memory access
-            if (cycle < 8'd1 + 8'(regs_count)) begin
+            if (cycle < 8'(regs_count)) begin
               control_signals.Rp_imm =
                   get_ith_bit(4'(cycle - 8'd1), decoder_bus.word.arm.block.reg_list);
 
@@ -1014,19 +1016,40 @@ module GBA_ControlUnit (
 
             end else
 
-            // Latch the final fetched word into the register file and 
+            // Write the current register into memory and 
             // update the address bus back to PC for the next instruction
+            if (cycle == 8'(regs_count)) begin
+              control_signals.Rp_imm =
+                  get_ith_bit(4'(cycle - 8'd1), decoder_bus.word.arm.block.reg_list);
+
+              control_signals.B_bus_source = B_BUS_SRC_REG_RP;
+
+              control_signals.addr_bus_src = ADDR_SRC_PC_RESTORE;
+
+              // Write the next word in the block
+              control_signals.memory_write_en = 1'b1;
+
+              $display("[ControlUnit] Cycle %0d of STM instruction, writing register R%0d to data",
+                       cycle, control_signals.Rp_imm);
+
+            end else
+
+            // We do not write this block. Instead we fetch the next instruction
+            // from memory and latch it to the fetched IR
             if (cycle == 8'd1 + 8'(regs_count)) begin
+
+              control_signals |= fetch_next_instr();
+              // control_signals.incrementer_writeback = 1'b1;
 
               control_signals.Rp_imm =
                   get_ith_bit(4'(cycle - 8'd1), decoder_bus.word.arm.block.reg_list);
 
               control_signals.B_bus_source = B_BUS_SRC_REG_RP;
 
-              control_signals.addr_bus_src = ADDR_SRC_PC;
+              control_signals.addr_bus_src = ADDR_SRC_INCR;
 
-              // Write the next word in the block
-              control_signals.memory_write_en = 1'b1;
+              // We do not write the next word in the block
+              control_signals.memory_write_en = 1'b0;
 
               control_signals.pipeline_advance = 1'b1;
 
@@ -1107,12 +1130,15 @@ module GBA_ControlUnit (
 
             // control_signals.ALU_writeback = ALU_WB_REG_RP;
             // control_signals.Rp_imm = 4'd15;
-
+            // pe
             control_signals.B_bus_source = B_BUS_SRC_REG_RN;
 
             control_signals.set_thumb_mode = 1'b1;
 
             control_signals.pipeline_advance = 1'b1;
+
+            $display(
+                "[ControlUnit] Branch Exchange instruction, switching to Thumb mode and updating PC");
           end
         end
 

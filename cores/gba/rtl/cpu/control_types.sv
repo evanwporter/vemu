@@ -8,7 +8,7 @@ import gba_cpu_types_pkg::*;
 
 package gba_control_types_pkg;
 
-  typedef enum logic [1:0] {
+  typedef enum logic [2:0] {
     /// Don't change the current address on the address bus
     ADDR_SRC_NONE,
 
@@ -19,7 +19,11 @@ package gba_control_types_pkg;
     ADDR_SRC_ALU,
 
     /// Increments the current address on the address bus
-    ADDR_SRC_INCR
+    ADDR_SRC_INCR,
+
+    /// Places PC - 4 onto the address bus.
+    /// TODO maybe i can just remove ADDR_SRC_PC and make this the default?
+    ADDR_SRC_PC_RESTORE
   } address_source_t;
 
   typedef enum logic [1:0] {
@@ -217,8 +221,6 @@ package gba_control_types_pkg;
     // ======================================================
     // Pipeline Control
     // ======================================================
-
-    logic pipeline_flush;
 
     /// Control unit will handle the flush instead of the PC triggering one
     logic pipeline_handle_flush;

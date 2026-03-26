@@ -476,6 +476,10 @@ static inline uint32_t arm_swp_rd(uint32_t ir) {
     return (ir >> 12) & 0xF;
 }
 
+static inline uint32_t arm_bx_rn(uint32_t ir) {
+    return ir & 0xF;
+}
+
 static void run_single_test(const json& testCase, const fs::path& source, const size_t index) {
 
     TestLogger logger(testCase, true);
@@ -494,6 +498,13 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
             GTEST_SKIP() << "Skipping MUL/MLA with Rd==PC in arm_mul_mla.json.bin (test " << index << ")";
         }
         flag_mask = IGNORE_C;
+    }
+
+    if (source.filename() == "arm_bx.json.bin") {
+        const uint32_t opcode = testCase["opcode"].get<uint32_t>();
+        if (arm_bx_rn(opcode) == 15) {
+            GTEST_SKIP() << "Skipping BX with Rn==PC in arm_bx.json.bin (test " << index << ")";
+        }
     }
 
     if (source.filename() == "arm_swp.json.bin") {

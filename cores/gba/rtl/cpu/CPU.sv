@@ -263,6 +263,11 @@ module ARM7TMDI (
     instr_boundary <= control_signals.pipeline_advance;
   end
 
+
+  wire pc_modified = (control_signals.ALU_writeback == ALU_WB_REG_RD && decoder_bus.decoded_regs.Rd == 4'd15) ||
+                     (control_signals.ALU_writeback == ALU_WB_REG_RN && decoder_bus.decoded_regs.Rn == 4'd15) ||
+                     (control_signals.ALU_writeback == ALU_WB_REG_RP && control_signals.Rp_imm == 4'd15);
+
   // ======================================================
   // Memory Module
   // ======================================================
@@ -369,9 +374,7 @@ module ARM7TMDI (
         flush_req <= 1'b1;
       end
 
-      if ((control_signals.ALU_writeback == ALU_WB_REG_RD && decoder_bus.decoded_regs.Rd == 4'd15) ||
-          (control_signals.ALU_writeback == ALU_WB_REG_RN && decoder_bus.decoded_regs.Rn == 4'd15) ||
-          (control_signals.ALU_writeback == ALU_WB_REG_RP && control_signals.Rp_imm == 4'd15)) begin
+      if (pc_modified) begin
 
         $display("ALU writeback to PC (R15) detected. ALU_writeback=%0d, Rd=%0d, Rn=%0d",
                  control_signals.ALU_writeback, decoder_bus.decoded_regs.Rd,
@@ -509,6 +512,14 @@ module ARM7TMDI (
             MODE_THUMB: bus.addr <= read_reg(regs, cpu_mode, 15) & ~32'd1;
           endcase
         end
+
+          ADDR_SRC_PC_RESTORE: begin
+            $display("Restoring address bus from PC value: 0x%08x", read_reg(regs, cpu_mode, 15));
+            unique case (execution_mode)
+              MODE_ARM:   bus.addr <= read_reg(regs, cpu_mode, 15) - 32'd4 & ~32'd3;
+              MODE_THUMB: bus.addr <= read_reg(regs, cpu_mode, 15) - 32'd4 & ~32'd1;
+            endcase
+          end
 
         ADDR_SRC_INCR: begin
           unique case (execution_mode)
