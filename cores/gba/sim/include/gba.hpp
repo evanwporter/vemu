@@ -47,10 +47,11 @@ private:
 public:
     struct Options {
         bool skip_boot_rom = false;
+        std::filesystem::path wave_path = "wave.vcd";
     };
 
     GameboyAdvanceHarness() :
-        options(Options { true }) { };
+        options(Options { true, "wave.vcd" }) { };
 
     GameboyAdvanceHarness(Options options) :
         options(options) { }

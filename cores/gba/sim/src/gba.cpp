@@ -37,7 +37,7 @@ bool GameboyAdvanceHarness::setup(const std::filesystem::path& rom_path) {
     Verilated::traceEverOn(true);
 
     top->trace(tfp.get(), 99);
-    tfp->open("wave.vcd");
+    tfp->open(options.wave_path.string().c_str());
 
     cpu.emplace(*top);
 

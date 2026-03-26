@@ -45,6 +45,6 @@ verilate(libgba
         -I${CMAKE_CURRENT_SOURCE_DIR}
         -I${GBA_INCLUDE_DIR}
         -O3
-        # --trace-params
-        # --trace-structs
+        --trace-params
+        --trace-structs
 )

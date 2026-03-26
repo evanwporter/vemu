@@ -432,6 +432,25 @@ static void verify_memory_writes(
     }
 }
 
+static void verify_pipeline(
+    const Varm_cpu_top& top,
+    const json& testCase,
+    const std::string& test_name) {
+
+    const auto& fetched_IR = top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__IR;
+    const auto& executed_IR = top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__decoder_inst__DOT__IR;
+
+    EXPECT_EQ(executed_IR, testCase["final"]["pipeline"][0].get<uint32_t>())
+        << "Decoded instruction mismatch in test " << test_name
+        << ". Expected instruction at PC-8=" << hex32(testCase["final"]["pipeline"][0].get<uint32_t>())
+        << " actual=" << hex32(executed_IR);
+
+    EXPECT_EQ(fetched_IR, testCase["final"]["pipeline"][1].get<uint32_t>())
+        << "Fetched instruction mismatch in test " << test_name
+        << ". Expected instruction at PC-4=" << hex32(testCase["final"]["pipeline"][1].get<uint32_t>())
+        << " actual=" << hex32(fetched_IR);
+};
+
 static inline uint32_t arm_mul_rd(uint32_t ir) {
     // Rd is bits [19:16]
     return (ir >> 16) & 0xF;
@@ -495,7 +514,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
 
     top.trace(&tfp, 99);
 
-    logger.open_waveform("wave.vcd");
+    logger.open_waveform((fs::path(__FILE__).parent_path() / "cpu.vcd").string().c_str());
 
     std::cout << "Cycle 0: Reset Phase 1" << std::endl;
 
@@ -552,8 +571,6 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
         // Check if it flushed the reset correctly and is now ready to begin executing the instruction.
         ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__controlUnit__DOT__flush_cnt, 0);
 
-        const auto pipe1 = testCase["initial"]["pipeline"][1].get<uint32_t>();
-
         // Verify pipeline looks good
         ASSERT_EQ(top.rootp->arm_cpu_top__DOT__cpu_inst__DOT__decoder_inst__DOT__IR, testCase["initial"]["pipeline"][0])
             << "Pipeline stage 2 mismatch in test " << index
@@ -580,8 +597,14 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
             tick(top, tfp, ctx);
         }
 
+        top.clk = 0;
+        top.eval();
+        tfp.dump(ctx.time());
+        ctx.timeInc(5);
+
         verify_registers(top, testCase["final"], std::to_string(index), flag_mask);
         verify_memory_writes(top, testCase, std::to_string(index));
+        // verify_pipeline(top, testCase, std::to_string(index));
     }
 }
 

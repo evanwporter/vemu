@@ -234,7 +234,6 @@ static void compare_states(
 
 TEST(ARM_GBA_Tests, CPUInstrsAll) {
     const fs::path rom_path = fs::path(TEST_DIR) / "arm.gba";
-    const fs::path log_path = R"(C:\Users\evanw\vemu\tests\GBA-Logs\logs\arm-log.bin)";
 
     testing::internal::CaptureStdout();
     testing::internal::CaptureStderr();
@@ -243,9 +242,6 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
     ASSERT_TRUE(harness.setup(rom_path)) << "Failed to set up Gameboy Advance harness with ROM: " << rom_path;
 
     size_t step_index = 0;
-
-    std::ifstream log(log_path, std::ios::binary);
-    ASSERT_TRUE(log) << "Failed to open log file";
 
     std::optional<TraceRow> last_good;
 
@@ -306,10 +302,6 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
     int instructions_executed = 0;
 
     while (true) {
-        if (log.peek() == EOF) {
-            break;
-        }
-
         int max_ticks = 40;
         std::cout << "\n===============================================\n";
         std::cout << "Executing instruction " << instructions_executed << std::endl;
@@ -355,6 +347,16 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
                 << " Fetching instruction mismatch. Instruction at PC-4 expected=" << hex32(instr_fetch)
                 << " actual=" << hex32(nba.impl->GetCPU().GetFetchedOpcode(1));
 
+            EXPECT_EQ(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__decoder_inst__DOT__IR, nba.impl->GetCPU().GetFetchedOpcode(0))
+                << "Step " << step_index
+                << " Decoded instruction mismatch. Expected instruction at PC-8=" << hex32(nba.impl->GetCPU().GetFetchedOpcode(0))
+                << " actual=" << hex32(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__decoder_inst__DOT__IR);
+
+            EXPECT_EQ(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__IR, nba.impl->GetCPU().GetFetchedOpcode(1))
+                << "Step " << step_index
+                << " Fetched instruction mismatch. Expected instruction at PC-4=" << hex32(nba.impl->GetCPU().GetFetchedOpcode(1))
+                << " actual=" << hex32(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__IR);
+
             if (::testing::Test::HasFailure()) {
                 break;
             }
@@ -388,17 +390,18 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
 
             compare_states(expected, actual, last_good);
 
-            EXPECT_EQ(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__decoder_inst__DOT__IR, nba.impl->GetCPU().GetFetchedOpcode(0))
-                << "Step " << step_index
-                << " Decoded instruction mismatch. Expected instruction at PC-8=" << hex32(nba.impl->GetCPU().GetFetchedOpcode(0))
-                << " actual=" << hex32(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__decoder_inst__DOT__IR);
+            // EXPECT_EQ(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__decoder_inst__DOT__IR, nba.impl->GetCPU().GetFetchedOpcode(0))
+            //     << "Step " << step_index
+            //     << " Decoded instruction mismatch. Expected instruction at PC-8=" << hex32(nba.impl->GetCPU().GetFetchedOpcode(0))
+            //     << " actual=" << hex32(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__decoder_inst__DOT__IR);
 
-            EXPECT_EQ(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__IR, nba.impl->GetCPU().GetFetchedOpcode(1))
-                << "Step " << step_index
-                << " Fetched instruction mismatch. Expected instruction at PC-4=" << hex32(nba.impl->GetCPU().GetFetchedOpcode(1))
-                << " actual=" << hex32(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__IR);
+            // EXPECT_EQ(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__IR, nba.impl->GetCPU().GetFetchedOpcode(1))
+            //     << "Step " << step_index
+            //     << " Fetched instruction mismatch. Expected instruction at PC-4=" << hex32(nba.impl->GetCPU().GetFetchedOpcode(1))
+            //     << " actual=" << hex32(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__IR);
 
             if (::testing::Test::HasFailure()) {
+                harness.tick();
                 print_debug_mismatch(last_good, expected, actual);
                 break;
             }
