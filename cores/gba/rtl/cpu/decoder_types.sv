@@ -51,6 +51,12 @@ package gba_cpu_decoder_types_pkg;
     ARM_SMLAL = 4'b0111
   } multiply_opcode_t;
 
+  /// PSR Transfer
+  typedef enum logic {
+    ARM_PSR_CPSR,
+    ARM_PSR_SPSR
+  } psr_transfer_t;
+
   // TODO: make into a union
   typedef union packed {
 
@@ -248,17 +254,48 @@ package gba_cpu_decoder_types_pkg;
     // PSR Transfer
     // ======================================================
 
-    /// MSR (immediate form)
+    /// MSR
     struct packed {
-      logic [11:0] _pad;
+      logic [5:0] _pad;
+
+      // Bit 25
+      logic I;
+
+      // Bit 22
+      // Psr - Source/Destination PSR (0=CPSR, 1=SPSR_<current mode>)
+      psr_transfer_t psr;
+
+      // Bit 19
+      /// write to flags field (bits 31-25)
+      logic f;
+
+      // Bit 18
+      /// write to status field (bits 24-16)
+      logic s;
+
+      // Bit 17
+      /// write to extension field (bits 15-8)
+      logic x;
+
+      // Bit 16
+      /// write to control field (Bits 7-0)
+      logic c;
+
+      // If I = 1, then the lower 12 bits are unused (at least by this struct)
 
       // Bits 11-8
       logic [3:0] rotate;
 
       // Bits 7-0
       logic [7:0] imm8;
-    } psr_imm;
+    } msr;
 
+    struct packed {
+      logic [22:0] _pad;
+
+      // Bits 22
+      psr_transfer_t psr;
+    } mrs;
 
     // ======================================================
     // Software Interrupt

@@ -494,6 +494,14 @@ module ARM7TMDI (
                      control_signals.Rp_imm, alu_bus.result, execution_mode,
                      !control_signals.force_no_align_pc)
         end
+        ALU_WB_REG_CSPR: begin
+          regs.CPSR <= alu_bus.result;
+          $display("Writing back ALU result %0d to CPSR", alu_bus.result);
+        end
+        ALU_WB_REG_SPSR: begin
+          `WRITE_SPSR(regs, cpu_mode, alu_bus.result)
+          $display("Writing back ALU result %0d to SPSR_%0d", alu_bus.result, cpu_mode);
+        end
       endcase
     end
   end

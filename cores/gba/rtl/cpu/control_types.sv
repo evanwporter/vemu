@@ -86,7 +86,11 @@ package gba_control_types_pkg;
     ALU_WB_REG_RN,
 
     /// If set, we need also need to set `Rp_imm`
-    ALU_WB_REG_RP
+    ALU_WB_REG_RP,
+
+    ALU_WB_REG_CSPR,
+
+    ALU_WB_REG_SPSR
   } alu_writeback_source_t;
 
   typedef struct packed {

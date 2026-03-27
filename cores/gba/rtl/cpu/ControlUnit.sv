@@ -1199,6 +1199,26 @@ module GBA_ControlUnit (
             control_signals.pipeline_advance = 1'b1;
           end
         end
+
+        // ============================
+        // PSR Transfer
+        // ============================
+        ARM_INSTR_MRS: begin
+          $display("[ControlUnit] Detected PSR transfer instruction");
+          if (cycle == 8'd0) begin
+            $display("[ControlUnit] MRS instruction, moving CPSR to R%0d",
+                     decoder_bus.decoded_regs.Rd);
+          end
+        end
+
+        ARM_INSTR_MSR: begin
+          $display("[ControlUnit] Detected PSR transfer instruction");
+          if (cycle == 8'd0) begin
+            $display("[ControlUnit] MSR instruction, moving R%0d to CPSR",
+                     decoder_bus.decoded_regs.Rm);
+          end
+        end
+
         default: ;
       endcase
     end

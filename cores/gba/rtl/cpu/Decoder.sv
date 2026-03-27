@@ -185,11 +185,26 @@ module GBA_Decoder (
 
           // PSR Transfer MSR
           32'b????_0001_0?00_1111_????_????_????_????: begin
+            bus.instr_type = ARM_INSTR_MSR;
+
+            bus.word.arm.msr.I = IR[25];
+
+            bus.word.arm.msr.f = IR[19];
+            bus.word.arm.msr.s = IR[18];
+            bus.word.arm.msr.x = IR[17];
+            bus.word.arm.msr.c = IR[16];
+
+            bus.word.arm.msr.rotate = IR[11:8];
+            bus.word.arm.msr.imm8 = IR[7:0];
+
+            bus.word.arm.msr.psr = psr_transfer_t'(IR[22]);
             $display("[GBA_Decoder] Detected MSR instruction with IR=0x%08x", IR);
           end
 
           // PSR Transfer MRS
           32'b????_00?1_0?10_????_1111_????_????_????: begin
+            bus.instr_type = ARM_INSTR_MRS;
+            bus.word.arm.mrs.psr = psr_transfer_t'(IR[22]);
             $display("[GBA_Decoder] Detected MRS instruction with IR=0x%08x", IR);
           end
 
