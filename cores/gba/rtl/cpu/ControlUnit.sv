@@ -175,16 +175,18 @@ module GBA_ControlUnit (
 
             control_signals.pipeline_advance = 1'b1;
 
+            if (decoder_bus.decoded_regs.Rd == 4'd15) begin
+              control_signals.restore_cpsr_from_spsr = decoder_bus.word.arm.data_proc_imm.set_flags;
+              control_signals.addr_bus_src = ADDR_SRC_ALU;
+            end else control_signals.addr_bus_src = ADDR_SRC_INCR;
+
             if (decoder_bus.word.arm.data_proc_imm.align_flag) begin
               control_signals.A_bus_align = 1'b1;
             end
 
-            control_signals.addr_bus_src = ADDR_SRC_PC;
             control_signals |= fetch_next_instr();
             control_signals.incrementer_writeback = 1'b1;
 
-            control_signals.restore_cpsr_from_spsr = decoder_bus.decoded_regs.Rd == 4'd15 & 
-                                                   decoder_bus.word.arm.data_proc_imm.set_flags;
 
             $display("[ControlUnit] Decoding complete, preparing for next instruction");
           end
@@ -231,10 +233,10 @@ module GBA_ControlUnit (
             $display("[ControlUnit] 2 Instr done is %b, cycle is %0d",
                      control_signals.pipeline_advance, cycle);
 
-            control_signals.addr_bus_src = ADDR_SRC_PC;
-
-            control_signals.restore_cpsr_from_spsr = decoder_bus.decoded_regs.Rd == 4'd15 & 
-                                                   decoder_bus.word.arm.data_proc_reg_reg.set_flags;
+            if (decoder_bus.decoded_regs.Rd == 4'd15) begin
+              control_signals.restore_cpsr_from_spsr = decoder_bus.word.arm.data_proc_reg_reg.set_flags;
+              control_signals.addr_bus_src = ADDR_SRC_ALU;
+            end else control_signals.addr_bus_src = ADDR_SRC_INCR;
 
             control_signals.pipeline_advance = 1'b1;
           end
@@ -267,10 +269,10 @@ module GBA_ControlUnit (
 
           control_signals.incrementer_writeback = 1'b1;
 
-          control_signals.addr_bus_src = ADDR_SRC_PC;
-
-          control_signals.restore_cpsr_from_spsr = decoder_bus.decoded_regs.Rd == 4'd15 & 
-                                                   decoder_bus.word.arm.data_proc_reg_imm.set_flags;
+          if (decoder_bus.decoded_regs.Rd == 4'd15) begin
+            control_signals.restore_cpsr_from_spsr = decoder_bus.word.arm.data_proc_reg_imm.set_flags;
+            control_signals.addr_bus_src = ADDR_SRC_ALU;
+          end else control_signals.addr_bus_src = ADDR_SRC_INCR;
 
           control_signals.pipeline_advance = 1'b1;
         end
@@ -629,7 +631,6 @@ module GBA_ControlUnit (
 
               // Load the PC back into the address bus
               control_signals.addr_bus_src   = ADDR_SRC_PC;
-
             end
 
             if (cycle == 8'd2) begin

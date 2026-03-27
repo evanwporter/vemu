@@ -410,8 +410,7 @@ module ARM7TMDI (
 
       if (control_signals.set_thumb_mode) begin
         regs.CPSR[5] <= B_bus[0];
-        `WRITE_REG(regs, cpu_mode, 4'd15, B_bus & ~32'd1, execution_mode,
-                   !control_signals.force_no_align_pc)
+        `WRITE_REG(regs, cpu_mode, 4'd15, B_bus & ~32'd1, execution_mode, 1'b0)
         flush_req <= 1'b1;
         $display("Setting Thumb mode bit in CPSR");
       end
@@ -495,6 +494,22 @@ module ARM7TMDI (
     end else begin
       $display("[CPU] addr=%0d", bus.addr);
 
+      // if (control_signals.pipeline_advance && pc_modified) begin
+      //   bus.addr <= alu_bus.result & ~32'd1;
+      //   $display(
+      //       "Pipeline advance with ALU writeback to PC, setting address bus to ALU result: 0x%08x",
+      //       alu_bus.result);
+      // end else if (control_signals.pipeline_advance && flush_req_pending) begin
+      //   bus.addr <= read_reg(regs, cpu_mode, 15);
+      //   $display(
+      //       "Pipeline advance with pending flush request, setting address bus to PC value: 0x%08x",
+      //       read_reg(regs, cpu_mode, 15));
+      // end else if (control_signals.set_thumb_mode) begin
+      //   bus.addr <= B_bus & ~32'd1;
+      //   $display(
+      //       "Setting address bus to new Thumb mode PC value due to set_thumb_mode control signal, B_bus=0x%08x, addr=0x%08x",
+      //       B_bus, bus.addr);
+      // end else begin
       unique case (control_signals.addr_bus_src)
         ADDR_SRC_NONE: begin
           // bus.addr <= 32'd0;
@@ -513,13 +528,13 @@ module ARM7TMDI (
           endcase
         end
 
-          ADDR_SRC_PC_RESTORE: begin
-            $display("Restoring address bus from PC value: 0x%08x", read_reg(regs, cpu_mode, 15));
-            unique case (execution_mode)
-              MODE_ARM:   bus.addr <= read_reg(regs, cpu_mode, 15) - 32'd4 & ~32'd3;
-              MODE_THUMB: bus.addr <= read_reg(regs, cpu_mode, 15) - 32'd4 & ~32'd1;
-            endcase
-          end
+        ADDR_SRC_PC_RESTORE: begin
+          $display("Restoring address bus from PC value: 0x%08x", read_reg(regs, cpu_mode, 15));
+          unique case (execution_mode)
+            MODE_ARM:   bus.addr <= read_reg(regs, cpu_mode, 15) - 32'd4 & ~32'd3;
+            MODE_THUMB: bus.addr <= read_reg(regs, cpu_mode, 15) - 32'd4 & ~32'd1;
+          endcase
+        end
 
         ADDR_SRC_INCR: begin
           unique case (execution_mode)
@@ -535,5 +550,6 @@ module ARM7TMDI (
       endcase
     end
   end
+  // end
 
 endmodule : ARM7TMDI
