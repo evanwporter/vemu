@@ -884,7 +884,7 @@ module GBA_ControlUnit (
 
             // Latch the last fetched word into the register file and 
             // increment address for the next memory access
-            if (cycle < 8'd1 + 8'(regs_count)) begin
+            if (cycle < 8'(regs_count)) begin
               control_signals.Rp_imm =
                   get_ith_bit(4'(cycle - 8'd2), decoder_bus.word.arm.block.reg_list);
 
@@ -901,11 +901,38 @@ module GBA_ControlUnit (
               control_signals.ALU_op = ALU_OP_MOV;
             end else
 
+            // Latch the last fetched word into the register file and
+            // update the address bus back to PC for the next instruction
+            // So we can fetch next cycle
+            if (cycle == 8'(regs_count)) begin
+              control_signals.Rp_imm =
+                  get_ith_bit(4'(cycle - 8'd2), decoder_bus.word.arm.block.reg_list);
+
+              control_signals.ALU_writeback = ALU_WB_REG_RP;
+
+              control_signals.B_bus_source = B_BUS_SRC_READ_DATA;
+
+              control_signals.addr_bus_src = ADDR_SRC_PC;
+
+              // Read the next word in the block
+              control_signals.memory_read_en = 1'b1;
+
+              // Let the B_bus word pass through the ALU unmodified for the writeback
+              control_signals.ALU_op = ALU_OP_MOV;
+            end else
+
             // Latch the final fetched word into the register file and 
             // update the address bus back to PC for the next instruction
             if (cycle == 8'd1 + 8'(regs_count) && regs_count != 0) begin
 
-              control_signals.addr_bus_src = ADDR_SRC_INCR;
+              // If in the final cycle, r15 is being written too,
+              // then we need to update the address as well.
+
+              if (decoder_bus.word.arm.block.reg_list[15]) begin
+                control_signals.addr_bus_src = ADDR_SRC_ALU;
+              end else begin
+                control_signals.addr_bus_src = ADDR_SRC_INCR;
+              end
 
               control_signals |= fetch_next_instr();
 

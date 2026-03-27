@@ -375,7 +375,7 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
 
         instructions_executed++;
 
-        ASSERT_GT(max_ticks, 0)
+        EXPECT_GT(max_ticks, 0)
             << "Timeout in test.";
 
         if (harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__flush_req) {
