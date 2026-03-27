@@ -227,6 +227,10 @@ package gba_control_types_pkg;
 
     logic pipeline_advance;
 
+    logic memory_latch_early_IR;
+
+    logic memory_advance_early_fetched_IR;
+
   } control_t;
 
 endpackage : gba_control_types_pkg

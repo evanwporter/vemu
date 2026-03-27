@@ -16,6 +16,15 @@ package control_util_pkg;
     return s;
   endfunction : fetch_next_instr
 
+  function automatic control_t fetch_instr_early();
+    control_t s = '0;
+
+    s.memory_read_en = 1'b1;
+    s.memory_latch_early_IR = 1'b1;
+
+    return s;
+  endfunction : fetch_instr_early
+
   function automatic control_t calc_ls_address(logic U, logic P, logic W, logic is_imm,
                                                logic [11:0] imm);
 

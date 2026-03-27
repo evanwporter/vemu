@@ -558,7 +558,7 @@ module GBA_ControlUnit (
             $display("[ControlUnit] Cycle 0 of load/store instruction, calculating address");
 
             // Perform a fetch in this cycle
-            control_signals |= fetch_next_instr();
+            control_signals |= fetch_instr_early();
 
             // Write PC with Address + 1.
             // This ensures that we can return to the correct address after 
@@ -660,12 +660,17 @@ module GBA_ControlUnit (
                 control_signals.memory_signed_transfer = 1'b1;
               end
 
+              control_signals.memory_advance_early_fetched_IR = 1'b1;
+
               // Load the PC back into the address bus
               control_signals.addr_bus_src = ADDR_SRC_PC;
 
             end
           end else if (decoder_bus.instr_type == ARM_INSTR_STR_HALF) begin
             if (cycle == 8'd1) begin
+              $display(
+                  "[ControlUnit] Cycle 1 of store instruction, address calculation done, preparing for memory write");
+
               control_signals.pipeline_advance = 1'b1;
 
               control_signals.B_bus_source = B_BUS_SRC_REG_RD;
@@ -688,6 +693,8 @@ module GBA_ControlUnit (
                 $display("[ControlUnit] Store instruction requires writeback to base register R%0d",
                          decoder_bus.decoded_regs.Rn);
               end
+
+              control_signals.memory_advance_early_fetched_IR = 1'b1;
 
               // Load the PC back into the address bus
               control_signals.addr_bus_src = ADDR_SRC_PC;
@@ -898,7 +905,9 @@ module GBA_ControlUnit (
             // update the address bus back to PC for the next instruction
             if (cycle == 8'd1 + 8'(regs_count) && regs_count != 0) begin
 
-              control_signals.addr_bus_src = ADDR_SRC_PC;
+              control_signals.addr_bus_src = ADDR_SRC_INCR;
+
+              control_signals |= fetch_next_instr();
 
               control_signals.ALU_writeback = ALU_WB_REG_RP;
               control_signals.Rp_imm =

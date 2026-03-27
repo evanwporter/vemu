@@ -16,6 +16,8 @@ module ARM7TMDI (
 
   word_t IR;
 
+  word_t early_fetched_IR;
+
   logic flush_req;
   logic flush_req_pending;
 
@@ -280,10 +282,21 @@ module ARM7TMDI (
       assert (!(control_signals.memory_write_en && control_signals.memory_read_en))
       else $fatal(1, "Both memory_read_en and memory_write_en asserted!");
 
+      if (control_signals.memory_advance_early_fetched_IR) begin
+        IR <= early_fetched_IR;
+        $display("Advancing early fetched IR to main IR: 0x%08x", early_fetched_IR);
+        $fflush();
+      end
+
       if (control_signals.memory_read_en) begin
         if (control_signals.memory_latch_IR) begin
           IR <= bus.rdata;
           $display("Latching IR with value: 0x%08x", bus.rdata);
+          $fflush();
+
+        end else if (control_signals.memory_latch_early_IR) begin
+          early_fetched_IR <= bus.rdata;
+          $display("Latching early fetched IR with value: 0x%08x", bus.rdata);
           $fflush();
 
         end else begin
