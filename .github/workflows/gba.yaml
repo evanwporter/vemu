@@ -89,13 +89,13 @@ jobs:
           - thumb_ldr_str_imm_offset
           - thumb_ldr_str_reg_offset
           - thumb_ldrsb_strb_reg_offset
-          - thumb_ldr_strb_imm_offset
+          - thumb_ldrb_strb_imm_offset
           - thumb_ldrsh_ldrsb_reg_offset
           - thumb_ldrsb_strb_reg_offset
           - thumb_ldrh_strh_imm_offset
-          - thumb_ldr_str_sp_rel_offset
+          - thumb_ldr_str_sp_rel
           - thumb_add_cmp_mov_hi
-          - thumb_add_sub_sp_json
+          - thumb_add_sub_sp
 
     steps:
       - uses: actions/checkout@v4
