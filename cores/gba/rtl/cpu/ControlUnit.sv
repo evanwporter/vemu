@@ -208,11 +208,11 @@ module GBA_ControlUnit (
           if (cycle == 8'd0) begin
             // decoder_bus.enable = 1'b0;
 
-            control_signals |= fetch_next_instr();
+            // control_signals |= fetch_next_instr();
 
             control_signals.incrementer_writeback = 1'b1;
 
-            control_signals.addr_bus_src = ADDR_SRC_INCR;
+            // control_signals.addr_bus_src = ADDR_SRC_INCR;
 
             control_signals.B_bus_source = B_BUS_SRC_REG_RS;
 
@@ -223,6 +223,8 @@ module GBA_ControlUnit (
           end
 
           if (cycle == 8'd1) begin
+            control_signals |= fetch_next_instr();
+
             control_signals.shift_use_latch = 1'b1;
 
             control_signals.B_bus_source = B_BUS_SRC_REG_RM;
