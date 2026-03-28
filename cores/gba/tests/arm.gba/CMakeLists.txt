@@ -14,6 +14,7 @@ target_link_libraries(test_arm_gba PUBLIC
     GameboyAdvanceHarness
     GTest::gtest
     nlohmann_json::nlohmann_json
+    libcommon
 )
 
 target_include_directories(test_arm_gba

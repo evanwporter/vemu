@@ -12,6 +12,7 @@ target_sources(test_cpu_adv
 target_link_libraries(test_cpu_adv PRIVATE
     GTest::gtest
     nlohmann_json::nlohmann_json
+    libcommon
 )
 
 target_include_directories(test_cpu_adv

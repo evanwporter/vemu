@@ -12,6 +12,8 @@
 #include "util/test_config.hpp"
 #include "util/util.hpp"
 
+#include "common/util.hpp"
+
 #include "json_parser.hpp"
 
 using namespace std;
@@ -181,11 +183,6 @@ static inline u8 read_u8(const json& j) {
         return static_cast<u8>(std::stoul(j.get<std::string>(), nullptr, 16));
     }
     return j.get<u8>();
-}
-
-template <typename T>
-static inline bool get_bit(const T value, const unsigned bit) {
-    return static_cast<bool>((value >> bit) & 1u);
 }
 
 static inline u16 read_u16(const json& j) {
@@ -567,7 +564,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
     top.reset = 0;
 
     // If bit 5 (T) is 0, it's ARM mode; if it's 1, it's Thumb mode.
-    const bool thumb_mode = get_bit(testCase["initial"]["CPSR"].get<uint32_t>(), 5);
+    const bool thumb_mode = is_thumb_mode(testCase["initial"]["CPSR"].get<u32>());
 
     std::cout << "\nCycle 1: Reset Phase 2:" << std::endl;
 

@@ -23,6 +23,7 @@ target_link_libraries(test_gba
         test_cpu_adv
         test_arm_gba
         GTest::gtest
+        libcommon
 )
 
 target_compile_definitions(test_gba PRIVATE

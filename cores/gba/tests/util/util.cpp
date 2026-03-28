@@ -50,3 +50,8 @@ std::string get_test_name(const ::testing::TestParamInfo<std::filesystem::path>&
 
     return name;
 };
+
+// If bit 5 (T) is 0, it's ARM mode; if it's 1, it's Thumb mode.
+bool is_thumb_mode(u32 cpsr) {
+    return get_bit(cpsr, 5);
+};
