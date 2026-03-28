@@ -159,6 +159,9 @@ package gba_control_types_pkg;
     /// Used to specify the source for the address bus
     address_source_t addr_bus_src;
 
+    /// Forces address to be incremented by 4
+    logic addr_incr_force_p4;
+
     // ======================================================
     // Memory Module
     // ======================================================

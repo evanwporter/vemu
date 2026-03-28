@@ -855,14 +855,12 @@ module GBA_ControlUnit (
 
               // Increment address for next (sequential) memory access
               control_signals.addr_bus_src = ADDR_SRC_INCR;
+              control_signals.addr_incr_force_p4 = 1'b1;
 
               control_signals.A_bus_source = A_BUS_SRC_IMM;
               control_signals.A_bus_imm = regs_count * 4;
 
               control_signals.ALU_op = decoder_bus.word.arm.block.U ? ALU_OP_ADD : ALU_OP_SUB_REVERSED;
-
-              // First transfer for STMDB post-index must start at base - total + 4
-              control_signals.addr_bus_src = ADDR_SRC_INCR;
 
               if (regs_count == 0) begin
                 control_signals.ALU_use_op_b_latch = 1'b1;
@@ -899,6 +897,7 @@ module GBA_ControlUnit (
               control_signals.B_bus_source = B_BUS_SRC_READ_DATA;
 
               control_signals.addr_bus_src = ADDR_SRC_INCR;
+              control_signals.addr_incr_force_p4 = 1'b1;
 
               // Read the next word in the block
               control_signals.memory_read_en = 1'b1;
@@ -1019,6 +1018,7 @@ module GBA_ControlUnit (
 
               // Increment address for next (sequential) memory access
               control_signals.addr_bus_src = ADDR_SRC_INCR;
+              control_signals.addr_incr_force_p4 = 1'b1;
 
               control_signals.A_bus_source = A_BUS_SRC_IMM;
               control_signals.A_bus_imm = regs_count * 4;
@@ -1050,6 +1050,7 @@ module GBA_ControlUnit (
               control_signals.B_bus_source = B_BUS_SRC_REG_RP;
 
               control_signals.addr_bus_src = ADDR_SRC_INCR;
+              control_signals.addr_incr_force_p4 = 1'b1;
 
               // Write the next word in the block
               control_signals.memory_write_en = 1'b1;

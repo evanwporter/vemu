@@ -583,8 +583,15 @@ module ARM7TMDI (
                 bus.addr <= bus.addr + 32'd4;
               end
               MODE_THUMB: begin
-                bus.addr <= bus.addr + 32'd2;
-                $display("Incrementing address bus for Thumb mode: new addr=%0d", bus.addr);
+                if (control_signals.addr_incr_force_p4) begin
+                  bus.addr <= bus.addr + 32'd4;
+                  $display("Incrementing address bus by 4 due to addr_incr_force_p4: new addr=%0d",
+                           bus.addr);
+                end else begin
+                  bus.addr <= bus.addr + 32'd2;
+                  $display("Incrementing address bus for Thumb mode: new addr=%0d",
+                           bus.addr + 32'd2);
+                end
               end
             endcase
           end
