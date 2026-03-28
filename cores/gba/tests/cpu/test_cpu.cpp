@@ -499,7 +499,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
 
     constexpr uint32_t CPSR_VISIBLE_MASK = (1u << 31) | // N
         (1u << 30) | // Z
-        // (1u << 29) | // C
+        (1u << 29) | // C
         // (1u << 28) | // V
         (1u << 7) | // I
         (1u << 6) | // F
@@ -515,7 +515,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
         if (arm_mul_rd(opcode) == 15 || arm_mul_rs(opcode) == 15 || arm_rm(opcode) == 15) {
             GTEST_SKIP() << "Skipping MUL/MLA with Rd==PC in arm_mul_mla.json.bin (test " << index << ")";
         }
-        flag_mask = IGNORE_C;
+        flag_mask = flag_mask & IGNORE_C;
     }
 
     if (source.filename() == "arm_bx.json.bin") {
