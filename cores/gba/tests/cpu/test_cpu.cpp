@@ -20,21 +20,13 @@ using namespace std;
 namespace fs = std::filesystem;
 using json = nlohmann::json;
 
+using namespace vemu;
+using namespace vemu::gba;
+
 using u8 = uint8_t;
 using u16 = uint16_t;
 
 static const fs::path kTestDir = fs::path(TEST_DIR) / "GameboyAdvanceCPUTests/v1";
-
-static std::string hex32(uint32_t v) {
-    std::ostringstream oss;
-    oss << "0x"
-        << std::uppercase
-        << std::hex
-        << std::setw(8)
-        << std::setfill('0')
-        << v;
-    return oss.str();
-}
 
 static bool should_hex_array(const std::string& key) {
     return key == "R" || key == "R_fiq" || key == "R_svc" || key == "R_abt" || key == "R_irq" || key == "R_und" || key == "SPSR" || key == "pipeline";

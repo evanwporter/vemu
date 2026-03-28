@@ -34,6 +34,9 @@ module ARM7TMDI (
   execution_mode_t execution_mode;
   assign execution_mode = execution_mode_t'(regs.CPSR[5]);
 
+  (* maybe_unused *)
+  wire [15:0] IR_THUMB = IR[15:0];
+
   always_comb begin
     if (control_signals.exception != EXCEPTION_NONE) begin
       // TODO: think about combining with `update_cpsr_mode`

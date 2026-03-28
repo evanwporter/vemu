@@ -10,6 +10,7 @@
 
 #include "decode.hpp"
 #include "gba.hpp"
+#include "util/util.hpp"
 
 #include <nba/config.hpp>
 #include <nba/core.hpp>
@@ -18,6 +19,8 @@
 
 namespace fs = std::filesystem;
 using namespace nba; // TODO: don't use this
+using namespace vemu;
+using namespace vemu::gba;
 
 static std::vector<u8> ReadFile(const std::string& path) {
     std::ifstream file(path, std::ios::binary);
@@ -58,13 +61,9 @@ static uint32_t read_u32_mem(const GameboyAdvanceHarness& h, uint32_t addr) {
         | ((uint32_t)h.read_memory(addr + 3) << 24);
 }
 
-static std::string hex32(uint32_t v) {
-    std::ostringstream oss;
-    oss << "0x"
-        << std::hex << std::uppercase
-        << std::setw(8) << std::setfill('0')
-        << v;
-    return oss.str();
+static u32 read_u16_mem(const GameboyAdvanceHarness& h, uint32_t addr) {
+    return (u32)h.read_memory(addr)
+        | ((u32)h.read_memory(addr + 1) << 8);
 }
 
 static constexpr const char* ANSI_RED = "";
@@ -312,13 +311,22 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
 
             uint32_t pc = actual.r[15];
 
+            bool thumb_mode = is_thumb_mode(actual.cpsr);
+
+            int instr_size = thumb_mode ? 2 : 4;
+
             // ARM pipeline:
             // PC points 8 bytes ahead → instruction being executed is at PC - 8
-            uint32_t instr_addr_exec = pc - 8;
-            uint32_t instr_addr_fetch = pc - 4;
+            u32 instr_addr_exec = pc - (2 * instr_size);
+            u32 instr_addr_fetch = pc - instr_size;
 
-            uint32_t instr_exec = read_u32_mem(harness, instr_addr_exec);
-            uint32_t instr_fetch = read_u32_mem(harness, instr_addr_fetch);
+            u32 instr_exec = thumb_mode
+                ? read_u16_mem(harness, instr_addr_exec)
+                : read_u32_mem(harness, instr_addr_exec);
+
+            u32 instr_fetch = thumb_mode
+                ? read_u16_mem(harness, instr_addr_fetch)
+                : read_u32_mem(harness, instr_addr_fetch);
 
             auto decoded_exec = DecodeARMInstruction(instr_exec);
             auto decoded_fetch = DecodeARMInstruction(instr_fetch);
@@ -330,10 +338,10 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
             std::cout << "Mode          = " << cpu_mode_to_string(mode) << "\n";
             std::cout << "Exec          = " << exec_mode_to_string(actual.cpsr) << "\n";
             std::cout << "Exec Addr     = " << hex32(instr_addr_exec)
-                      << " Instr=" << hex32(instr_exec)
+                      << " Instr=" << (thumb_mode ? hex16(instr_exec) : hex32(instr_exec))
                       << " Type=" << ToString(decoded_exec) << "\n";
             std::cout << "Fetch Addr    = " << hex32(instr_addr_fetch)
-                      << " Instr=" << hex32(instr_fetch)
+                      << " Instr=" << (thumb_mode ? hex16(instr_fetch) : hex32(instr_fetch))
                       << " Type=" << ToString(decoded_fetch) << "\n";
             std::cout << "----------------------------\n";
 

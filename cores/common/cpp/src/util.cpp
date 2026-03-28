@@ -8,16 +8,19 @@
 
 namespace fs = std::filesystem;
 
-std::vector<u8> read_buffer(const fs::path& filename) {
+namespace vemu {
 
-    // Source - https://stackoverflow.com/a/5420568
-    // Posted by Björn Pollex, modified by community. See post 'Timeline' for change history
-    // Retrieved 2026-03-22, License - CC BY-SA 4.0
+    std::vector<u8> read_buffer(const fs::path& filename) {
 
-    std::ifstream input(filename, std::ios::binary);
+        // Source - https://stackoverflow.com/a/5420568
+        // Posted by Björn Pollex, modified by community. See post 'Timeline' for change history
+        // Retrieved 2026-03-22, License - CC BY-SA 4.0
 
-    // copies all data into buffer
-    std::vector<u8> buffer(std::istreambuf_iterator<char>(input), {});
+        std::ifstream input(filename, std::ios::binary);
 
-    return buffer;
+        // copies all data into buffer
+        std::vector<u8> buffer(std::istreambuf_iterator<char>(input), {});
+
+        return buffer;
+    }
 }
