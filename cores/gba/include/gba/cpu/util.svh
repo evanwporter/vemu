@@ -261,6 +261,44 @@
     $fflush(); \
   end
 
+`define DISPLAY_DECODED_MSR(word, regs, instr_type, condition_pass) \
+  begin \
+    $display("---- DECODED WORD (MSR) ----"); \
+    $display("instr_type   = %s", instr_type.name()); \
+    $display("cond pass    = %0d", condition_pass); \
+    $display(""); \
+    $display("Target PSR   = %s", (word).msr.psr.name()); \
+    $display("Fields:"); \
+    $display("  f (flags)  = %0b", (word).msr.f); \
+    $display("  s (status) = %0b", (word).msr.s); \
+    $display("  x (ext)    = %0b", (word).msr.x); \
+    $display("  c (ctrl)   = %0b", (word).msr.c); \
+    $display(""); \
+    if ((word).msr.I) begin \
+      $display("Operand      = immediate"); \
+      $display("  imm8       = 0x%02h", (word).msr.imm8); \
+      $display("  rotate     = %0d (ROR=%0d)", \
+               (word).msr.rotate, (word).msr.rotate << 1); \
+    end else begin \
+      $display("Operand      = register"); \
+      $display("  Rm         = R%0d", (regs).Rm); \
+    end \
+    $display("--------------------------------"); \
+    $fflush(); \
+  end
+
+`define DISPLAY_DECODED_MRS(word, regs, instr_type, condition_pass) \
+  begin \
+    $display("---- DECODED WORD (MRS) ----"); \
+    $display("instr_type   = %s", instr_type.name()); \
+    $display("cond pass    = %0d", condition_pass); \
+    $display(""); \
+    $display("Source PSR   = %s", (word).mrs.psr.name()); \
+    $display("Destination  = R%0d", (regs).Rd); \
+    $display("--------------------------------"); \
+    $fflush(); \
+  end
+
 `define WRITE_REG(REGS, MODE, REGNUM, VALUE, EXEC_MODE, ALIGN_PC) \
   begin \
     unique case (REGNUM) \

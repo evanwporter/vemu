@@ -79,6 +79,8 @@ jobs:
           - arm_swi
           - arm_mul_mla
           - arm_swp
+          - arm_mrs
+          - arm_msr_imm
           - thumb_add_sub
           - thumb_mov_cmp_add_sub
           - thumb_data_proc

@@ -86,6 +86,12 @@ module GBA_ControlUnit (
       end else if (decoder_bus.instr_type == ARM_INSTR_MULTIPLY) begin
         `DISPLAY_DECODED_MULT(decoder_bus.word.arm, decoder_bus.decoded_regs,
                               decoder_bus.instr_type, decoder_bus.condition_pass)
+      end else if (decoder_bus.instr_type == ARM_INSTR_MSR) begin
+        `DISPLAY_DECODED_MSR(decoder_bus.word.arm, decoder_bus.decoded_regs,
+                             decoder_bus.instr_type, decoder_bus.condition_pass)
+      end else if (decoder_bus.instr_type == ARM_INSTR_MRS) begin
+        `DISPLAY_DECODED_MRS(decoder_bus.word.arm, decoder_bus.decoded_regs,
+                             decoder_bus.instr_type, decoder_bus.condition_pass)
       end else begin
         $display("[ControlUnit] Decoded instruction type is undefined");
       end
@@ -1206,6 +1212,29 @@ module GBA_ControlUnit (
         ARM_INSTR_MRS: begin
           $display("[ControlUnit] Detected PSR transfer instruction");
           if (cycle == 8'd0) begin
+            unique case (decoder_bus.word.arm.mrs.psr)
+              ARM_PSR_CPSR: begin
+                control_signals.B_bus_source = B_BUS_SRC_CPSR;
+              end
+
+              ARM_PSR_SPSR: begin
+                control_signals.B_bus_source = B_BUS_SRC_SPSR;
+                $display(
+                    "[ControlUnit] MRS instruction accessing SPSR, only valid in privileged modes");
+              end
+            endcase
+
+            $display("[ControlUnit] Detected MRS instruction accessing %s",
+                     decoder_bus.word.arm.mrs.psr == ARM_PSR_CPSR ? "CPSR" : "SPSR");
+
+            control_signals |= fetch_next_instr();
+            control_signals.pipeline_advance = 1'b1;
+            control_signals.incrementer_writeback = 1'b1;
+            control_signals.addr_bus_src = ADDR_SRC_INCR;
+
+            control_signals.ALU_op = ALU_OP_MOV;
+            control_signals.ALU_writeback = ALU_WB_REG_RD;
+
             $display("[ControlUnit] MRS instruction, moving CPSR to R%0d",
                      decoder_bus.decoded_regs.Rd);
           end
@@ -1216,6 +1245,40 @@ module GBA_ControlUnit (
           if (cycle == 8'd0) begin
             $display("[ControlUnit] MSR instruction, moving R%0d to CPSR",
                      decoder_bus.decoded_regs.Rm);
+            control_signals.ALU_op = ALU_OP_MOV;
+
+            control_signals |= fetch_next_instr();
+            control_signals.pipeline_advance = 1'b1;
+            control_signals.incrementer_writeback = 1'b1;
+            control_signals.addr_bus_src = ADDR_SRC_INCR;
+
+            control_signals.status_reg_write_mask = {
+              decoder_bus.word.arm.msr.f,
+              decoder_bus.word.arm.msr.s,
+              decoder_bus.word.arm.msr.x,
+              decoder_bus.word.arm.msr.c
+            };
+
+            unique case (decoder_bus.word.arm.msr.psr)
+              ARM_PSR_CPSR: begin
+                control_signals.ALU_writeback = ALU_WB_REG_CSPR;
+              end
+
+              ARM_PSR_SPSR: begin
+                control_signals.ALU_writeback = ALU_WB_REG_SPSR;
+              end
+            endcase
+
+            if (decoder_bus.word.arm.msr.I) begin
+              control_signals.B_bus_source = B_BUS_SRC_IMM;
+              control_signals.B_bus_imm = {16'd0, decoder_bus.word.arm.msr.imm8};
+              control_signals.shift_type = SHIFT_ROR;
+              control_signals.shift_amount = decoder_bus.word.arm.msr.rotate << 1;
+            end else begin
+              control_signals.B_bus_source = B_BUS_SRC_REG_RM;
+              control_signals.shift_type   = SHIFT_LSL;
+              control_signals.shift_amount = 5'd0;
+            end
           end
         end
 

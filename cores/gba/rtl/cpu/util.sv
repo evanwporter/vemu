@@ -137,17 +137,29 @@ package gba_cpu_util_pkg;
     return 4'd0;
   endfunction : get_ith_bit
 
-  function automatic logic [4:0] update_cspr_mode(input exception_t exception);
+  function automatic logic [4:0] update_cpsr_mode(input exception_t exception);
     unique case (exception)
-      EXCEPTION_NONE: update_cspr_mode = 5'b10000;  // USR
-      EXCEPTION_RESET: update_cspr_mode = 5'b10000;  // TODO
-      EXCEPTION_UNDEFINED: update_cspr_mode = 5'b11011;  // UND
-      EXCEPTION_SWI: update_cspr_mode = 5'b10011;  // SVC
-      EXCEPTION_PABT: update_cspr_mode = 5'b10111;  // ABT
-      EXCEPTION_DABT: update_cspr_mode = 5'b10111;  // ABT
-      EXCEPTION_IRQ: update_cspr_mode = 5'b10010;  // IRQ
-      EXCEPTION_FIQ: update_cspr_mode = 5'b10001;  // FIQ
+      EXCEPTION_NONE: update_cpsr_mode = 5'b10000;  // USR
+      EXCEPTION_RESET: update_cpsr_mode = 5'b10000;  // TODO
+      EXCEPTION_UNDEFINED: update_cpsr_mode = 5'b11011;  // UND
+      EXCEPTION_SWI: update_cpsr_mode = 5'b10011;  // SVC
+      EXCEPTION_PABT: update_cpsr_mode = 5'b10111;  // ABT
+      EXCEPTION_DABT: update_cpsr_mode = 5'b10111;  // ABT
+      EXCEPTION_IRQ: update_cpsr_mode = 5'b10010;  // IRQ
+      EXCEPTION_FIQ: update_cpsr_mode = 5'b10001;  // FIQ
     endcase
-  endfunction : update_cspr_mode
+  endfunction : update_cpsr_mode
+
+  function automatic word_t apply_status_mask(input word_t write_data, input word_t status,
+                                              input logic [3:0] mask);
+    word_t result = status;
+
+    if (mask[3]) result[31:24] = write_data[31:24];  // flags
+    if (mask[2]) result[23:16] = write_data[23:16];  // status
+    if (mask[1]) result[15:8] = write_data[15:8];  // extension
+    if (mask[0]) result[7:0] = write_data[7:0];  // control
+
+    return result;
+  endfunction
 
 endpackage : gba_cpu_util_pkg

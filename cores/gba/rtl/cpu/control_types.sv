@@ -69,7 +69,11 @@ package gba_control_types_pkg;
     B_BUS_SRC_REG_RP,
 
     /// Read data from output of multiplier unit
-    B_BUS_SRC_MULTIPLIER
+    B_BUS_SRC_MULTIPLIER,
+
+    B_BUS_SRC_CPSR,
+
+    B_BUS_SRC_SPSR
 
   } B_bus_source_t;
 
@@ -204,6 +208,8 @@ package gba_control_types_pkg;
 
     /// The ALU operation to perform in the current cycle
     alu_op_t ALU_op;
+
+    logic [3:0] status_reg_write_mask;
 
     // ======================================================
     // Barrel Shifter

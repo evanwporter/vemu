@@ -36,7 +36,7 @@ module ARM7TMDI (
 
   always_comb begin
     if (control_signals.exception != EXCEPTION_NONE) begin
-      // TODO: think about combining with `update_cspr_mode`
+      // TODO: think about combining with `update_cpsr_mode`
       unique case (control_signals.exception)
         EXCEPTION_NONE: cpu_mode = CPU_MODE_USR;  // Impossible to reach
         EXCEPTION_RESET: cpu_mode = CPU_MODE_USR;  // TODO;
@@ -256,6 +256,16 @@ module ARM7TMDI (
       B_BUS_SRC_MULTIPLIER: begin
         B_bus = multiplier_bus.result;
       end
+
+      B_BUS_SRC_CPSR: begin
+        B_bus = regs.CPSR;
+        $display("Driving B bus with value from CPSR: 0x%08x", B_bus);
+      end
+
+      B_BUS_SRC_SPSR: begin
+        B_bus = read_spsr(regs, cpu_mode);
+        $display("Driving B bus with value from SPSR: 0x%08x", B_bus);
+      end
     endcase
   end
 
@@ -463,7 +473,7 @@ module ARM7TMDI (
 
         regs.CPSR[7] <= 1'b1;  // Disable IRQ
 
-        regs.CPSR[4:0] <= update_cspr_mode(control_signals.exception);
+        regs.CPSR[4:0] <= update_cpsr_mode(control_signals.exception);
 
         flush_req <= 1'b1;
 
@@ -495,11 +505,28 @@ module ARM7TMDI (
                      !control_signals.force_no_align_pc)
         end
         ALU_WB_REG_CSPR: begin
-          regs.CPSR <= alu_bus.result;
-          $display("Writing back ALU result %0d to CPSR", alu_bus.result);
+          logic [3:0] mask;
+
+          mask = control_signals.status_reg_write_mask;
+
+          // In general the extension bits should never get written to
+          // since on ARMv3 they are unused.
+          mask[1] = 1'b0;  // x (extension)
+
+          // Restrict writes in User mode
+          if (cpu_mode == CPU_MODE_USR) begin
+            mask[2] = 1'b0;  // s (status)
+            mask[0] = 1'b0;  // c (control)
+          end
+
+          regs.CPSR <= apply_status_mask(alu_bus.result, regs.CPSR, mask);
+
+          $display("Writing back ALU result %0d to CPSR (masked=%b)", alu_bus.result, mask);
         end
         ALU_WB_REG_SPSR: begin
-          `WRITE_SPSR(regs, cpu_mode, alu_bus.result)
+          `WRITE_SPSR(
+              regs, cpu_mode, apply_status_mask(
+              alu_bus.result, read_spsr(regs, cpu_mode), control_signals.status_reg_write_mask))
           $display("Writing back ALU result %0d to SPSR_%0d", alu_bus.result, cpu_mode);
         end
       endcase

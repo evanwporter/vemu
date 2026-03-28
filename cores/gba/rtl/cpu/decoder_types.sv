@@ -262,7 +262,7 @@ package gba_cpu_decoder_types_pkg;
       logic I;
 
       // Bit 22
-      // Psr - Source/Destination PSR (0=CPSR, 1=SPSR_<current mode>)
+      /// (0=CPSR, 1=SPSR_<current mode>)
       psr_transfer_t psr;
 
       // Bit 19
