@@ -81,6 +81,7 @@ jobs:
           - arm_swp
           - arm_mrs
           - arm_msr_imm
+          - arm_msr_reg
           - thumb_add_sub
           - thumb_mov_cmp_add_sub
           - thumb_data_proc

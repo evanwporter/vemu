@@ -343,8 +343,8 @@ static void check_cpsr(const string& test_name, const Varm_cpu_top_cpu_regs_t__s
            << " (exp " << flag(exp, 5) << ")\n";
 
         ss << "\nMode:\n";
-        ss << "  Actual mode    : 0x" << std::hex << (actual & 0x1F) << "\n";
-        ss << "  Expected mode  : 0x" << std::hex << (exp & 0x1F) << "\n";
+        ss << "  Actual mode    : 0b" << std::bitset<5>(actual & 0x1F) << "\n";
+        ss << "  Expected mode  : 0b" << std::bitset<5>(exp & 0x1F) << "\n";
 
         ss << "==========================\n";
 
@@ -504,7 +504,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
         (1u << 7) | // I
         (1u << 6) | // F
         (1u << 5) | // T
-        (0x1Fu); // Mode bits [4:0]
+        (0xFu); // Mode bits [3:0]
 
     uint32_t flag_mask = CPSR_VISIBLE_MASK;
 
