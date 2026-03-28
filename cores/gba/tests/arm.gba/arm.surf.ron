@@ -31,10 +31,8 @@
                 "TOP",
                 "GameboyAdvance",
                 "cpu_inst",
-                "controlUnit",
-                "control_signals",
             ],
-            id: Wellen((107)),
+            id: Wellen((44)),
         ))),
         items_tree: (
             items: [
@@ -135,6 +133,18 @@
                     selected: false,
                 ),
                 (
+                    item_ref: (34),
+                    level: 0,
+                    unfolded: true,
+                    selected: true,
+                ),
+                (
+                    item_ref: (33),
+                    level: 0,
+                    unfolded: true,
+                    selected: false,
+                ),
+                (
                     item_ref: (15),
                     level: 0,
                     unfolded: true,
@@ -179,38 +189,37 @@
             ],
         ),
         displayed_items: {
-            (11): Variable((
+            (29): Marker((
+                color: None,
+                background_color: None,
+                name: Some("End of Instr 6"),
+                idx: 8,
+            )),
+            (10): Variable((
                 variable_ref: (
                     path: (
                         strs: [
                             "TOP",
                             "GameboyAdvance",
                             "cpu_inst",
-                            "decoder_inst",
                         ],
-                        id: Wellen((111)),
+                        id: Wellen((44)),
                     ),
                     name: "IR",
-                    id: Wellen((706)),
+                    id: Wellen((349)),
                     index: None,
                 ),
                 color: None,
                 background_color: None,
-                display_name: "…decoder_inst.IR [31:0]",
+                display_name: "…cpu_inst.IR [31:0]",
                 display_name_type: Unique,
-                manual_name: Some("Decoder IR"),
+                manual_name: Some("CPU IR"),
                 format: None,
                 field_formats: [],
                 height_scaling_factor: None,
                 analog: None,
             )),
-            (18): Marker((
-                color: None,
-                background_color: None,
-                name: Some("End of Instr 2"),
-                idx: 4,
-            )),
-            (7): Variable((
+            (8): Variable((
                 variable_ref: (
                     path: (
                         strs: [
@@ -218,19 +227,25 @@
                         ],
                         id: Wellen((2)),
                     ),
-                    name: "reset",
-                    id: Wellen((2)),
+                    name: "clk",
+                    id: Wellen((1)),
                     index: None,
                 ),
                 color: None,
                 background_color: None,
-                display_name: "reset",
+                display_name: "clk",
                 display_name_type: Unique,
                 manual_name: None,
                 format: None,
                 field_formats: [],
                 height_scaling_factor: None,
                 analog: None,
+            )),
+            (17): Marker((
+                color: None,
+                background_color: None,
+                name: Some("End of Instr 1"),
+                idx: 3,
             )),
             (14): Variable((
                 variable_ref: (
@@ -245,7 +260,7 @@
                         id: Wellen((49)),
                     ),
                     name: "r15",
-                    id: Wellen((367)),
+                    id: Wellen((368)),
                     index: None,
                 ),
                 color: None,
@@ -258,23 +273,35 @@
                 height_scaling_factor: None,
                 analog: None,
             )),
-            (21): Variable((
+            (16): Marker((
+                color: None,
+                background_color: None,
+                name: Some("End of Instr 0"),
+                idx: 2,
+            )),
+            (28): Marker((
+                color: None,
+                background_color: None,
+                name: Some("End of Instr 5"),
+                idx: 7,
+            )),
+            (15): Variable((
                 variable_ref: (
                     path: (
                         strs: [
                             "TOP",
                             "GameboyAdvance",
-                            "cpu_bus",
+                            "cpu_inst",
                         ],
-                        id: Wellen((10)),
+                        id: Wellen((44)),
                     ),
-                    name: "read_en",
-                    id: Wellen((81)),
+                    name: "flush_req",
+                    id: Wellen((351)),
                     index: None,
                 ),
                 color: None,
                 background_color: None,
-                display_name: "read_en",
+                display_name: "flush_req",
                 display_name_type: Unique,
                 manual_name: None,
                 format: None,
@@ -282,7 +309,13 @@
                 height_scaling_factor: None,
                 analog: None,
             )),
-            (9): Variable((
+            (26): Marker((
+                color: None,
+                background_color: None,
+                name: Some("End of Instr 3"),
+                idx: 5,
+            )),
+            (22): Variable((
                 variable_ref: (
                     path: (
                         strs: [
@@ -292,25 +325,19 @@
                         ],
                         id: Wellen((10)),
                     ),
-                    name: "addr",
-                    id: Wellen((78)),
+                    name: "write_en",
+                    id: Wellen((82)),
                     index: None,
                 ),
                 color: None,
                 background_color: None,
-                display_name: "addr [31:0]",
+                display_name: "write_en",
                 display_name_type: Unique,
-                manual_name: Some("CPU Address"),
+                manual_name: None,
                 format: None,
                 field_formats: [],
                 height_scaling_factor: None,
                 analog: None,
-            )),
-            (27): Marker((
-                color: None,
-                background_color: None,
-                name: Some("End of Instr 4"),
-                idx: 6,
             )),
             (25): Variable((
                 variable_ref: (
@@ -337,34 +364,6 @@
                 height_scaling_factor: None,
                 analog: None,
             )),
-            (26): Marker((
-                color: None,
-                background_color: None,
-                name: Some("End of Instr 3"),
-                idx: 5,
-            )),
-            (8): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "TOP",
-                        ],
-                        id: Wellen((2)),
-                    ),
-                    name: "clk",
-                    id: Wellen((1)),
-                    index: None,
-                ),
-                color: None,
-                background_color: None,
-                display_name: "clk",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-                analog: None,
-            )),
             (32): Variable((
                 variable_ref: (
                     path: (
@@ -375,15 +374,67 @@
                             "controlUnit",
                             "control_signals",
                         ],
-                        id: Wellen((107)),
+                        id: Wellen((109)),
                     ),
                     name: "addr_bus_src",
-                    id: Wellen((606)),
+                    id: Wellen((624)),
                     index: None,
                 ),
                 color: None,
                 background_color: None,
                 display_name: "addr_bus_src [2:0]",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+                analog: None,
+            )),
+            (12): Marker((
+                color: None,
+                background_color: None,
+                name: Some("End of Reset"),
+                idx: 0,
+            )),
+            (9): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "TOP",
+                            "GameboyAdvance",
+                            "cpu_bus",
+                        ],
+                        id: Wellen((10)),
+                    ),
+                    name: "addr",
+                    id: Wellen((78)),
+                    index: None,
+                ),
+                color: None,
+                background_color: None,
+                display_name: "addr [31:0]",
+                display_name_type: Unique,
+                manual_name: Some("CPU Address"),
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+                analog: None,
+            )),
+            (7): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "TOP",
+                        ],
+                        id: Wellen((2)),
+                    ),
+                    name: "reset",
+                    id: Wellen((2)),
+                    index: None,
+                ),
+                color: None,
+                background_color: None,
+                display_name: "reset",
                 display_name_type: Unique,
                 manual_name: None,
                 format: None,
@@ -402,54 +453,12 @@
                         id: Wellen((44)),
                     ),
                     name: "flush_req_pending",
-                    id: Wellen((351)),
+                    id: Wellen((352)),
                     index: None,
                 ),
                 color: None,
                 background_color: None,
                 display_name: "flush_req_pending",
-                display_name_type: Unique,
-                manual_name: None,
-                format: None,
-                field_formats: [],
-                height_scaling_factor: None,
-                analog: None,
-            )),
-            (12): Marker((
-                color: None,
-                background_color: None,
-                name: Some("End of Reset"),
-                idx: 0,
-            )),
-            (29): Marker((
-                color: None,
-                background_color: None,
-                name: Some("End of Instr 6"),
-                idx: 8,
-            )),
-            (16): Marker((
-                color: None,
-                background_color: None,
-                name: Some("End of Instr 0"),
-                idx: 2,
-            )),
-            (15): Variable((
-                variable_ref: (
-                    path: (
-                        strs: [
-                            "TOP",
-                            "GameboyAdvance",
-                            "cpu_inst",
-                        ],
-                        id: Wellen((44)),
-                    ),
-                    name: "flush_req",
-                    id: Wellen((350)),
-                    index: None,
-                ),
-                color: None,
-                background_color: None,
-                display_name: "flush_req",
                 display_name_type: Unique,
                 manual_name: None,
                 format: None,
@@ -463,43 +472,44 @@
                 name: Some("End of Flush"),
                 idx: 1,
             )),
-            (28): Marker((
-                color: None,
-                background_color: None,
-                name: Some("End of Instr 5"),
-                idx: 7,
-            )),
-            (22): Variable((
+            (11): Variable((
                 variable_ref: (
                     path: (
                         strs: [
                             "TOP",
                             "GameboyAdvance",
-                            "cpu_bus",
+                            "cpu_inst",
+                            "decoder_inst",
                         ],
-                        id: Wellen((10)),
+                        id: Wellen((113)),
                     ),
-                    name: "write_en",
-                    id: Wellen((82)),
+                    name: "IR",
+                    id: Wellen((733)),
                     index: None,
                 ),
                 color: None,
                 background_color: None,
-                display_name: "write_en",
+                display_name: "…decoder_inst.IR [31:0]",
                 display_name_type: Unique,
-                manual_name: None,
+                manual_name: Some("Decoder IR"),
                 format: None,
                 field_formats: [],
                 height_scaling_factor: None,
                 analog: None,
             )),
-            (30): Marker((
+            (18): Marker((
                 color: None,
                 background_color: None,
-                name: Some("End of Instr 7"),
-                idx: 9,
+                name: Some("End of Instr 2"),
+                idx: 4,
             )),
-            (10): Variable((
+            (27): Marker((
+                color: None,
+                background_color: None,
+                name: Some("End of Instr 4"),
+                idx: 6,
+            )),
+            (34): Variable((
                 variable_ref: (
                     path: (
                         strs: [
@@ -509,15 +519,15 @@
                         ],
                         id: Wellen((44)),
                     ),
-                    name: "IR",
-                    id: Wellen((348)),
+                    name: "IR_THUMB",
+                    id: Wellen((395)),
                     index: None,
                 ),
                 color: None,
                 background_color: None,
-                display_name: "…cpu_inst.IR [31:0]",
+                display_name: "…cpu_inst.IR_THUMB [15:0]",
                 display_name_type: Unique,
-                manual_name: Some("CPU IR"),
+                manual_name: Some("CPU IR THUMB"),
                 format: None,
                 field_formats: [],
                 height_scaling_factor: None,
@@ -535,7 +545,7 @@
                         id: Wellen((46)),
                     ),
                     name: "pipeline_advance",
-                    id: Wellen((345)),
+                    id: Wellen((346)),
                     index: None,
                 ),
                 color: None,
@@ -548,18 +558,67 @@
                 height_scaling_factor: None,
                 analog: None,
             )),
-            (17): Marker((
+            (33): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "TOP",
+                            "GameboyAdvance",
+                            "cpu_inst",
+                            "decoder_inst",
+                        ],
+                        id: Wellen((113)),
+                    ),
+                    name: "IR_THUMB",
+                    id: Wellen((735)),
+                    index: None,
+                ),
                 color: None,
                 background_color: None,
-                name: Some("End of Instr 1"),
-                idx: 3,
+                display_name: "…decoder_inst.IR_THUMB [15:0]",
+                display_name_type: Unique,
+                manual_name: Some("Decoder IR THUMB"),
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+                analog: None,
+            )),
+            (30): Marker((
+                color: None,
+                background_color: None,
+                name: Some("End of Instr 7"),
+                idx: 9,
+            )),
+            (21): Variable((
+                variable_ref: (
+                    path: (
+                        strs: [
+                            "TOP",
+                            "GameboyAdvance",
+                            "cpu_bus",
+                        ],
+                        id: Wellen((10)),
+                    ),
+                    name: "read_en",
+                    id: Wellen((81)),
+                    index: None,
+                ),
+                color: None,
+                background_color: None,
+                display_name: "read_en",
+                display_name_type: Unique,
+                manual_name: None,
+                format: None,
+                field_formats: [],
+                height_scaling_factor: None,
+                analog: None,
             )),
         },
-        display_item_ref_counter: 32,
+        display_item_ref_counter: 34,
         viewports: [
             (
-                curr_left: (0.16592594160857077),
-                curr_right: (0.46222223790486794),
+                curr_left: (0.984737118854616),
+                curr_right: (0.9968148156544682),
                 target_left: (0.1588888883215408),
                 target_right: (0.19592592535857792),
                 move_start_left: (0.1588888883215408),
@@ -569,20 +628,14 @@
             ),
         ],
         cursor: Some((1, [
-            251,
+            1865,
         ])),
         markers: {
-            7: (1, [
-                185,
-            ]),
             4: (1, [
                 155,
             ]),
-            5: (1, [
-                165,
-            ]),
-            2: (1, [
-                65,
+            7: (1, [
+                185,
             ]),
             1: (1, [
                 35,
@@ -590,20 +643,26 @@
             6: (1, [
                 175,
             ]),
+            0: (1, [
+                15,
+            ]),
+            5: (1, [
+                165,
+            ]),
+            2: (1, [
+                65,
+            ]),
+            8: (1, [
+                205,
+            ]),
             3: (1, [
                 105,
             ]),
             9: (1, [
                 275,
             ]),
-            8: (1, [
-                205,
-            ]),
-            0: (1, [
-                15,
-            ]),
         },
-        focused_item: None,
+        focused_item: Some((16)),
         focused_transaction: (None, None),
         default_variable_name_type: Unique,
         scroll_offset: 0.0,
@@ -612,7 +671,10 @@
     )),
     drag_started: false,
     drag_source_idx: None,
-    drag_target_idx: None,
+    drag_target_idx: Some((
+        before: (16),
+        level: 0,
+    )),
     previous_waves: None,
     count: None,
     blacklisted_translators: [],

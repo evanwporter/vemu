@@ -355,15 +355,22 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
                 << " Fetching instruction mismatch. Instruction at PC-4 expected=" << hex32(instr_fetch)
                 << " actual=" << hex32(nba.impl->GetCPU().GetFetchedOpcode(1));
 
-            EXPECT_EQ(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__decoder_inst__DOT__IR, nba.impl->GetCPU().GetFetchedOpcode(0))
+            auto mask_thumb = [&](uint32_t v) {
+                return thumb_mode ? (v & 0xFFFF) : v;
+            };
+
+            u32 decoder_inst_IR = mask_thumb(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__decoder_inst__DOT__IR);
+            u32 cpu_inst_IR = mask_thumb(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__IR);
+
+            EXPECT_EQ(decoder_inst_IR, nba.impl->GetCPU().GetFetchedOpcode(0))
                 << "Step " << step_index
                 << " Decoded instruction mismatch. Expected instruction at PC-8=" << hex32(nba.impl->GetCPU().GetFetchedOpcode(0))
-                << " actual=" << hex32(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__decoder_inst__DOT__IR);
+                << " actual=" << hex32(decoder_inst_IR);
 
-            EXPECT_EQ(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__IR, nba.impl->GetCPU().GetFetchedOpcode(1))
+            EXPECT_EQ(cpu_inst_IR, nba.impl->GetCPU().GetFetchedOpcode(1))
                 << "Step " << step_index
                 << " Fetched instruction mismatch. Expected instruction at PC-4=" << hex32(nba.impl->GetCPU().GetFetchedOpcode(1))
-                << " actual=" << hex32(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__IR);
+                << " actual=" << hex32(cpu_inst_IR);
 
             if (::testing::Test::HasFailure()) {
                 harness.half_tick();
