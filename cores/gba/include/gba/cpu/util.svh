@@ -78,7 +78,7 @@
   begin \
     $display("---- DECODED WORD (DATAPROC_REG_IMM) ----");                 \
     // $display("IR          = 0x%08x", (word).IR);                           \
-    $display("opcode      = %0d",   (word).data_proc_reg_imm.opcode); \
+    $display("opcode      = %s",    (word).data_proc_reg_imm.opcode); \
     $display("S bit       = %0b",   (word).data_proc_reg_imm.set_flags); \
     $display("Rn          = R%0d",  (regs).Rn);                            \
     $display("Rd          = R%0d",  (regs).Rd);                            \

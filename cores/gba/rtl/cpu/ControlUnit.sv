@@ -263,8 +263,8 @@ module GBA_ControlUnit (
 
           control_signals.ALU_op = alu_op_t'(decoder_bus.word.arm.data_proc_reg_imm.opcode);
 
-          control_signals.ALU_writeback = gba_cpu_util_pkg::get_alu_writeback(
-              alu_op_t'(decoder_bus.word.arm.data_proc_reg_imm.opcode));
+          control_signals.ALU_writeback =
+              gba_cpu_util_pkg::get_alu_writeback(decoder_bus.word.arm.data_proc_reg_imm.opcode);
           control_signals.ALU_set_flags = decoder_bus.word.arm.data_proc_reg_imm.set_flags;
 
           if (decoder_bus.word.arm.data_proc_reg_imm.shift_type == SHIFT_ROR &&
@@ -275,12 +275,19 @@ module GBA_ControlUnit (
 
           control_signals |= fetch_next_instr();
 
-          control_signals.incrementer_writeback = 1'b1;
-
           if (decoder_bus.decoded_regs.Rd == 4'd15) begin
             control_signals.restore_cpsr_from_spsr = decoder_bus.word.arm.data_proc_reg_imm.set_flags;
+          end
+
+          if (gba_cpu_util_pkg::get_alu_writeback(
+                  decoder_bus.word.arm.data_proc_reg_imm.opcode
+              ) == ALU_WB_REG_RD && decoder_bus.decoded_regs.Rd == 4'd15) begin
+            control_signals.restore_cpsr_from_spsr = decoder_bus.word.arm.data_proc_reg_imm.set_flags;
             control_signals.addr_bus_src = ADDR_SRC_ALU;
-          end else control_signals.addr_bus_src = ADDR_SRC_INCR;
+          end else begin
+            control_signals.incrementer_writeback = 1'b1;
+            control_signals.addr_bus_src = ADDR_SRC_INCR;
+          end
 
           control_signals.pipeline_advance = 1'b1;
         end

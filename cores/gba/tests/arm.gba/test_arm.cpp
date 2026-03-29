@@ -182,7 +182,6 @@ static TraceRow capture_nba_state(nba::core::Core* core_impl, size_t step_index)
     row.r[14] = s.r14;
     row.r[15] = s.r15;
 
-    // Adjust these two field accesses if your NBA checkout names them differently.
     row.cpsr = s.cpsr.v;
     row.spsr = s.spsr[0].v; // todo: get correct mode
 

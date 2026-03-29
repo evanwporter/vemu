@@ -278,11 +278,6 @@ module ARM7TMDI (
     instr_boundary <= control_signals.pipeline_advance;
   end
 
-
-  wire pc_modified = (control_signals.ALU_writeback == ALU_WB_REG_RD && decoder_bus.decoded_regs.Rd == 4'd15) ||
-                     (control_signals.ALU_writeback == ALU_WB_REG_RN && decoder_bus.decoded_regs.Rn == 4'd15) ||
-                     (control_signals.ALU_writeback == ALU_WB_REG_RP && control_signals.Rp_imm == 4'd15);
-
   // ======================================================
   // Memory Module
   // ======================================================
@@ -400,7 +395,9 @@ module ARM7TMDI (
         flush_req <= 1'b1;
       end
 
-      if (pc_modified) begin
+      if ((control_signals.ALU_writeback == ALU_WB_REG_RD && decoder_bus.decoded_regs.Rd == 4'd15) ||
+          (control_signals.ALU_writeback == ALU_WB_REG_RN && decoder_bus.decoded_regs.Rn == 4'd15) ||
+          (control_signals.ALU_writeback == ALU_WB_REG_RP && control_signals.Rp_imm == 4'd15)) begin
 
         $display("ALU writeback to PC (R15) detected. ALU_writeback=%0d, Rd=%0d, Rn=%0d",
                  control_signals.ALU_writeback, decoder_bus.decoded_regs.Rd,
