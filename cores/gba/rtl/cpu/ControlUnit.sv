@@ -304,7 +304,6 @@ module GBA_ControlUnit (
             control_signals.A_bus_source = A_BUS_SRC_RS;
             control_signals.B_bus_source = B_BUS_SRC_REG_RM;
 
-            control_signals |= fetch_next_instr();
             control_signals.incrementer_writeback = 1'b1;
           end
 
@@ -350,7 +349,9 @@ module GBA_ControlUnit (
             control_signals.ALU_set_flags = decoder_bus.word.arm.mul.S;
 
             control_signals.pipeline_advance = 1'b1;
-            control_signals.addr_bus_src = ADDR_SRC_PC;
+            control_signals.addr_bus_src = ADDR_SRC_INCR;
+
+            control_signals |= fetch_next_instr();
           end
         end
 
