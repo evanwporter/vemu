@@ -38,6 +38,10 @@ module GBA_Multiplier (
     if (reset) begin
       cycle <= 0;
     end else begin
+      cycle <= 0;
+      accum_high <= 0;
+      accum_low <= 0;
+
       if (bus.enable) begin
         cycle <= cycle + 1;
 
@@ -47,33 +51,11 @@ module GBA_Multiplier (
           ARM_MUL, ARM_MLA: begin
             if (cycle == 0) begin
               $display("[Multiplier] Starting multiplication: M=%0d, S=%0d", bus.B_bus, bus.A_bus);
-              S <= bus.A_bus;
-              M <= bus.B_bus;
+              {accum_high, accum_low} <= bus.A_bus * bus.B_bus;
             end
           end
 
           ARM_UMULL, ARM_UMLAL: begin
-            // TODO long multiplication
-            if (cycle == 0) begin
-              $display("[Multiplier] Starting long multiplication: M=%0d, S=%0d", bus.B_bus,
-                       bus.A_bus);
-              S <= bus.A_bus;
-              M <= bus.B_bus;
-            end
-
-            if (cycle == 1) begin
-              accum_low  <= bus.B_bus;
-              accum_high <= bus.A_bus;
-              $display("[Multiplier] Initial accum_low set to %0d", accum_low);
-            end
-
-            if (cycle >= 2) begin
-              if (S[0])
-                {accum_high, accum_low} <= {accum_high, accum_low} + ({32'd0, M} << (cycle - 2));
-              S <= S >> 1;
-              $display("[Multiplier] After cycle %0d: accum_high=%0d, accum_low=%0d, S=%0d", cycle,
-                       accum_high, accum_low, S);
-            end
           end
 
           default: begin
@@ -81,67 +63,17 @@ module GBA_Multiplier (
 
           end
         endcase
-      end
+      end else cycle <= 0;
     end
   end
 
   always_comb begin
-    /// Chunk is built from {S[2i + 1], S[2i], S[2i - 1]} where i = cycle - 1
-    logic [2:0] chunk;
-    word_t addend;
-
-    chunk = 3'd0;
-    addend = 32'd0;
-
-    bus.result = 32'd0;
+    bus.result = 0;
     if (bus.enable) begin
-      unique case (bus.opcode)
-        ARM_MUL, ARM_MLA: begin
-          if (cycle != 0) begin
-            if (cycle == 1) begin
-              chunk = {S[1], S[0], 1'b0};
-            end else begin
-              chunk = {S[2*(cycle-1)+1], S[2*(cycle-1)], S[2*(cycle-1)-1]};
-            end
-
-            unique case (chunk)
-              3'b000: addend = 32'd0;
-              3'b001: addend = M;
-              3'b010: addend = M;
-              3'b011: addend = (M << 1);
-              3'b100: addend = (M << 1);
-              3'b101: addend = M;
-              3'b110: addend = M;
-              3'b111: addend = 32'd0;
-            endcase
-
-            if (chunk[2])  // negative 
-              bus.result = ~addend + 1;
-            else bus.result = addend;
-          end
-        end
-
-        ARM_UMULL, ARM_UMLAL: begin
-          if (cycle == 34) begin
-            $display(
-                "[Multiplier] Long multiplication complete: Final result = {accum_high, accum_low} = %0d",
-                {accum_high, accum_low});
-            bus.result = accum_low;
-          end
-
-          if (cycle == 35) begin
-            $display(
-                "[Multiplier] Long multiplication complete: Final result = {accum_high, accum_low} = %0d",
-                {accum_high, accum_low});
-            bus.result = accum_high;
-          end
-        end
-
-        default: begin
-          // Handle other opcodes or do nothing
-
-        end
-      endcase
+      if (cycle == 1) begin
+        bus.result = accum_low + bus.A_bus;
+        $display("[Multiplier] Cycle 1: M=%0d, S=%0d, Accum Low=%0d", M, S, accum_low);
+      end
     end
   end
 

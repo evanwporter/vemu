@@ -311,41 +311,20 @@ module GBA_ControlUnit (
             // Process Accumulator
             $display("[ControlUnit] Cycle 1 of multiply instruction");
 
-            control_signals.multiplier_enable = 1'b0;
+            control_signals.multiplier_enable = 1'b1;
             control_signals.ALU_writeback = ALU_WB_REG_RD;
-            if (decoder_bus.word.arm.mul.opcode == ARM_MUL || 
-                decoder_bus.word.arm.mul.opcode == ARM_UMULL) begin
-              control_signals.B_bus_source = B_BUS_SRC_IMM;
-              control_signals.B_bus_imm = 24'(0);
-            end else if (decoder_bus.word.arm.mul.opcode == ARM_MLA ||
-                         decoder_bus.word.arm.mul.opcode == ARM_UMLAL) begin
+            if (decoder_bus.word.arm.mul.opcode == ARM_MUL) begin
+              control_signals.A_bus_source = A_BUS_SRC_IMM;
+              control_signals.A_bus_imm = 7'(0);
+            end else if (decoder_bus.word.arm.mul.opcode == ARM_MLA) begin
               $display("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source",
                        decoder_bus.decoded_regs.Rn);
-              control_signals.B_bus_source = B_BUS_SRC_REG_RN;
+              control_signals.A_bus_source = A_BUS_SRC_RN;
             end
             control_signals.ALU_op = ALU_OP_MOV;
-          end
-
-          // FYI: on cycle 33, this if statement and the following are triggered
-          if (cycle >= 8'd2) begin
-            $display("[ControlUnit] Cycle %0d of multiply instruction", cycle);
-            control_signals.multiplier_enable = 1'b1;
-
-            control_signals.shift_type = SHIFT_LSL;
-
-            // Shift one more every cycle
-            control_signals.shift_amount = 5'((cycle - 8'd2) << 1);
-
-            control_signals.ALU_writeback = ALU_WB_REG_RD;
-
-            control_signals.A_bus_source = A_BUS_SRC_RD;
-
-            control_signals.ALU_op = ALU_OP_ADD;
 
             control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
-          end
 
-          if (cycle == 8'd17) begin
             control_signals.ALU_set_flags = decoder_bus.word.arm.mul.S;
 
             control_signals.pipeline_advance = 1'b1;
