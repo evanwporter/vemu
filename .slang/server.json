@@ -1,3 +1,4 @@
 {
-  "flags": "-f ./build/debug/cores/slang.f"
+  "flags": "-f ./build/debug/cores/slang.f",
+  "build": "./build/debug/cores/slang.f"
 }
