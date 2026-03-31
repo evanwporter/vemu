@@ -17,14 +17,20 @@ module GBA_Decoder (
 
   wire [15:0] IR_THUMB = IR[15:0];
 
+  logic check_cond;
+
   always_ff @(posedge clk) begin
     if (reset) begin
       // Reset logic here
       IR <= 32'h0;
       execution_mode <= MODE_ARM;
+      check_cond <= 1'b0;
     end else begin
+      check_cond <= 1'b0;
+
       if (bus.pipeline_advance) begin
         IR <= bus.IR;
+        check_cond <= 1'b1;
         execution_mode <= bus.execution_mode;
         $display("[GBA_Decoder] Latched instruction 0x%08x into IR", bus.IR);
       end
@@ -39,8 +45,10 @@ module GBA_Decoder (
 
     unique case (execution_mode)
       MODE_ARM: begin
-        bus.condition_pass =
-            eval_cond(condition_t'(IR[31:28]), bus.flags.n, bus.flags.z, bus.flags.c, bus.flags.v);
+        if (check_cond) begin
+          bus.condition_pass = eval_cond(condition_t'(IR[31:28]), bus.flags.n, bus.flags.z,
+                                         bus.flags.c, bus.flags.v);
+        end
 
         bus.decoded_regs.Rn = IR[19:16];
         $display("[GBA_Decoder] Extracted Rn = R%0d from IR %b", bus.decoded_regs.Rn, IR[19:16]);

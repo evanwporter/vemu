@@ -499,7 +499,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
 
     // Skip known-bad case
     // TODO: Only skip MUL for thumb data proc
-    if (source.filename() == "arm_mul_mla.json.bin" || source.filename() == "thumb_data_proc.json.bin") {
+    if (source.filename() == "arm_mul_mla.json.bin" || source.filename() == "arm_mull_mlal.json.bin" || source.filename() == "thumb_data_proc.json.bin") {
         const uint32_t opcode = testCase["opcode"].get<uint32_t>();
         if (arm_mul_rd(opcode) == 15 || arm_mul_rs(opcode) == 15 || arm_rm(opcode) == 15) {
             GTEST_SKIP() << "Skipping MUL/MLA with Rd==PC in arm_mul_mla.json.bin (test " << index << ")";

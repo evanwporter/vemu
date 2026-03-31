@@ -78,6 +78,7 @@ jobs:
           - arm_bx
           - arm_swi
           - arm_mul_mla
+          - arm_mull_mlal
           - arm_swp
           - arm_mrs
           - arm_msr_imm

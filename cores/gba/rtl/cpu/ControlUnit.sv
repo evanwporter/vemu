@@ -102,11 +102,7 @@ module GBA_ControlUnit (
     // For use in block data transfer instructions
     logic [3:0] regs_count;
 
-    // For use in multiply instruction
-    logic is_long_op;
-
     regs_count = 4'd0;
-    is_long_op = 1'd0;
 
     control_signals = '0;
 
@@ -297,41 +293,117 @@ module GBA_ControlUnit (
         // ============================
 
         ARM_INSTR_MULTIPLY: begin
-          if (cycle == 8'd0) begin
-            $display("[ControlUnit] Cycle 0 of multiply instruction, preparing for multiplication");
-            control_signals.multiplier_enable = 1'b1;
+          unique case (decoder_bus.word.arm.mul.opcode)
+            ARM_MUL, ARM_MLA: begin
+              if (cycle == 8'd0) begin
+                $display(
+                    "[ControlUnit] Cycle 0 of multiply instruction, preparing for multiplication");
+                control_signals.multiplier_enable = 1'b1;
 
-            control_signals.A_bus_source = A_BUS_SRC_RS;
-            control_signals.B_bus_source = B_BUS_SRC_REG_RM;
+                control_signals.A_bus_source = A_BUS_SRC_RS;
+                control_signals.B_bus_source = B_BUS_SRC_REG_RM;
 
-            control_signals.incrementer_writeback = 1'b1;
-          end
+                control_signals.incrementer_writeback = 1'b1;
+              end
 
-          if (cycle == 8'd1) begin
-            // Process Accumulator
-            $display("[ControlUnit] Cycle 1 of multiply instruction");
+              if (cycle == 8'd1) begin
+                // Process Accumulator
+                $display("[ControlUnit] Cycle 1 of multiply instruction");
 
-            control_signals.multiplier_enable = 1'b1;
-            control_signals.ALU_writeback = ALU_WB_REG_RD;
-            if (decoder_bus.word.arm.mul.opcode == ARM_MUL) begin
-              control_signals.A_bus_source = A_BUS_SRC_IMM;
-              control_signals.A_bus_imm = 7'(0);
-            end else if (decoder_bus.word.arm.mul.opcode == ARM_MLA) begin
-              $display("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source",
-                       decoder_bus.decoded_regs.Rn);
-              control_signals.A_bus_source = A_BUS_SRC_RN;
+                control_signals.multiplier_enable = 1'b1;
+                control_signals.ALU_writeback = ALU_WB_REG_RD;
+                if (decoder_bus.word.arm.mul.opcode == ARM_MUL) begin
+                  control_signals.A_bus_source = A_BUS_SRC_IMM;
+                  control_signals.A_bus_imm = 7'(0);
+                end else if (decoder_bus.word.arm.mul.opcode == ARM_MLA) begin
+                  $display("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source",
+                           decoder_bus.decoded_regs.Rn);
+                  control_signals.A_bus_source = A_BUS_SRC_RN;
+                end
+                control_signals.ALU_op = ALU_OP_MOV;
+
+                control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
+
+                control_signals.ALU_set_flags = decoder_bus.word.arm.mul.S;
+
+                control_signals.pipeline_advance = 1'b1;
+                control_signals.addr_bus_src = ADDR_SRC_INCR;
+
+                control_signals |= fetch_next_instr();
+              end
             end
-            control_signals.ALU_op = ALU_OP_MOV;
 
-            control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
+            ARM_UMULL, ARM_UMLAL, ARM_SMULL, ARM_SMLAL: begin
+              if (cycle == 8'd0) begin
+                $display(
+                    "[ControlUnit] Cycle 0 of multiply instruction, preparing for multiplication");
+                control_signals.multiplier_enable = 1'b1;
 
-            control_signals.ALU_set_flags = decoder_bus.word.arm.mul.S;
+                control_signals.A_bus_source = A_BUS_SRC_RS;
+                control_signals.B_bus_source = B_BUS_SRC_REG_RM;
 
-            control_signals.pipeline_advance = 1'b1;
-            control_signals.addr_bus_src = ADDR_SRC_INCR;
+                control_signals.incrementer_writeback = 1'b1;
+              end
 
-            control_signals |= fetch_next_instr();
-          end
+              if (cycle == 8'd1) begin
+                $display(
+                    "[ControlUnit] Cycle 1 of multiply instruction, preparing for multiplication");
+                control_signals.multiplier_enable = 1'b1;
+
+                if (decoder_bus.word.arm.mul.opcode == ARM_UMULL || decoder_bus.word.arm.mul.opcode == ARM_SMULL) begin
+                  control_signals.A_bus_source = A_BUS_SRC_IMM;
+                  control_signals.A_bus_imm = 7'(0);
+                end else if (decoder_bus.word.arm.mul.opcode == ARM_UMLAL || decoder_bus.word.arm.mul.opcode == ARM_SMLAL) begin
+                  $display("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source",
+                           decoder_bus.decoded_regs.Rn);
+                  control_signals.A_bus_source = A_BUS_SRC_RD;
+                end
+
+                if (decoder_bus.word.arm.mul.opcode == ARM_UMULL || decoder_bus.word.arm.mul.opcode == ARM_SMULL) begin
+                  control_signals.B_bus_source = B_BUS_SRC_IMM;
+                  control_signals.B_bus_imm = 24'(0);
+                end else if (decoder_bus.word.arm.mul.opcode == ARM_UMLAL || decoder_bus.word.arm.mul.opcode == ARM_SMLAL) begin
+                  $display("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source",
+                           decoder_bus.decoded_regs.Rn);
+                  control_signals.B_bus_source = B_BUS_SRC_REG_RN;
+                end
+              end
+
+              if (cycle == 8'd2) begin
+                // Process Accumulator
+                $display("[ControlUnit] Cycle 2 of multiply instruction");
+
+                control_signals.multiplier_enable = 1'b1;
+                control_signals.ALU_writeback = ALU_WB_REG_RN;
+                control_signals.ALU_op = ALU_OP_MOV;
+
+                control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
+
+                control_signals.ALU_set_flags = decoder_bus.word.arm.mul.S;
+              end
+
+              if (cycle == 8'd3) begin
+                // Process Accumulator
+                $display("[ControlUnit] Cycle 3 of multiply instruction");
+
+                control_signals.multiplier_enable = 1'b1;
+                control_signals.ALU_writeback = ALU_WB_REG_RD;
+                control_signals.ALU_op = ALU_OP_MOV;
+
+                control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
+
+                control_signals.ALU_set_flags = decoder_bus.word.arm.mul.S;
+
+                control_signals.pipeline_advance = 1'b1;
+                control_signals.addr_bus_src = ADDR_SRC_INCR;
+
+                control_signals |= fetch_next_instr();
+              end
+            end
+
+            default: ;
+          endcase
+
         end
 
         // ============================
