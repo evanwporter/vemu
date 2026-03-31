@@ -509,8 +509,10 @@ module GBA_ControlUnit (
 
               control_signals.memory_byte_transfer = decoder_bus.word.arm.ls.B;
 
-              // Load the PC back into the address bus
-              control_signals.addr_bus_src = ADDR_SRC_PC;
+              if (decoder_bus.decoded_regs.Rd == 4'd15) begin
+                control_signals.restore_cpsr_from_spsr = decoder_bus.word.arm.data_proc_imm.set_flags;
+                control_signals.addr_bus_src = ADDR_SRC_ALU;
+              end else control_signals.addr_bus_src = ADDR_SRC_PC;
 
               control_signals.memory_advance_early_fetched_IR = 1'b1;
 
@@ -706,7 +708,7 @@ module GBA_ControlUnit (
         ARM_INSTR_SWAP: begin
           $display("[ControlUnit] Detected SWP instruction");
           if (cycle == 8'd0) begin
-            control_signals |= fetch_next_instr();
+            control_signals |= fetch_instr_early();
 
             // Save address so we can return to it
             control_signals.incrementer_writeback = 1'b1;
@@ -745,7 +747,9 @@ module GBA_ControlUnit (
 
             control_signals.pipeline_advance = 1'b1;
 
-            // Restore address from PC
+            control_signals.memory_advance_early_fetched_IR = 1'b1;
+
+            // Load the PC back into the address bus
             control_signals.addr_bus_src = ADDR_SRC_PC;
           end
         end

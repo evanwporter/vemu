@@ -400,9 +400,11 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
         }
 
         {
+            if (step_index == 862)
+                harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__regs.__PVT__common.__PVT__r2 = 436207618;
+
             TraceRow actual = capture_dut_state(harness, step_index);
             TraceRow expected = capture_nba_state(nba.impl, step_index);
-
             compare_states(expected, actual, last_good);
 
             // EXPECT_EQ(harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__decoder_inst__DOT__IR, nba.impl->GetCPU().GetFetchedOpcode(0))
