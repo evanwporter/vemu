@@ -256,6 +256,7 @@
     $display("Rd (dest)    = R%0d", (regs).Rd); \
     $display("Rm (operand) = R%0d", (regs).Rm); \
     $display("Rs (operand) = R%0d", (regs).Rs); \
+    $display("S bit        = %0b", (word).mul.S); \
     $display("opcode       = %s", (word).mul.opcode.name()); \
     $display("--------------------------------"); \
     $fflush(); \

@@ -112,6 +112,11 @@ interface GBA_Multiplier_if (
 
   multiply_opcode_t opcode;
 
-  modport Multiplier_side(input A_bus, B_bus, enable, opcode, output result);
+  struct packed {
+    logic N;
+    logic Z;
+  } flags;
+
+  modport Multiplier_side(input A_bus, B_bus, enable, opcode, output result, flags);
 
 endinterface : GBA_Multiplier_if

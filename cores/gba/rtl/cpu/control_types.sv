@@ -192,6 +192,8 @@ package gba_control_types_pkg;
 
     logic multiplier_enable;
 
+    logic mult_set_flags;
+
     // ======================================================
     // ALU
     // ======================================================

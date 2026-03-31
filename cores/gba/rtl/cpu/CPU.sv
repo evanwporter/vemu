@@ -464,6 +464,14 @@ module ARM7TMDI (
         $display("ALU op was %0d, setting C flag to %b", control_signals.ALU_op,
                  alu_bus.flags_out.c);
         $fflush();
+      end else if (control_signals.mult_set_flags) begin
+        regs.CPSR[31] <= multiplier_bus.flags.N;
+        regs.CPSR[30] <= multiplier_bus.flags.Z;
+        regs.CPSR[29] <= 1'd0;  // C flag is set to destroyed for multiply instructions (ARMv4)
+
+        $display("Multiplier set flags, setting N=%b, Z=%b", multiplier_bus.flags.N,
+                 multiplier_bus.flags.Z);
+        $fflush();
       end
 
       if (control_signals.exception != EXCEPTION_NONE) begin

@@ -100,6 +100,7 @@ module GBA_Multiplier (
 
   always_comb begin
     bus.result = 0;
+    bus.flags  = 0;
     if (bus.enable) begin
       unique case (bus.opcode)
         ARM_MUL, ARM_MLA: begin
@@ -116,7 +117,10 @@ module GBA_Multiplier (
 
             $display("[Multiplier] Cycle 2: M=%0d, S=%0d, Lower Result=%0d", M, S, lower_result);
           end else if (cycle == 3) begin
-            bus.result = upper_result;
+            bus.result  = upper_result;
+
+            bus.flags.N = upper_result[31];
+            bus.flags.Z = ({upper_result, lower_result} == 0);
 
             $display("[Multiplier] Cycle 3: M=%0d, S=%0d, Upper Result=%0d", M, S, upper_result);
           end
@@ -128,7 +132,10 @@ module GBA_Multiplier (
 
             $display("[Multiplier] Cycle 2: M=%0d, S=%0d, Lower Result=%0d", M, S, s_lower_result);
           end else if (cycle == 3) begin
-            bus.result = s_upper_result;
+            bus.result  = s_upper_result;
+
+            bus.flags.N = s_upper_result[31];
+            bus.flags.Z = ({s_upper_result, s_lower_result} == 0);
 
             $display("[Multiplier] Cycle 3: M=%0d, S=%0d, Upper Result=%0d", M, S, s_upper_result);
           end

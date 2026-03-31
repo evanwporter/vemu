@@ -378,8 +378,6 @@ module GBA_ControlUnit (
                 control_signals.ALU_op = ALU_OP_MOV;
 
                 control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
-
-                control_signals.ALU_set_flags = decoder_bus.word.arm.mul.S;
               end
 
               if (cycle == 8'd3) begin
@@ -392,7 +390,7 @@ module GBA_ControlUnit (
 
                 control_signals.B_bus_source = B_BUS_SRC_MULTIPLIER;
 
-                control_signals.ALU_set_flags = decoder_bus.word.arm.mul.S;
+                control_signals.mult_set_flags = decoder_bus.word.arm.mul.S;
 
                 control_signals.pipeline_advance = 1'b1;
                 control_signals.addr_bus_src = ADDR_SRC_INCR;
