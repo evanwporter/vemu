@@ -31,6 +31,7 @@ module GameboyAdvance (
   );
 
   GBA_MMU mmu (
+      .clk(clk),
       .cpu_bus(cpu_bus),
       .bios_bus(bios_bus),
       .wram_board_bus(wram_board_bus),

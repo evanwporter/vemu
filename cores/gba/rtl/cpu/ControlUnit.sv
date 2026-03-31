@@ -413,7 +413,7 @@ module GBA_ControlUnit (
             $display("[ControlUnit] Cycle 0 of load/store instruction, calculating address");
 
             // Perform a fetch in this cycle
-            control_signals |= fetch_next_instr();
+            control_signals |= fetch_instr_early();
 
             // Write PC with Address + 1.
             // This ensures that we can return to the correct address after 
@@ -512,6 +512,8 @@ module GBA_ControlUnit (
               // Load the PC back into the address bus
               control_signals.addr_bus_src = ADDR_SRC_PC;
 
+              control_signals.memory_advance_early_fetched_IR = 1'b1;
+
             end
           end
 
@@ -539,6 +541,8 @@ module GBA_ControlUnit (
                 $display("[ControlUnit] Store instruction requires writeback to base register R%0d",
                          decoder_bus.decoded_regs.Rn);
               end
+
+              control_signals.memory_advance_early_fetched_IR = 1'b1;
 
               // Load the PC back into the address bus
               control_signals.addr_bus_src = ADDR_SRC_PC;

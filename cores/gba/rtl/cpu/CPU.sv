@@ -2,6 +2,7 @@ import gba_types_pkg::*;
 import gba_cpu_types_pkg::*;
 import gba_control_types_pkg::*;
 import gba_cpu_util_pkg::*;
+import gba_mmu_types_pkg::*;
 
 `include "gba/cpu/util.svh"
 
@@ -102,7 +103,19 @@ module ARM7TMDI (
 
   assign bus.read_en = control_signals.memory_read_en;
   assign bus.write_en = control_signals.memory_write_en;
-  assign bus.instruction_fetch = control_signals.memory_latch_IR;
+
+  always_comb begin
+    if (control_signals.memory_latch_IR || control_signals.memory_latch_early_IR) begin
+      unique case (execution_mode)
+        MODE_ARM:   bus.transfer_size = ARM_BUS_SIZE_WORD;
+        MODE_THUMB: bus.transfer_size = ARM_BUS_SIZE_HALFWORD;
+      endcase
+    end else begin
+      if (control_signals.memory_byte_transfer) bus.transfer_size = ARM_BUS_SIZE_BYTE;
+      else if (control_signals.memory_halfword_transfer) bus.transfer_size = ARM_BUS_SIZE_HALFWORD;
+      else bus.transfer_size = ARM_BUS_SIZE_WORD;
+    end
+  end
 
   assign multiplier_bus.enable = control_signals.multiplier_enable;
   assign multiplier_bus.opcode = decoder_bus.instr_type == ARM_INSTR_MULTIPLY
