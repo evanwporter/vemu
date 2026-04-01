@@ -792,7 +792,7 @@ module GBA_ControlUnit (
             control_signals.A_bus_imm = regs_count * 4;
 
             // If its pre offset we add/subtract the offset to the base register before the memory access
-            if (decoder_bus.word.arm.block.P == ARM_LDR_STR_PRE_OFFSET) begin
+            if (decoder_bus.word.arm.block.P == ARM_LDR_STR_PRE_OFFSET) begin  // PRE-OFFSET
               if (decoder_bus.word.arm.block.W == 1'b1) begin
                 // Updating the base register with the offset is enabled so we 
                 // latch operand b for the writeback in the next cycle
@@ -802,8 +802,8 @@ module GBA_ControlUnit (
                     "[ControlUnit] Block load/store with pre-indexing and writeback, latching offset for writeback");
               end
 
-              if (decoder_bus.word.arm.block.U == 1'b1) begin
-                if (regs_count == 0) control_signals.A_bus_imm = 7'h40;
+              if (decoder_bus.word.arm.block.U == 1'b1) begin  // Increment Before (IB)
+                if (regs_count == 0) control_signals.A_bus_imm = 7'd4;
                 else control_signals.A_bus_imm = 7'd4;
 
                 control_signals.ALU_op = ALU_OP_ADD;
@@ -811,7 +811,7 @@ module GBA_ControlUnit (
                 $display(
                     "[ControlUnit] Block load/store with pre-indexing and writeback, adding offset to base register R%0d before memory access",
                     decoder_bus.decoded_regs.Rn);
-              end else begin
+              end else begin  // Decrement Before (DB)
                 if (regs_count == 0) control_signals.A_bus_imm = 7'h40;
                 else control_signals.A_bus_imm = 6'(regs_count) * 4;
 
@@ -833,7 +833,8 @@ module GBA_ControlUnit (
                 // Decrement After (DA)
 
                 control_signals.A_bus_source = A_BUS_SRC_IMM;
-                control_signals.A_bus_imm = (regs_count * 4) - 4;
+                if (regs_count == 0) control_signals.A_bus_imm = 7'h3C;  // 0x40 - 4
+                else control_signals.A_bus_imm = (regs_count * 4) - 4;
 
                 control_signals.ALU_op = ALU_OP_SUB_REVERSED;
               end
@@ -967,7 +968,7 @@ module GBA_ControlUnit (
             end
 
             if (cycle == 8'd2 && regs_count == 0) begin
-              control_signals.addr_bus_src = ADDR_SRC_PC;
+              control_signals.addr_bus_src = ADDR_SRC_ALU;
 
               control_signals.ALU_writeback = ALU_WB_REG_RP;
               control_signals.Rp_imm = 4'd15;
@@ -999,6 +1000,16 @@ module GBA_ControlUnit (
 
               control_signals.ALU_use_op_b_latch = 1'b1;
               control_signals.ALU_writeback = ALU_WB_REG_RN;
+
+              control_signals.addr_bus_src = ADDR_SRC_PC_RESTORE;
+
+              $display(
+                  "[ControlUnit] Cycle 1 of STM instruction, address calculation done, preparing for memory write");
+            end else
+
+            // Second cycle
+            if (cycle == 8'd2 && regs_count == 0) begin
+              control_signals |= fetch_next_instr();
 
               control_signals.addr_bus_src = ADDR_SRC_PC;
 
