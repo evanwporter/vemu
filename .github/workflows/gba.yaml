@@ -58,7 +58,7 @@ jobs:
           name: test_gba
           path: build/debug/cores/gba/tests/test_gba.exe
 
-  test:
+  sst_tests:
     runs-on: windows-latest
     needs: build
 
@@ -111,3 +111,20 @@ jobs:
       - name: Run GBA tests
         run: |
           .\test_gba.exe --gtest_filter=*${{ matrix.test }}_json --test-dir=${{ github.workspace }}/tests/
+
+  arm_gba_test:
+    runs-on: windows-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: test_gba
+
+      - name: Run GBA tests
+        run: |
+          .\test_gba.exe --gtest_filter=*ARM_GBA_tests* --test-dir=${{ github.workspace }}/tests/
