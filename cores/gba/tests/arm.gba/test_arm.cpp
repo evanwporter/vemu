@@ -233,9 +233,9 @@ static void compare_states(
 TEST(ARM_GBA_Tests, CPUInstrsAll) {
     fs::path rom_path;
     if (test_config().test_dir.has_value()) {
-        rom_path = test_config().test_dir.value() / "GameboyAdvanceCPUTests/v1";
+        rom_path = test_config().test_dir.value() / "gba-tests/arm/arm.gba";
     } else {
-        rom_path = fs::path(TEST_DIR) / "arm.gba";
+        rom_path = fs::path(TEST_DIR) / "gba-tests/arm/arm.gba";
     }
 
     testing::internal::CaptureStdout();
