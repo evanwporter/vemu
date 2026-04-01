@@ -56,6 +56,18 @@ module GBA_MMU (
   assign gamepak_ws2_bus.wdata = cpu_bus.wdata;
   assign gamepak_sram_bus.wdata = cpu_bus.wdata;
 
+  assign bios_bus.transfer_size = cpu_bus.transfer_size;
+  assign wram_board_bus.transfer_size = cpu_bus.transfer_size;
+  assign wram_chip_bus.transfer_size = cpu_bus.transfer_size;
+  assign io_bus.transfer_size = cpu_bus.transfer_size;
+  assign palette_bus.transfer_size = cpu_bus.transfer_size;
+  assign vram_bus.transfer_size = cpu_bus.transfer_size;
+  assign oam_bus.transfer_size = cpu_bus.transfer_size;
+  assign gamepak_ws0_bus.transfer_size = cpu_bus.transfer_size;
+  assign gamepak_ws1_bus.transfer_size = cpu_bus.transfer_size;
+  assign gamepak_ws2_bus.transfer_size = cpu_bus.transfer_size;
+  assign gamepak_sram_bus.transfer_size = cpu_bus.transfer_size;
+
   wire bios_selected = effective_addr inside {[BIOS_start : BIOS_end]};
   assign bios_bus.read_en  = cpu_bus.read_en && bios_selected;
   assign bios_bus.write_en = cpu_bus.write_en && bios_selected;

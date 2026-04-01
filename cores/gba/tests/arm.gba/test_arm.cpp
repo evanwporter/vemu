@@ -430,10 +430,10 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
     std::string stdout_output = testing::internal::GetCapturedStdout();
     std::string stderr_output = testing::internal::GetCapturedStderr();
 
-    std::cout << "\n==== Captured stdout ====\n"
-              << stdout_output
-              << "\n==== Captured stderr ====\n"
-              << stderr_output;
+    // std::cout << "\n==== Captured stdout ====\n"
+    //           << stdout_output
+    //           << "\n==== Captured stderr ====\n"
+    //           << stderr_output;
 
     std::ofstream logfile("trace.log");
     ASSERT_TRUE(logfile) << "Failed to open trace.log";

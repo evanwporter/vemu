@@ -772,6 +772,11 @@ module GBA_ControlUnit (
 
           // First cycle: Prefetch and calculate first address
           if (cycle == 8'd0) begin
+            if (decoder_bus.instr_type == ARM_INSTR_STM) begin
+            end else if (decoder_bus.instr_type == ARM_INSTR_LDM) begin
+              $display("[ControlUnit] Cycle 0 of LDM instruction, calculating address");
+              control_signals |= fetch_instr_early();
+            end
             // // Perform a prefetch
             // control_signals |= fetch_next_instr();
 
@@ -932,10 +937,10 @@ module GBA_ControlUnit (
               if (decoder_bus.word.arm.block.reg_list[15]) begin
                 control_signals.addr_bus_src = ADDR_SRC_ALU;
               end else begin
-                control_signals.addr_bus_src = ADDR_SRC_INCR;
+                control_signals.addr_bus_src = ADDR_SRC_PC;
               end
 
-              control_signals |= fetch_next_instr();
+              // control_signals |= fetch_next_instr();
 
               control_signals.ALU_writeback = ALU_WB_REG_RP;
               control_signals.Rp_imm =
@@ -947,6 +952,10 @@ module GBA_ControlUnit (
               control_signals.B_bus_source = B_BUS_SRC_READ_DATA;
 
               control_signals.pipeline_advance = 1'b1;
+
+              control_signals.memory_advance_early_fetched_IR = 1'b1;
+
+              // control_signals.incrementer_writeback = 1'b1;
 
               if (decoder_bus.word.arm.block.S && decoder_bus.word.arm.block.reg_list[15]) begin
                 control_signals.restore_cpsr_from_spsr = 1'b1;
@@ -1086,7 +1095,7 @@ module GBA_ControlUnit (
 
               control_signals.B_bus_source = B_BUS_SRC_REG_RP;
 
-              control_signals.addr_bus_src = ADDR_SRC_INCR;
+              control_signals.addr_bus_src = ADDR_SRC_PC;
 
               // We do not write the next word in the block
               control_signals.memory_write_en = 1'b0;
