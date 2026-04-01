@@ -7,10 +7,11 @@
 
 #include <gtest/gtest.h>
 
-#include "decode.hpp"
 #include "gba.hpp"
+#include "util/decode.hpp"
 #include "util/test_config.hpp"
 #include "util/util.hpp"
+
 
 #include <nba/config.hpp>
 #include <nba/core.hpp>
