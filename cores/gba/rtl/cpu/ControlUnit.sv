@@ -1140,7 +1140,7 @@ module GBA_ControlUnit (
             control_signals.B_bus_sign_extend = 1'b1;
 
             control_signals.shift_type = SHIFT_LSL;
-            control_signals.shift_amount = 5'd2;
+            control_signals.shift_amount = 5'(decoder_bus.decoded_regs.Rs);
 
             control_signals.pipeline_advance = 1'b1;
           end

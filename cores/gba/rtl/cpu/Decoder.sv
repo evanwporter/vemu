@@ -91,6 +91,7 @@ module GBA_Decoder (
             // Overwrite Rn and Rd
             bus.decoded_regs.Rn = 4'd15;
             bus.decoded_regs.Rd = 4'd14;
+            bus.decoded_regs.Rs = 4'd2;
 
             $display("[GBA_Decoder] Detected B instruction with IR=0x%08x", IR);
           end
@@ -290,11 +291,30 @@ module GBA_Decoder (
 
           // Unconditional Branch
           16'b1110_0???_????_????: begin
+            bus.instr_type = ARM_INSTR_BRANCH;
+
+            bus.decoded_regs.Rn = 4'd15;
+            bus.decoded_regs.Rd = 4'd14;
+            bus.decoded_regs.Rs = 4'd1;
+
+            bus.word.arm.branch.imm24 = {{13{IR_THUMB[10]}}, IR_THUMB[10:0]};
+
             $display("[Decoder] Detected THUMB B instruction with IR=0x%08x", IR_THUMB);
           end
 
           // Conditional Branch
           16'b1101_????_????_????: begin
+            bus.condition_pass = eval_cond(condition_t'(IR_THUMB[11:8]), bus.flags.n, bus.flags.z,
+                                           bus.flags.c, bus.flags.v);
+
+            bus.instr_type = ARM_INSTR_BRANCH;
+
+            bus.decoded_regs.Rn = 4'd15;
+            bus.decoded_regs.Rd = 4'd14;
+            bus.decoded_regs.Rs = 4'd1;
+
+            bus.word.arm.branch.imm24 = {{16{IR_THUMB[7]}}, IR_THUMB[7:0]};
+
             $display("[Decoder] Detected THUMB B<cond> instruction with IR=0x%08x", IR_THUMB);
           end
 

@@ -58,7 +58,7 @@ jobs:
           name: test_gba
           path: build/debug/cores/gba/tests/test_gba.exe
 
-  sst_tests:
+  arm_sst_tests:
     runs-on: windows-latest
     needs: build
 
@@ -66,37 +66,61 @@ jobs:
       fail-fast: true
       matrix:
         test:
-          - arm_data_proc_immediate
-          - arm_data_proc_immediate_shift
-          - arm_data_proc_register_shift
-          - arm_ldm_stm
-          - arm_ldr_str_immediate_offset
-          - arm_ldr_str_register_offset
-          - arm_ldrh_strh
-          - arm_ldrsb_ldrsh
-          - arm_b_bl
-          - arm_bx
-          - arm_swi
-          - arm_mul_mla
-          - arm_mull_mlal
-          - arm_swp
-          - arm_mrs
-          - arm_msr_imm
-          - arm_msr_reg
-          - thumb_add_sub
-          - thumb_mov_cmp_add_sub
-          - thumb_data_proc
-          - thumb_ldr_pc_rel
-          - thumb_ldm_stm
-          - thumb_ldr_str_imm_offset
-          - thumb_ldr_str_reg_offset
-          - thumb_ldrsb_strb_reg_offset
-          - thumb_ldrb_strb_imm_offset
-          - thumb_ldrsh_ldrsb_reg_offset
-          - thumb_ldrsb_strb_reg_offset
-          - thumb_ldrh_strh_imm_offset
-          - thumb_ldr_str_sp_rel
-          - thumb_add_cmp_mov_hi
+          - data_proc_immediate
+          - data_proc_immediate_shift
+          - data_proc_register_shift
+          - ldm_stm
+          - ldr_str_immediate_offset
+          - ldr_str_register_offset
+          - ldrh_strh
+          - ldrsb_ldrsh
+          - b_bl
+          - bx
+          - swi
+          - mul_mla
+          - mull_mlal
+          - swp
+          - mrs
+          - msr_imm
+          - msr_reg
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: test_gba
+
+      - name: Run GBA tests
+        run: |
+          .\test_gba.exe --gtest_filter=*arm_${{ matrix.test }}_json --test-dir=${{ github.workspace }}/tests/
+
+  thumb_sst_tests:
+    runs-on: windows-latest
+    needs: build
+
+    strategy:
+      fail-fast: true
+      matrix:
+        test:
+          - add_sub
+          - mov_cmp_add_sub
+          - data_proc
+          - ldr_pc_rel
+          - ldm_stm
+          - ldr_str_imm_offset
+          - ldr_str_reg_offset
+          - ldrsb_strb_reg_offset
+          - ldrb_strb_imm_offset
+          - ldrsh_ldrsb_reg_offset
+          - ldrsb_strb_reg_offset
+          - ldrh_strh_imm_offset
+          - ldr_str_sp_rel
+          - add_cmp_mov_hi
+          - b
+          - bcc
           # - thumb_add_sub_sp
 
     steps:
@@ -110,7 +134,7 @@ jobs:
 
       - name: Run GBA tests
         run: |
-          .\test_gba.exe --gtest_filter=*${{ matrix.test }}_json --test-dir=${{ github.workspace }}/tests/
+          .\test_gba.exe --gtest_filter=*thumb_${{ matrix.test }}_json --test-dir=${{ github.workspace }}/tests/
 
   arm_gba_test:
     runs-on: windows-latest
