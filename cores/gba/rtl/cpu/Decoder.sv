@@ -367,6 +367,42 @@ module GBA_Decoder (
 
           // Push / Pop Registers
           16'b1011_?10?_????_????: begin
+
+            bus.word.arm.block.W = 1'b1;
+            bus.word.arm.block.S = 1'b0;
+
+            bus.decoded_regs.Rn = 4'd13;
+
+            bus.word.arm.block.reg_list = {8'd0, IR_THUMB[7:0]};
+
+            if (IR_THUMB[11]) begin
+              // POP = LDMIA SP!
+              bus.instr_type = ARM_INSTR_LDM;
+              bus.word.arm.block.P = ARM_LDR_STR_POST_OFFSET;
+              bus.word.arm.block.U = 1'b1;
+
+              // Add PC if requested
+              if (IR_THUMB[8]) begin
+                bus.word.arm.block.reg_list[15] = 1'b1;  // PC = R15
+              end
+
+              $display("[Decoder] Detected THUMB POP instruction (reg_list=0x%02x, PC=%0d)",
+                       IR_THUMB[7:0], IR_THUMB[8]);
+
+            end else begin
+              // PUSH = STMDB SP!
+              bus.instr_type = ARM_INSTR_STM;
+              bus.word.arm.block.P = ARM_LDR_STR_PRE_OFFSET;
+              bus.word.arm.block.U = 1'b0;
+
+              // Add LR if requested
+              if (IR_THUMB[8]) begin
+                bus.word.arm.block.reg_list[14] = 1'b1;  // LR = R14
+              end
+
+              $display("[Decoder] Detected THUMB PUSH instruction (reg_list=0x%02x, LR=%0d)",
+                       IR_THUMB[7:0], IR_THUMB[8]);
+            end
             $display("[Decoder] Detected THUMB PUSH/POP instruction with IR=0x%08x", IR_THUMB);
           end
 
