@@ -12,7 +12,6 @@
 #include "util/test_config.hpp"
 #include "util/util.hpp"
 
-
 #include <nba/config.hpp>
 #include <nba/core.hpp>
 #include <nba/rom/rom.hpp>
@@ -446,8 +445,10 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
     //           << "\n==== Captured stderr ====\n"
     //           << stderr_output;
 
-    std::ofstream logfile("trace.log");
-    ASSERT_TRUE(logfile) << "Failed to open trace.log";
+    const fs::path log_path = fs::current_path() / "arm_trace.log";
+
+    std::ofstream logfile(log_path);
+    ASSERT_TRUE(logfile) << "Failed to open arm_trace.log";
 
     logfile << "\n==== Captured stdout ====\n"
             << stdout_output
@@ -455,7 +456,7 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
             << stderr_output;
     logfile.close();
 
-    std::cout << "Wrote logs to trace.log\n";
+    std::cout << "Wrote logs to " << log_path << "\n";
 
     std::cout << "Validated " << step_index << " steps\n";
 }

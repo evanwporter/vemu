@@ -349,6 +349,19 @@ module GBA_Decoder (
 
           // Add Offset to Stack Pointer
           16'b1011_0000_????_????: begin
+            bus.instr_type = ARM_INSTR_DATAPROC_IMM;
+            // Immediate value with rotate
+            bus.word.arm.data_proc_imm.imm8 = 8'(IR_THUMB[6:0]);
+            bus.word.arm.data_proc_imm.rotate = 4'd1; // multiplied by 2, so we actually are rotating by 2 (step 4)
+            bus.word.arm.data_proc_imm.set_flags = 1'd0;
+
+            bus.word.arm.data_proc_imm.use_lsl = 1'b1;
+
+            bus.word.arm.data_proc_imm.opcode = IR_THUMB[7] ? ALU_OP_SUB : ALU_OP_ADD;
+
+            bus.decoded_regs.Rd = 4'd13;
+            bus.decoded_regs.Rn = 4'd13;
+
             $display("[Decoder] Detected THUMB ADD SP instruction with IR=0x%08x", IR_THUMB);
           end
 
