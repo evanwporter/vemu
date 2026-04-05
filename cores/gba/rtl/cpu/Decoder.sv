@@ -375,6 +375,8 @@ module GBA_Decoder (
 
             bus.word.arm.block.reg_list = {8'd0, IR_THUMB[7:0]};
 
+            if (IR_THUMB[7:0] == 8'd0) bus.word.arm.block.force_no_align_pc = 1'b1;
+
             if (IR_THUMB[11]) begin
               // POP = LDMIA SP!
               bus.instr_type = ARM_INSTR_LDM;
