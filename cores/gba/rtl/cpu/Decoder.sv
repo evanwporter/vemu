@@ -633,6 +633,11 @@ module GBA_Decoder (
                   bus.instr_type = ARM_INSTR_BRANCH_EX;
                 end else begin
                   // TODO
+                  bus.instr_type = ARM_INSTR_BRANCH_EX;
+
+                  $display(
+                      "[Decoder] Detected THUMB BLX instruction with Hs as operand instruction with IR=0x%08x, but BLX is not yet implemented, treating as BX for now",
+                      IR_THUMB);
                 end
 
                 // For BX Rn (ARM) == Rs (THUMB)

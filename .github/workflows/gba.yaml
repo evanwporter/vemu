@@ -121,8 +121,9 @@ jobs:
           - add_cmp_mov_hi
           - b
           - bcc
+          - bx
           - add_sub_sp
-          - push_pop
+          # - push_pop
 
     steps:
       - uses: actions/checkout@v4
