@@ -1149,10 +1149,12 @@ module GBA_ControlUnit (
         // TODO: Currently this instr lasts an extra cycle. We need to overlap the fetch and cycle 2.
         ARM_INSTR_BRANCH_LINK: begin
           if (cycle == 8'd0) begin
-            // Rd should be R14 (LR)
+            // Rd == R14 (LR)
             control_signals.ALU_writeback = ALU_WB_REG_RD;
 
             control_signals.ALU_op = ALU_OP_SUB;
+
+            // Rn == R15 (PC)
             control_signals.A_bus_source = A_BUS_SRC_RN;
 
             control_signals.B_bus_source = B_BUS_SRC_IMM;
@@ -1197,6 +1199,31 @@ module GBA_ControlUnit (
 
             $display(
                 "[ControlUnit] Branch Exchange instruction, switching to Thumb mode and updating PC");
+          end
+        end
+
+        ARM_INSTR_THUMB_LONG_BRANCH_LINK_0: begin
+          if (cycle == 8'd0) begin
+            control_signals.addr_bus_src = ADDR_SRC_INCR;
+            control_signals |= fetch_next_instr();
+            control_signals.pipeline_advance = 1'b1;
+            control_signals.incrementer_writeback = 1'b1;
+
+            control_signals.ALU_op = ALU_OP_ADD;
+
+            // Rn == R15 (PC)
+            control_signals.A_bus_source = A_BUS_SRC_RN;
+
+            // Rd == R14 (LR)
+            control_signals.ALU_writeback = ALU_WB_REG_RD;
+
+            control_signals.B_bus_source = B_BUS_SRC_IMM;
+            control_signals.B_bus_imm = decoder_bus.word.arm.branch.imm24;
+            control_signals.B_bus_sign_extend = 1'b1;
+
+            control_signals.shift_type = SHIFT_LSL;
+            control_signals.shift_amount = 5'd12;
+
           end
         end
 

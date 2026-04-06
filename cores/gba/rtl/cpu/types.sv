@@ -295,6 +295,9 @@ package gba_cpu_types_pkg;
     /// Branch and exchange (BX)
     ARM_INSTR_BRANCH_EX,
 
+    /// Thumb Long Branch with Link (BL) - first instruction
+    ARM_INSTR_THUMB_LONG_BRANCH_LINK_0,
+
     // ======================================================
     // Data Processing
     // ======================================================
@@ -355,7 +358,11 @@ package gba_cpu_types_pkg;
     ARM_INSTR_MRS,
 
     /// MSR (write CPSR/SPSR)
-    ARM_INSTR_MSR
+    ARM_INSTR_MSR,
+
+    /// This instruction is for the BL instruction in thumb mode which takes 
+    /// 2 instructions to execute.
+    ARM_INSTR_THUMB_STALL
 
   } arm_instr_t;
 

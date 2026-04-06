@@ -37,6 +37,17 @@ module GBA_Decoder (
     end
   end
 
+  logic [10:0] thumb_bl_imm11;
+
+  always_ff @(posedge clk) begin
+    if (reset) begin
+      thumb_bl_imm11 <= 11'b0;
+    end else if (execution_mode == MODE_THUMB && IR_THUMB[15:11] == 5'b11110) begin
+      thumb_bl_imm11 <= IR_THUMB[10:0];
+      $display("[GBA_Decoder] Latched upper half of BL immediate value 0x%03x", IR_THUMB[10:0]);
+    end
+  end
+
   always_comb begin
     bus.instr_type = ARM_INSTR_UNDEFINED;
     bus.condition_pass = 1'b1;
@@ -344,7 +355,20 @@ module GBA_Decoder (
 
           // Long Branch with Link
           16'b1111_????_????_????: begin
-            $display("[Decoder] Detected THUMB BL instruction with IR=0x%08x", IR_THUMB);
+            if (IR_THUMB[11] == 1'b0) begin
+              // bus.instr_type = ARM_INSTR_BRANCH_LINK;
+
+              bus.instr_type = ARM_INSTR_THUMB_LONG_BRANCH_LINK_0;
+
+              // Overwrite Rn and Rd
+              bus.decoded_regs.Rn = 4'd15;
+              bus.decoded_regs.Rd = 4'd14;
+
+              bus.word.arm.branch.imm24 = {{13{IR_THUMB[10]}}, IR_THUMB[10:0]};
+              $display("[Decoder] Detected THUMB BL instruction with IR=0x%08x", IR_THUMB);
+            end else begin
+
+            end
           end
 
           // Add Offset to Stack Pointer

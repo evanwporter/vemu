@@ -119,10 +119,11 @@ jobs:
           - ldrh_strh_imm_offset
           - ldr_str_sp_rel
           - add_cmp_mov_hi
+          - add_sub_sp
           - b
           - bcc
           - bx
-          - add_sub_sp
+          - bl_blx_prefix
           # - push_pop
 
     steps:
