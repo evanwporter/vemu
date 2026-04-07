@@ -125,7 +125,7 @@ jobs:
           - bx
           - bl_blx_prefix
           - bl_suffix
-          # - push_pop
+          - push_pop
 
     steps:
       - uses: actions/checkout@v4
