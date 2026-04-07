@@ -770,8 +770,7 @@ module GBA_ControlUnit (
 
           // First cycle: Prefetch and calculate first address
           if (cycle == 8'd0) begin
-            if (decoder_bus.instr_type == ARM_INSTR_STM) begin
-            end else if (decoder_bus.instr_type == ARM_INSTR_LDM) begin
+            if (decoder_bus.instr_type == ARM_INSTR_LDM) begin
               $display("[ControlUnit] Cycle 0 of LDM instruction, calculating address");
               control_signals |= fetch_instr_early();
             end
@@ -944,6 +943,10 @@ module GBA_ControlUnit (
               control_signals.ALU_writeback = ALU_WB_REG_RP;
               control_signals.Rp_imm =
                   get_ith_bit(4'(cycle - 8'd2), decoder_bus.word.arm.block.reg_list);
+
+              if (get_ith_bit(4'(cycle - 8'd2), decoder_bus.word.arm.block.reg_list) == 4'd15) begin
+                control_signals.force_no_align_pc = 1'b0;
+              end
 
               // Let the B_bus word pass through the ALU unmodified for the writeback
               control_signals.ALU_op = ALU_OP_MOV;
