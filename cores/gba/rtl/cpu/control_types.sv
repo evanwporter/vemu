@@ -103,7 +103,7 @@ package gba_control_types_pkg;
     // Register Bank
     // ======================================================
 
-    /// Whether to update the `PC` with `address + 4`
+    /// Whether to update the `PC` with `PC + 4`
     logic incrementer_writeback;
 
     /// Write back to register `Rd` from ALU output

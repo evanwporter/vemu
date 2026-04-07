@@ -1227,6 +1227,63 @@ module GBA_ControlUnit (
           end
         end
 
+        ARM_INSTR_THUMB_LONG_BRANCH_LINK_1: begin
+          if (cycle == 8'd0) begin
+            // Rn == R15 (PC)
+            control_signals.B_bus_source   = B_BUS_SRC_REG_RN;
+
+            control_signals.ALU_latch_op_b = 1'b1;
+          end
+
+          if (cycle == 8'd1) begin
+            // Rd == R14 (LR)
+            control_signals.A_bus_source = A_BUS_SRC_RD;
+
+            control_signals.ALU_op = ALU_OP_ADD;
+
+            control_signals.B_bus_source = B_BUS_SRC_IMM;
+            control_signals.B_bus_imm = decoder_bus.word.arm.branch.imm24;
+            // control_signals.B_bus_sign_extend = 1'b1;
+
+            control_signals.shift_type = SHIFT_LSL;
+            control_signals.shift_amount = 5'd1;
+
+            // Rn == R15 (PC)
+            control_signals.ALU_writeback = ALU_WB_REG_RN;
+
+          end
+
+          if (cycle == 8'd2) begin
+            control_signals.addr_bus_src = ADDR_SRC_PC;
+
+            // Rn == R15 (PC)
+            control_signals.A_bus_source = A_BUS_SRC_IMM;
+            control_signals.A_bus_imm = 7'd2;
+
+            control_signals.ALU_use_op_b_latch = 1'b1;
+
+            control_signals.ALU_op = ALU_OP_SUB_REVERSED;
+
+            // Rd == R14 (LR)
+            control_signals.ALU_writeback = ALU_WB_REG_RD;
+          end
+
+          if (cycle == 8'd3) begin
+            control_signals.pipeline_advance = 1'b1;
+
+            // Rd == R14 (LR)
+            control_signals.A_bus_source = A_BUS_SRC_RD;
+
+            control_signals.ALU_op = ALU_OP_OR;
+
+            control_signals.B_bus_source = B_BUS_SRC_IMM;
+            control_signals.B_bus_imm = 24'd1;
+
+            // Rd == R14 (LR)
+            control_signals.ALU_writeback = ALU_WB_REG_RD;
+          end
+        end
+
         ARM_INSTR_SWI: begin
           if (cycle == 8'd0) begin
             // Rd should be R14 (LR)

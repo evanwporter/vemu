@@ -124,6 +124,7 @@ jobs:
           - bcc
           - bx
           - bl_blx_prefix
+          - bl_suffix
           # - push_pop
 
     steps:

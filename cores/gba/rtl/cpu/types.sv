@@ -298,6 +298,8 @@ package gba_cpu_types_pkg;
     /// Thumb Long Branch with Link (BL) - first instruction
     ARM_INSTR_THUMB_LONG_BRANCH_LINK_0,
 
+    ARM_INSTR_THUMB_LONG_BRANCH_LINK_1,
+
     // ======================================================
     // Data Processing
     // ======================================================
