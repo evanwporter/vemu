@@ -770,15 +770,13 @@ module GBA_ControlUnit (
 
           // First cycle: Prefetch and calculate first address
           if (cycle == 8'd0) begin
-            if (decoder_bus.instr_type == ARM_INSTR_STM && regs_count != 0) begin
+            if (decoder_bus.instr_type == ARM_INSTR_STM) begin
               $display("[ControlUnit] Cycle 0 of STM instruction, calculating address");
               control_signals |= fetch_instr_early();
             end else if (decoder_bus.instr_type == ARM_INSTR_LDM) begin
               $display("[ControlUnit] Cycle 0 of LDM instruction, calculating address");
               control_signals |= fetch_instr_early();
             end
-            // // Perform a prefetch
-            // control_signals |= fetch_next_instr();
 
             // // Stash address in PC so we can return later
             // control_signals.stash_addr = 1'b1;
@@ -941,8 +939,6 @@ module GBA_ControlUnit (
                 control_signals.addr_bus_src = ADDR_SRC_PC;
               end
 
-              // control_signals |= fetch_next_instr();
-
               control_signals.ALU_writeback = ALU_WB_REG_RP;
               control_signals.Rp_imm =
                   get_ith_bit(4'(cycle - 8'd2), decoder_bus.word.arm.block.reg_list);
@@ -1015,9 +1011,10 @@ module GBA_ControlUnit (
 
             // Second cycle
             if (cycle == 8'd2 && regs_count == 0) begin
-              control_signals |= fetch_next_instr();
 
               control_signals.addr_bus_src = ADDR_SRC_PC;
+
+              control_signals.memory_advance_early_fetched_IR = 1'b1;
 
               control_signals.pipeline_advance = 1'b1;
 
