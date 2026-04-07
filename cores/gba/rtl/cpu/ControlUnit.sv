@@ -770,7 +770,10 @@ module GBA_ControlUnit (
 
           // First cycle: Prefetch and calculate first address
           if (cycle == 8'd0) begin
-            if (decoder_bus.instr_type == ARM_INSTR_LDM) begin
+            if (decoder_bus.instr_type == ARM_INSTR_STM && regs_count != 0) begin
+              $display("[ControlUnit] Cycle 0 of STM instruction, calculating address");
+              control_signals |= fetch_instr_early();
+            end else if (decoder_bus.instr_type == ARM_INSTR_LDM) begin
               $display("[ControlUnit] Cycle 0 of LDM instruction, calculating address");
               control_signals |= fetch_instr_early();
             end
@@ -1099,7 +1102,9 @@ module GBA_ControlUnit (
             // from memory and latch it to the fetched IR
             if (cycle == 8'd1 + 8'(regs_count)) begin
 
-              control_signals |= fetch_next_instr();
+              // control_signals |= fetch_next_instr();
+
+              control_signals.memory_advance_early_fetched_IR = 1'b1;
               // control_signals.incrementer_writeback = 1'b1;
 
               control_signals.Rp_imm =
