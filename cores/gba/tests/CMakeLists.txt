@@ -4,6 +4,7 @@ add_subdirectory(golden/nba/src/nba)
 
 add_subdirectory(cpu)
 add_subdirectory(arm.gba)
+add_subdirectory(thumb.gba)
 
 add_executable(test_gba
     ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
@@ -22,6 +23,7 @@ target_link_libraries(test_gba
     PRIVATE
         test_cpu_adv
         test_arm_gba
+        test_thumb_gba
         GTest::gtest
         libcommon
 )

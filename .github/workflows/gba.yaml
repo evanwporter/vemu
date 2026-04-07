@@ -140,9 +140,16 @@ jobs:
         run: |
           .\test_gba.exe --gtest_filter=*thumb_${{ matrix.test }}_json --test-dir=${{ github.workspace }}/tests/
 
-  arm_gba_test:
+  jsmolka_gba_tests:
     runs-on: windows-latest
     needs: build
+
+    strategy:
+      fail-fast: true
+      matrix:
+        test:
+          - ARM_GBA_tests
+          - Thumb_GBA_tests
 
     steps:
       - uses: actions/checkout@v4
@@ -155,4 +162,4 @@ jobs:
 
       - name: Run GBA tests
         run: |
-          .\test_gba.exe --gtest_filter=*ARM_GBA_tests* --test-dir=${{ github.workspace }}/tests/
+          .\test_gba.exe --gtest_filter=*${{ matrix.test }}* --test-dir=${{ github.workspace }}/tests/
