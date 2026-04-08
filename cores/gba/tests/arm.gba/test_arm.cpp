@@ -8,6 +8,8 @@
 #include <gtest/gtest.h>
 
 #include "gba.hpp"
+#include "gpu.hpp"
+
 #include "util/decode.hpp"
 #include "util/test_config.hpp"
 #include "util/util.hpp"
@@ -409,6 +411,8 @@ TEST(ARM_GBA_Tests, CPUInstrsAll) {
                 harness.get_top().rootp->GameboyAdvance__DOT__cpu_inst__DOT__regs.__PVT__common.__PVT__r2 = 436207618;
 
             if (step_index == 1331) {
+                run_with_display(harness);
+
                 // TODO: Implement display
                 break;
             }
