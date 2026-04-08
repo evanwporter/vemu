@@ -1,6 +1,6 @@
 # Surfer solarized light
-# Colors from here https://github.com/ryanolsonx/vscode-solarized-theme/blob/master/themes/solarized-light-color-theme.json
-# AI slop
+# Colors from here https://github.com/microsoft/vscode/blob/main/extensions/theme-solarized-light/themes/solarized-light-color-theme.json
+# AI slop w/ human tweaks
 
 foreground = "586e75"
 alt_text_color = "6b7f86"
@@ -15,17 +15,17 @@ selected_elements_colors = {
 canvas_colors = { 
   background = "fdf6e3", 
   alt_background = "eee8d5",
-  foreground = "586e75" 
+  foreground = "4a5f66" 
 }
 
 primary_ui_color = { 
   background = "eee8d5", 
-  foreground = "586e75" 
+  foreground = "4a5f66" 
 }
 
 secondary_ui_color = { 
   background = "f5efdc", 
-  foreground = "586e75" 
+  foreground = "4a5f66" 
 }
 
 accent_info = { background = "e0f2f1", foreground = "2aa198" }
@@ -43,7 +43,7 @@ variable_event = "1c6fa3"
 
 transaction_default = "1c6fa3"
 
-waveform_opacity = 0.12
+waveform_opacity = 0.35
 wide_opacity = 0.0
 
 cursor = { color = "d30102", width = 2 }
