@@ -11,6 +11,8 @@ module GBA_MMU (
     GBA_Bus_if.Master_side wram_chip_bus,
     GBA_Bus_if.Master_side io_bus,
 
+    GBA_Bus_if.Master_side ppu_bus,
+
     GBA_Bus_if.Master_side palette_bus,
     GBA_Bus_if.Master_side vram_bus,
     GBA_Bus_if.Master_side oam_bus,
@@ -36,6 +38,7 @@ module GBA_MMU (
   assign wram_board_bus.addr = effective_addr;
   assign wram_chip_bus.addr = effective_addr;
   assign io_bus.addr = effective_addr;
+  assign ppu_bus.addr = effective_addr;
   assign palette_bus.addr = effective_addr;
   assign vram_bus.addr = effective_addr;
   assign oam_bus.addr = effective_addr;
@@ -48,6 +51,7 @@ module GBA_MMU (
   assign wram_board_bus.wdata = cpu_bus.wdata;
   assign wram_chip_bus.wdata = cpu_bus.wdata;
   assign io_bus.wdata = cpu_bus.wdata;
+  assign ppu_bus.wdata = cpu_bus.wdata;
   assign palette_bus.wdata = cpu_bus.wdata;
   assign vram_bus.wdata = cpu_bus.wdata;
   assign oam_bus.wdata = cpu_bus.wdata;
@@ -60,6 +64,7 @@ module GBA_MMU (
   assign wram_board_bus.transfer_size = cpu_bus.transfer_size;
   assign wram_chip_bus.transfer_size = cpu_bus.transfer_size;
   assign io_bus.transfer_size = cpu_bus.transfer_size;
+  assign ppu_bus.transfer_size = cpu_bus.transfer_size;
   assign palette_bus.transfer_size = cpu_bus.transfer_size;
   assign vram_bus.transfer_size = cpu_bus.transfer_size;
   assign oam_bus.transfer_size = cpu_bus.transfer_size;
@@ -83,6 +88,13 @@ module GBA_MMU (
   wire io_selected = effective_addr inside {[IO_start : IO_end]};
   assign io_bus.read_en  = cpu_bus.read_en && io_selected;
   assign io_bus.write_en = cpu_bus.write_en && io_selected;
+
+  wire ppu_selected = effective_addr inside {[PPU_IO_regs_start : PPU_IO_regs_end]} || 
+                      effective_addr inside {[Palette_start : Palette_end]} ||
+                      effective_addr inside {[VRAM_start : VRAM_end]} ||
+                      effective_addr inside {[OAM_start : OAM_end]};
+  assign ppu_bus.read_en  = cpu_bus.read_en && ppu_selected;
+  assign ppu_bus.write_en = cpu_bus.write_en && ppu_selected;
 
   wire palette_selected = effective_addr inside {[Palette_start : Palette_end]};
   assign palette_bus.read_en  = cpu_bus.read_en && palette_selected;
@@ -124,6 +136,9 @@ module GBA_MMU (
 
     end else if (io_selected) begin
       cpu_bus.rdata = io_bus.rdata;
+
+    end else if (ppu_selected) begin
+      cpu_bus.rdata = ppu_bus.rdata;
 
     end else if (palette_selected) begin
       cpu_bus.rdata = palette_bus.rdata;
@@ -167,6 +182,9 @@ module GBA_MMU (
       else if (io_selected)
         $display("[MMU][READ ] IO          addr=%h data=%h", effective_addr, io_bus.rdata);
 
+      else if (ppu_selected)
+        $display("[MMU][READ ] PPU         addr=%h data=%h", effective_addr, ppu_bus.rdata);
+
       else if (palette_selected)
         $display("[MMU][READ ] PALETTE     addr=%h data=%h", effective_addr, palette_bus.rdata);
 
@@ -206,6 +224,9 @@ module GBA_MMU (
 
       else if (io_selected)
         $display("[MMU][WRITE] IO          addr=%h data=%h", effective_addr, cpu_bus.wdata);
+
+      else if (ppu_selected)
+        $display("[MMU][WRITE] PPU         addr=%h data=%h", effective_addr, ppu_bus.wdata);
 
       else if (palette_selected)
         $display("[MMU][WRITE] PALETTE     addr=%h data=%h", effective_addr, cpu_bus.wdata);

@@ -5,4 +5,6 @@ package gba_types_pkg;
 
   typedef logic [7:0] byte_t;
 
+  typedef word_t addr_t;
+
 endpackage : gba_types_pkg
