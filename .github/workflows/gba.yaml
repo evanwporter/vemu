@@ -5,61 +5,43 @@ on:
   push:
     branches: [main]
   pull_request:
-    paths: [core/gba/**]
+    paths:
+      - cores/gba/**
+      - cores/common/**
+      - tests/GameboyAdvanceCPUTests
+      - tests/gba-tests
+      - CMakeLists.txt
+      - CMakePresets.json
+      - flake.nix
+      - flake.lock
+      - .github/workflows/gba.yaml
 
 jobs:
   build:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Install Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v6
-
-      - name: Set up OSS CAD Suite
-        uses: YosysHQ/setup-oss-cad-suite@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          version: "2026-02-16"
-
-      - name: Cache vcpkg
-        uses: actions/cache@v4
-        with:
-          path: |
-            vcpkg
-            build/vcpkg_installed
-          key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-
-      - name: Install vcpkg
-        shell: pwsh
-        run: |
-          if (!(Test-Path vcpkg)) {
-            git clone https://github.com/microsoft/vcpkg.git
-            git -C vcpkg checkout 80d025e8299d442c13b29751fc9451711b7c6c8e
-            vcpkg\bootstrap-vcpkg.bat
-          }
-          echo "VCPKG_ROOT=${{github.workspace}}\vcpkg" >> $env:GITHUB_ENV
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
 
       - name: Configure
-        run: cmake --preset debug -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreadedDebug -DVCPKG_TARGET_TRIPLET=x64-windows-static
+        run: nix develop --command cmake --preset debug --fresh
 
       - name: Build
-        run: cmake --build --preset debug --target test_gba
+        run: nix develop --command cmake --build --preset debug --target test_gba
 
       - name: Upload test binary
         uses: actions/upload-artifact@v4
         with:
           name: test_gba
-          path: build/debug/cores/gba/tests/test_gba.exe
+          path: build/debug/cores/gba/tests/test_gba
 
   arm_sst_tests:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     needs: build
 
     strategy:
@@ -89,16 +71,20 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
       - uses: actions/download-artifact@v4
         with:
           name: test_gba
 
       - name: Run GBA tests
         run: |
-          .\test_gba.exe --gtest_filter=*arm_${{ matrix.test }}_json --test-dir=${{ github.workspace }}/tests/
+          chmod +x test_gba
+          nix develop --command ./test_gba --gtest_filter='*arm_${{ matrix.test }}_json' --test-dir='${{ github.workspace }}/tests/'
 
   thumb_sst_tests:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     needs: build
 
     strategy:
@@ -115,7 +101,6 @@ jobs:
           - ldrsb_strb_reg_offset
           - ldrb_strb_imm_offset
           - ldrsh_ldrsb_reg_offset
-          - ldrsb_strb_reg_offset
           - ldrh_strh_imm_offset
           - ldr_str_sp_rel
           - add_cmp_mov_hi
@@ -132,16 +117,20 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
       - uses: actions/download-artifact@v4
         with:
           name: test_gba
 
       - name: Run GBA tests
         run: |
-          .\test_gba.exe --gtest_filter=*thumb_${{ matrix.test }}_json --test-dir=${{ github.workspace }}/tests/
+          chmod +x test_gba
+          nix develop --command ./test_gba --gtest_filter='*thumb_${{ matrix.test }}_json' --test-dir='${{ github.workspace }}/tests/'
 
   jsmolka_gba_tests:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     needs: build
 
     strategy:
@@ -156,10 +145,14 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
       - uses: actions/download-artifact@v4
         with:
           name: test_gba
 
       - name: Run GBA tests
         run: |
-          .\test_gba.exe --gtest_filter=*${{ matrix.test }}* --test-dir=${{ github.workspace }}/tests/
+          chmod +x test_gba
+          nix develop --command ./test_gba --gtest_filter='*${{ matrix.test }}*' --test-dir='${{ github.workspace }}/tests/'

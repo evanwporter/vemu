@@ -5,45 +5,32 @@ on:
   push:
     branches: [main]
   pull_request:
-    paths: [core/gb/**]
+    paths:
+      - cores/gb/**
+      - cores/common/**
+      - CMakeLists.txt
+      - CMakePresets.json
+      - flake.nix
+      - flake.lock
+      - .github/workflows/gb.yaml
 
 jobs:
   build-and-test:
-    runs-on: windows-latest
-
-    strategy:
-      fail-fast: true
+    runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
         with:
           submodules: recursive
 
-      - name: Set up MSVC
-        uses: ilammy/msvc-dev-cmd@v1
-
-      - name: Install Ninja
-        uses: seanmiddleditch/gha-setup-ninja@v6
-
-      - name: Set up OSS CAD Suite
-        uses: YosysHQ/setup-oss-cad-suite@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          version: "2026-02-16"
-
-      - name: Install vcpkg
-        shell: pwsh
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git ${{github.workspace}}/vcpkg
-          git -C ${{ github.workspace }}\vcpkg checkout 80d025e8299d442c13b29751fc9451711b7c6c8e
-          ${{github.workspace}}\vcpkg\bootstrap-vcpkg.bat
-          echo "VCPKG_ROOT=${{github.workspace}}\vcpkg" >> $env:GITHUB_ENV
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
 
       - name: Configure
-        run: cmake --preset debug
+        run: nix develop --command cmake --preset debug --fresh
 
       - name: Build
-        run: cmake --build --preset debug --target test_gb
+        run: nix develop --command cmake --build --preset debug --target test_gb
 
       - name: Run tests
-        run: ctest --test-dir build/debug/ -R ^test_gb$ -V
+        run: nix develop --command ctest --test-dir build/debug -R '^test_gb$' -V

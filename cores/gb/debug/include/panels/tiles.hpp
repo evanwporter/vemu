@@ -1,7 +1,7 @@
 // panels/vram_viewer.hpp
 #pragma once
 
-#include "types.hpp"
+#include "../types.hpp"
 #include <array>
 #include <optional>
 #include <vector>

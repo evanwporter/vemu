@@ -2,7 +2,9 @@
 
 #include <VGameboyAdvance.h>
 #include <VGameboyAdvance___024root.h>
+#include <array>
 #include <memory>
+#include <optional>
 #include <verilated.h>
 
 #include <filesystem>

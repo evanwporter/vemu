@@ -12,7 +12,7 @@
 	url = https://github.com/evanwporter/ARM7TDMI.git
 [submodule "cores/gba/tests/golden/nba"]
 	path = cores/gba/tests/golden/nba
-	url = https://github.com/nba-emu/NanoBoyAdvance.git
+	url = https://github.com/evanwporter/NanoBoyAdvance.git
 [submodule "tests/gba-tests"]
 	path = tests/gba-tests
 	url = https://github.com/jsmolka/gba-tests

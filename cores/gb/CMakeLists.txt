@@ -47,12 +47,7 @@ add_subdirectory(tests)
 
 find_package(Verilator REQUIRED HINTS $ENV{VERILATOR_ROOT})
 
-include(FetchContent)
-FetchContent_Declare(
-    argparse
-    GIT_REPOSITORY https://github.com/p-ranav/argparse.git
-)
-FetchContent_MakeAvailable(argparse)
+find_package(argparse CONFIG REQUIRED)
 
 add_executable(gb ${CMAKE_CURRENT_SOURCE_DIR}/sim/main.cpp)
 
@@ -63,7 +58,7 @@ target_include_directories(gb PRIVATE
 
 target_link_libraries(gb PRIVATE
     libgb
-    argparse
+    argparse::argparse
     GameboyHarness
 )
 

@@ -23,6 +23,7 @@ target_include_directories(test_arm_gba
     PUBLIC
         ${CMAKE_SOURCE_DIR}/cores/gba/tests/golden/nba/src/nba/include
         ${CMAKE_SOURCE_DIR}/cores/gba/tests/golden/nba/src/
+        ${CMAKE_SOURCE_DIR}/cores/gba/tests/golden/nba/src/nba/src
 )
 
 target_compile_definitions(test_arm_gba PUBLIC

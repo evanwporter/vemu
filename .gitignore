@@ -1,6 +1,9 @@
+.cache/
+.direnv/
 build/
 *.log
 *.ini
 *.gb
 *.html
 *.vcd
+.envrc
