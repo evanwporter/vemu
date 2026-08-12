@@ -12,11 +12,6 @@ add_executable(test_gb
 
 add_subdirectory(util)
 
-add_test(
-    NAME test_gb
-    COMMAND test_gb
-)
-
 find_package(GTest CONFIG REQUIRED)
 target_link_libraries(test_gb
     PRIVATE
@@ -36,3 +31,5 @@ target_include_directories(test_gb PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+include(GoogleTest)
+gtest_discover_tests(test_gb)

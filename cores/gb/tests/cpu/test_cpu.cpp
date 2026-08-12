@@ -8,7 +8,7 @@
 #include <Vcpu_top___024root.h>
 #include <verilated.h>
 
-#include "util/util.hpp"
+#include "test_cpu.hpp"
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -239,35 +239,10 @@ static void run_single_file(const fs::path& path) {
     }
 }
 
-class GameboyOpcodeTest : public ::testing::TestWithParam<fs::path> { };
-
-TEST_P(GameboyOpcodeTest, Run) {
-    run_single_file(GetParam());
+void run_gameboy_cpu_test_file(std::string_view filename) {
+    run_single_file(kTestDir / filename);
 }
 
-INSTANTIATE_TEST_SUITE_P(
-    CPUTests,
-    GameboyOpcodeTest,
-    ::testing::ValuesIn(collect_files_in_directory(
-        kTestDir,
-        ".json",
-        { "cb.json" })),
-    [](const ::testing::TestParamInfo<fs::path>& info) {
-        return info.param.stem().string();
-    });
-
-class GameboyCBOpcodeTest : public ::testing::TestWithParam<fs::path> { };
-
-TEST_P(GameboyCBOpcodeTest, Run) {
-    run_single_file(GetParam());
+void run_gameboy_cb_cpu_test_file(std::string_view filename) {
+    run_single_file(kCBTestDir / filename);
 }
-
-INSTANTIATE_TEST_SUITE_P(
-    CPUTests,
-    GameboyCBOpcodeTest,
-    ::testing::ValuesIn(collect_files_in_directory(
-        kTestDir,
-        ".json")),
-    [](const ::testing::TestParamInfo<fs::path>& info) {
-        return info.param.stem().string();
-    });

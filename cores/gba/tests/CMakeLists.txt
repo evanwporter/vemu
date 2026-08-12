@@ -20,11 +20,6 @@ add_executable(test_gba
 
 add_subdirectory(util)
 
-add_test(
-    NAME test_gba
-    COMMAND test_gba
-)
-
 find_package(GTest CONFIG REQUIRED)
 target_link_libraries(test_gba
     PRIVATE
@@ -42,3 +37,6 @@ target_compile_definitions(test_gba PRIVATE
 target_include_directories(test_gba PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
+include(GoogleTest)
+gtest_discover_tests(test_gba)

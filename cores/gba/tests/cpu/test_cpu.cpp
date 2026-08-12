@@ -15,6 +15,7 @@
 #include "common/util.hpp"
 
 #include "json_parser.hpp"
+#include "test_cpu.hpp"
 
 using namespace std;
 namespace fs = std::filesystem;
@@ -661,34 +662,6 @@ static void run_single_file(const fs::path& path) {
     }
 }
 
-class GameboyAdvanceARMOpcodeTest : public ::testing::TestWithParam<fs::path> { };
-
-TEST_P(GameboyAdvanceARMOpcodeTest, Run) {
-    run_single_file(GetParam());
+void run_cpu_test_file(std::string_view filename) {
+    run_single_file(get_test_dir() / filename);
 }
-
-INSTANTIATE_TEST_SUITE_P(
-    CPUTests,
-    GameboyAdvanceARMOpcodeTest,
-    ::testing::ValuesIn(collect_files_in_directory(
-        get_test_dir(),
-        ".bin",
-        {},
-        "arm")),
-    get_test_name);
-
-class GameboyAdvanceTHUMBOpcodeTest : public ::testing::TestWithParam<fs::path> { };
-
-TEST_P(GameboyAdvanceTHUMBOpcodeTest, Run) {
-    run_single_file(GetParam());
-}
-
-INSTANTIATE_TEST_SUITE_P(
-    CPUTests,
-    GameboyAdvanceTHUMBOpcodeTest,
-    ::testing::ValuesIn(collect_files_in_directory(
-        get_test_dir(),
-        ".bin",
-        {},
-        "thumb")),
-    get_test_name);
