@@ -13,6 +13,7 @@ gba_add_rtl(
 
 add_subdirectory(cpu)
 add_subdirectory(mmu)
+add_subdirectory(ppu)
 
 get_target_property(GBA_PACKAGES gba_rtl INTERFACE_GBA_PACKAGES)
 get_target_property(GBA_INTERFACES gba_rtl INTERFACE_GBA_INTERFACES)

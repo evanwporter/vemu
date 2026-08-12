@@ -25,8 +25,7 @@ static u32 rgb555_to_rgb888(u16 pixel) {
 }
 
 static bool read_bitmap_pixel(GameboyAdvanceHarness& gba, int x, int y, int mode, u16& out) {
-    auto vram = gba.get_top().rootp->GameboyAdvance__DOT__VRAM__DOT__mem;
-    auto io = gba.get_top().rootp->GameboyAdvance__DOT__IO__DOT__mem;
+    auto vram = gba.get_top().rootp->GameboyAdvance__DOT__ppu__DOT__VRAM__DOT__mem;
 
     int w = (mode == 5 ? 160 : 240);
     int h = (mode == 5 ? 128 : 160);
@@ -41,7 +40,7 @@ static bool read_bitmap_pixel(GameboyAdvanceHarness& gba, int x, int y, int mode
     }
 
     if (mode == 4) {
-        bool page = (io[0x000] & 0x10); // DISPCNT bit 4
+        bool page = (gba.read_memory(0x04000000) & 0x10); // DISPCNT bit 4
         u32 base = page ? 0xA000 : 0x0000;
 
         uint8_t index = vram[base + y * 240 + x];
@@ -54,7 +53,7 @@ static bool read_bitmap_pixel(GameboyAdvanceHarness& gba, int x, int y, int mode
     }
 
     if (mode == 5) {
-        bool page = (io[0x000] & 0x10);
+        bool page = (gba.read_memory(0x04000000) & 0x10);
         u32 base = page ? 0xA000 : 0x0000;
 
         u32 addr = base + (y * 160 + x) * 2;
@@ -67,8 +66,7 @@ static bool read_bitmap_pixel(GameboyAdvanceHarness& gba, int x, int y, int mode
 
 void render_frame(GameboyAdvanceHarness& gba, u32 framebuffer[160][240]) {
 
-    auto io = gba.get_top().rootp->GameboyAdvance__DOT__IO__DOT__mem;
-    int mode = io[0] & 0x7; // DISPCNT
+    int mode = gba.read_memory(0x04000000) & 0x7; // DISPCNT
 
     for (int y = 0; y < 160; y++) {
         for (int x = 0; x < 240; x++) {

@@ -104,10 +104,16 @@ u8 GameboyAdvanceHarness::read_memory(u32 addr) const {
         return val;
     }
 
-    // VRAM
-    else if (addr <= 0x04000000) {
+    // I/O
+    else if (addr <= 0x040003FF) {
         u16 address = addr - 0x04000000;
-        u8 val = static_cast<u8>(top->rootp->GameboyAdvance__DOT__IO__DOT__mem[address]);
+        u8 val;
+        if (addr <= 0x04000057) {
+            const auto& regs = top->rootp->GameboyAdvance__DOT__ppu__DOT__regs;
+            val = static_cast<u8>(regs[address / 4] >> ((address % 4) * 8));
+        } else {
+            val = static_cast<u8>(top->rootp->GameboyAdvance__DOT__IO__DOT__mem[address]);
+        }
         return val;
     }
 
@@ -119,7 +125,7 @@ u8 GameboyAdvanceHarness::read_memory(u32 addr) const {
 
     else if (addr <= 0x06017FFF) {
         u16 address = addr - 0x06000000;
-        u8 val = top->rootp->GameboyAdvance__DOT__VRAM__DOT__mem[address];
+        u8 val = top->rootp->GameboyAdvance__DOT__ppu__DOT__VRAM__DOT__mem[address];
         return val;
     }
 

@@ -12,6 +12,7 @@ module GameboyAdvance (
   GBA_Bus_if wram_board_bus ();
   GBA_Bus_if wram_chip_bus ();
   GBA_Bus_if io_bus ();
+  GBA_Bus_if ppu_io_bus ();
 
   // Display memory
   GBA_Bus_if palette_bus ();
@@ -37,6 +38,7 @@ module GameboyAdvance (
       .wram_board_bus(wram_board_bus),
       .wram_chip_bus(wram_chip_bus),
       .io_bus(io_bus),
+      .ppu_io_bus(ppu_io_bus),
       .palette_bus(palette_bus),
       .vram_bus(vram_bus),
       .oam_bus(oam_bus),
@@ -44,6 +46,13 @@ module GameboyAdvance (
       .gamepak_ws1_bus(gamepak_ws1_bus),
       .gamepak_ws2_bus(gamepak_ws2_bus),
       .gamepak_sram_bus(gamepak_sram_bus)
+  );
+
+  GBA_PPU ppu (
+      .clk(clk),
+      .reset(reset),
+      .vram_bus(vram_bus),
+      .ppu_io_bus(ppu_io_bus)
   );
 
   GBA_Memory #(
@@ -94,16 +103,6 @@ module GameboyAdvance (
       .clk  (clk),
       .reset(reset),
       .bus  (palette_bus)
-  );
-
-  GBA_Memory #(
-      .START_ADDR(VRAM_start),
-      .END_ADDR  (VRAM_end),
-      .SIZE      (VRAM_len)
-  ) VRAM (
-      .clk  (clk),
-      .reset(reset),
-      .bus  (vram_bus)
   );
 
   GBA_Memory #(

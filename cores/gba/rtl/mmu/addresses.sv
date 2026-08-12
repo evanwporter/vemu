@@ -22,6 +22,11 @@ package gba_mmu_addresses_pkg;
   localparam word_t IO_end = 32'h040003FF;
   localparam word_t IO_len = IO_end - IO_start + 1;
 
+  // LCD control, status, background, window, mosaic, and blending registers.
+  localparam word_t PPU_IO_start = 32'h04000000;
+  localparam word_t PPU_IO_end = 32'h04000057;
+  localparam word_t PPU_IO_len = PPU_IO_end - PPU_IO_start + 1;
+
   localparam word_t Palette_start = 32'h05000000;
   localparam word_t Palette_end = 32'h050003FF;
   localparam word_t Palette_len = Palette_end - Palette_start + 1;
