@@ -1,3 +1,5 @@
+`include "gba/util/logger.svh"
+
 import gba_mmu_addresses_pkg::*;
 
 module GameboyAdvance (

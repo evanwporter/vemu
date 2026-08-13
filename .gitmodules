@@ -16,3 +16,6 @@
 [submodule "tests/gba-tests"]
 	path = tests/gba-tests
 	url = https://github.com/jsmolka/gba-tests
+[submodule "tests/libtonc-examples"]
+	path = tests/libtonc-examples
+	url = https://github.com/gbadev-org/libtonc-examples

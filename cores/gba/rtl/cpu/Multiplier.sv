@@ -1,3 +1,5 @@
+`include "gba/util/logger.svh"
+
 import gba_types_pkg::*;
 import gba_cpu_decoder_types_pkg::*;
 
@@ -50,20 +52,20 @@ module GBA_Multiplier (
       if (bus.enable) begin
         cycle <= cycle + 1;
 
-        $display("[Multiplier] Cycle %0d: M=%0d, S=%0d, Result=%0d", cycle, M, S, bus.result);
+        `LOG_TRACE(("[Multiplier] Cycle %0d: M=%0d, S=%0d, Result=%0d", cycle, M, S, bus.result))
 
         unique case (bus.opcode)
           ARM_MUL, ARM_MLA: begin
             if (cycle == 0) begin
-              $display("[Multiplier] Starting multiplication: M=%0d, S=%0d", bus.B_bus, bus.A_bus);
+              `LOG_TRACE(("[Multiplier] Starting multiplication: M=%0d, S=%0d", bus.B_bus, bus.A_bus))
               {upper_result, lower_result} <= bus.A_bus * bus.B_bus;
             end
           end
 
           ARM_UMULL, ARM_UMLAL: begin
             if (cycle == 0) begin
-              $display("[Multiplier] Starting unsigned multiplication: M=%0d, S=%0d", bus.B_bus,
-                       bus.A_bus);
+              `LOG_TRACE(("[Multiplier] Starting unsigned multiplication: M=%0d, S=%0d", bus.B_bus,
+                       bus.A_bus))
               {upper_result, lower_result} <= bus.A_bus * bus.B_bus;
             end else if (cycle == 1) begin
               accum_high <= bus.A_bus;
@@ -71,14 +73,14 @@ module GBA_Multiplier (
 
               {upper_result, lower_result} <= {upper_result, lower_result} + {bus.A_bus, bus.B_bus};
 
-              $display("[Multiplier] Cycle 1: M=%0d, S=%0d, Accum Low=%0d", M, S, accum_low);
+              `LOG_TRACE(("[Multiplier] Cycle 1: M=%0d, S=%0d, Accum Low=%0d", M, S, accum_low))
             end
           end
 
           ARM_SMULL, ARM_SMLAL: begin
             if (cycle == 0) begin
-              $display("[Multiplier] Starting signed multiplication: A=%0d, B=%0d",
-                       $signed(bus.A_bus), $signed(bus.B_bus));
+              `LOG_TRACE(("[Multiplier] Starting signed multiplication: A=%0d, B=%0d",
+                       $signed(bus.A_bus), $signed(bus.B_bus)))
 
               {s_upper_result, s_lower_result} <= $signed(bus.A_bus) * $signed(bus.B_bus);
             end else if (cycle == 1) begin
@@ -107,7 +109,7 @@ module GBA_Multiplier (
           if (cycle == 1) begin
             bus.result = lower_result + bus.A_bus;
 
-            $display("[Multiplier] Cycle 1: M=%0d, S=%0d, Lower Result=%0d", M, S, lower_result);
+            `LOG_TRACE(("[Multiplier] Cycle 1: M=%0d, S=%0d, Lower Result=%0d", M, S, lower_result))
           end
         end
 
@@ -115,14 +117,14 @@ module GBA_Multiplier (
           if (cycle == 2) begin
             bus.result = lower_result;
 
-            $display("[Multiplier] Cycle 2: M=%0d, S=%0d, Lower Result=%0d", M, S, lower_result);
+            `LOG_TRACE(("[Multiplier] Cycle 2: M=%0d, S=%0d, Lower Result=%0d", M, S, lower_result))
           end else if (cycle == 3) begin
             bus.result  = upper_result;
 
             bus.flags.N = upper_result[31];
             bus.flags.Z = ({upper_result, lower_result} == 0);
 
-            $display("[Multiplier] Cycle 3: M=%0d, S=%0d, Upper Result=%0d", M, S, upper_result);
+            `LOG_TRACE(("[Multiplier] Cycle 3: M=%0d, S=%0d, Upper Result=%0d", M, S, upper_result))
           end
         end
 
@@ -130,14 +132,14 @@ module GBA_Multiplier (
           if (cycle == 2) begin
             bus.result = s_lower_result;
 
-            $display("[Multiplier] Cycle 2: M=%0d, S=%0d, Lower Result=%0d", M, S, s_lower_result);
+            `LOG_TRACE(("[Multiplier] Cycle 2: M=%0d, S=%0d, Lower Result=%0d", M, S, s_lower_result))
           end else if (cycle == 3) begin
             bus.result  = s_upper_result;
 
             bus.flags.N = s_upper_result[31];
             bus.flags.Z = ({s_upper_result, s_lower_result} == 0);
 
-            $display("[Multiplier] Cycle 3: M=%0d, S=%0d, Upper Result=%0d", M, S, s_upper_result);
+            `LOG_TRACE(("[Multiplier] Cycle 3: M=%0d, S=%0d, Upper Result=%0d", M, S, s_upper_result))
           end
         end
 

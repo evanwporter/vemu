@@ -56,6 +56,11 @@ module GBA_PPU (
         // VCOUNT is read-only.
         6, 7: ;
         1, 2, 3, 5: regs[index*8+:8] <= value;
+
+        // The rest of the LCD register file is currently stored without
+        // register-specific masking. Valid writes must not trip the unique
+        // case assertion merely because their behavior is not modeled yet.
+        default: regs[index*8+:8] <= value;
       endcase
     end
   endtask

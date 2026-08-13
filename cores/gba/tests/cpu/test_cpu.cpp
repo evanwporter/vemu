@@ -537,6 +537,8 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
     }
 
     VerilatedContext ctx;
+    const char* verilator_args[] = {"test_gba"};
+    ctx.commandArgs(1, verilator_args);
     ctx.debug(0);
     ctx.time(0);
 

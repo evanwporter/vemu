@@ -5,6 +5,7 @@
 #include <array>
 #include <memory>
 #include <optional>
+#include <utility>
 #include <verilated.h>
 
 #include <filesystem>
@@ -47,13 +48,34 @@ private:
     };
 
 public:
+    enum class LogLevel {
+        None,
+        Error,
+        Warn,
+        Info,
+        Trace,
+    };
+
     struct Options {
         bool skip_boot_rom = false;
+        bool waveform = false;
+        LogLevel log_level = LogLevel::None;
         std::filesystem::path wave_path = "wave.vcd";
+
+        Options() = default;
+
+        // Preserve the existing test-harness construction style. Supplying a
+        // waveform path explicitly means waveform generation is requested.
+        Options(bool skip_boot_rom, std::filesystem::path wave_path) :
+            skip_boot_rom(skip_boot_rom),
+            waveform(true),
+            wave_path(std::move(wave_path)) { }
     };
 
     GameboyAdvanceHarness() :
-        options(Options { true, "wave.vcd" }) { };
+        options() {
+        options.skip_boot_rom = true;
+    };
 
     GameboyAdvanceHarness(Options options) :
         options(options) { }

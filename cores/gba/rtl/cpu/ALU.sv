@@ -1,3 +1,5 @@
+`include "gba/util/logger.svh"
+
 import gba_types_pkg::*;
 import gba_cpu_types_pkg::*;
 
@@ -14,8 +16,7 @@ module ALU (
 
   always_comb begin
     if (bus.use_op_b_latch) begin
-      $display("[ALU] Using latched result 0x%08x", op_b_latch);
-      $fflush();
+      `LOG_TRACE(("[ALU] Using latched result 0x%08x", op_b_latch))
     end
   end
 
@@ -25,10 +26,10 @@ module ALU (
     if (reset) begin
       op_b_latch <= 32'h0;
     end else begin
-      $display(
+      `LOG_TRACE((
           "[ALU] op=%s, latch_op_b=%b, use_op_b_latch=%b, disable_op_b=%b, op_a=%0d, op_b=%0d, result=%0d",
           bus.alu_op.name(), bus.latch_op_b, bus.use_op_b_latch, bus.disable_op_b, bus.op_a, op_b,
-          bus.result);
+          bus.result))
 
       if (bus.latch_op_b) begin
         op_b_latch <= shifter_bus.op_b;
@@ -46,8 +47,8 @@ module ALU (
     bus.flags_out.c = bus.flags_in.c;
     bus.flags_out.v = bus.flags_in.v;
 
-    $display("ALU operation: op_a=0x%08x op_b=0x%08x alu_op=%s carry_in=%b, bus.result=0x%08x",
-             bus.op_a, op_b, bus.alu_op.name(), carry_in, bus.result);
+    `LOG_TRACE(("ALU operation: op_a=0x%08x op_b=0x%08x alu_op=%s carry_in=%b, bus.result=0x%08x",
+             bus.op_a, op_b, bus.alu_op.name(), carry_in, bus.result))
 
     temp = 33'h0;
 

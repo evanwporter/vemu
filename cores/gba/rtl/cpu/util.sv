@@ -1,3 +1,5 @@
+`include "gba/util/logger.svh"
+
 import gba_types_pkg::*;
 import gba_cpu_types_pkg::*;
 import gba_control_types_pkg::*;
@@ -26,8 +28,7 @@ package gba_cpu_util_pkg;
       default: eval_cond = 1'b0;
     endcase
 
-    $display("eval_cond: cond=%b N=%0b Z=%0b C=%0b V=%0b -> pass=%0b", cond, N, Z, C, V, eval_cond);
-    $fflush();
+    `LOG_TRACE(("eval_cond: cond=%b N=%0b Z=%0b C=%0b V=%0b -> pass=%0b", cond, N, Z, C, V, eval_cond))
   endfunction
 
   function automatic word_t read_reg(input cpu_regs_t regs, input cpu_mode_t mode,

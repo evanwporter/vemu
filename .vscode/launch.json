@@ -9,7 +9,11 @@
             "type": "codelldb",
             "request": "launch",
             "program": "${workspaceFolder}/build/debug/cores/gba/sim/gba",
-            "args": ["${workspaceFolder}/tests/tonc/hello.gba"],
+            "args": [
+                "${workspaceFolder}/tests/libtonc-examples/bin/mode3_vert.gba",
+                "--log-level",
+                "none"
+            ],
             "stdio": [
                 null,
                 "${workspaceFolder}/trace.txt",

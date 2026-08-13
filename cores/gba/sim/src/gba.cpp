@@ -1,12 +1,14 @@
 #include "gba.hpp"
 #include "verilated_vcd_c.h"
 
+#include <SDL2/SDL.h>
 #include <VGameboyAdvance.h>
 #include <VGameboyAdvance___024root.h>
 #include <gtest/gtest.h>
 #include <verilated.h>
 #include <verilated_types.h>
 
+#include <array>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
@@ -31,13 +33,33 @@ void GameboyAdvanceHarness::load_bios(const std::filesystem::path& filename) {
 }
 
 bool GameboyAdvanceHarness::setup(const std::filesystem::path& rom_path) {
+    const char* log_arg = nullptr;
+    switch (options.log_level) {
+    case LogLevel::Error:
+        log_arg = "+gba-log-error";
+        break;
+    case LogLevel::Warn:
+        log_arg = "+gba-log-warn";
+        break;
+    case LogLevel::Info:
+        log_arg = "+gba-log-info";
+        break;
+    case LogLevel::Trace:
+        log_arg = "+gba-log-trace";
+        break;
+    case LogLevel::None:
+        break;
+    }
+    const char* verilator_args[] = { "gba", log_arg };
+    ctx.commandArgs(log_arg ? 2 : 1, verilator_args);
+
     top = std::make_unique<VGameboyAdvance>(&ctx);
-    tfp = std::make_unique<VerilatedVcdC>();
-
-    Verilated::traceEverOn(true);
-
-    top->trace(tfp.get(), 99);
-    tfp->open(options.wave_path.string().c_str());
+    if (options.waveform) {
+        tfp = std::make_unique<VerilatedVcdC>();
+        Verilated::traceEverOn(true);
+        top->trace(tfp.get(), 99);
+        tfp->open(options.wave_path.string().c_str());
+    }
 
     cpu.emplace(*top);
 
@@ -246,7 +268,8 @@ bool GameboyAdvanceHarness::began_instruction() const {
 bool GameboyAdvanceHarness::half_tick() {
     top->clk = 0;
     top->eval();
-    tfp->dump(ctx.time());
+    if (tfp)
+        tfp->dump(ctx.time());
     ctx.timeInc(5);
 
     return true;
@@ -255,12 +278,14 @@ bool GameboyAdvanceHarness::half_tick() {
 bool GameboyAdvanceHarness::tick() {
     top->clk = 0;
     top->eval();
-    tfp->dump(ctx.time());
+    if (tfp)
+        tfp->dump(ctx.time());
     ctx.timeInc(5);
 
     top->clk = 1;
     top->eval();
-    tfp->dump(ctx.time());
+    if (tfp)
+        tfp->dump(ctx.time());
     ctx.timeInc(5);
 
     cycles++;
@@ -279,11 +304,95 @@ bool GameboyAdvanceHarness::step() {
 }
 
 bool GameboyAdvanceHarness::run() {
-    return false;
+    constexpr int width = 240;
+    constexpr int height = 160;
+    constexpr int scale = 3;
+    constexpr int cycles_per_frame = 200'000;
+
+    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
+        std::cerr << "SDL initialization failed: " << SDL_GetError() << "\n";
+        return false;
+    }
+
+    SDL_Window* window = SDL_CreateWindow(
+        "GBA - Mode 3",
+        SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_CENTERED,
+        width * scale,
+        height * scale,
+        0);
+    SDL_Renderer* renderer = window
+        ? SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED)
+        : nullptr;
+    SDL_Texture* texture = renderer
+        ? SDL_CreateTexture(
+              renderer,
+              SDL_PIXELFORMAT_ARGB8888,
+              SDL_TEXTUREACCESS_STREAMING,
+              width,
+              height)
+        : nullptr;
+
+    if (!window || !renderer || !texture) {
+        std::cerr << "SDL display setup failed: " << SDL_GetError() << "\n";
+        if (texture)
+            SDL_DestroyTexture(texture);
+        if (renderer)
+            SDL_DestroyRenderer(renderer);
+        if (window)
+            SDL_DestroyWindow(window);
+        SDL_Quit();
+        return false;
+    }
+
+    std::array<u32, width * height> framebuffer { };
+    auto& vram = top->rootp->GameboyAdvance__DOT__ppu__DOT__VRAM__DOT__mem;
+    bool running = true;
+
+    while (running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_QUIT)
+                running = false;
+        }
+
+        for (int i = 0; i < cycles_per_frame && running; ++i)
+            tick();
+
+        const auto mode = top->rootp->GameboyAdvance__DOT__ppu__DOT__regs[0] & 0x7;
+
+        if (mode == 3) {
+            std::cout << "Rendering frame in Mode 3\n";
+        }
+
+        for (std::size_t pixel_index = 0; pixel_index < framebuffer.size(); ++pixel_index) {
+            const std::size_t byte_index = pixel_index * 2;
+            const u16 pixel = static_cast<u16>(vram[byte_index])
+                | static_cast<u16>(vram[byte_index + 1] << 8);
+            const u8 red = static_cast<u8>(((pixel >> 0) & 0x1F) * 255 / 31);
+            const u8 green = static_cast<u8>(((pixel >> 5) & 0x1F) * 255 / 31);
+            const u8 blue = static_cast<u8>(((pixel >> 10) & 0x1F) * 255 / 31);
+            framebuffer[pixel_index] = 0xFF000000u
+                | (static_cast<u32>(red) << 16)
+                | (static_cast<u32>(green) << 8)
+                | blue;
+        }
+
+        SDL_UpdateTexture(texture, nullptr, framebuffer.data(), width * sizeof(u32));
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+        SDL_RenderPresent(renderer);
+    }
+
+    SDL_DestroyTexture(texture);
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return true;
 }
 
 ArmTraceState GameboyAdvanceHarness::capture_arm_state() const {
-    ArmTraceState st {};
+    ArmTraceState st { };
 
     const auto& regs = top->rootp->GameboyAdvance__DOT__cpu_inst__DOT__regs;
     const u32 mode = regs.__PVT__CPSR & 0x1F;

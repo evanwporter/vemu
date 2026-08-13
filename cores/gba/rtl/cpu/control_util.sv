@@ -1,3 +1,5 @@
+`include "gba/util/logger.svh"
+
 import gba_control_types_pkg::*;
 import gba_cpu_types_pkg::*;
 import gba_cpu_decoder_types_pkg::*;
@@ -38,8 +40,8 @@ package control_util_pkg;
     // on the U bit in the instruction.
     s.ALU_op = U ? ALU_OP_ADD : ALU_OP_SUB;
 
-    $display("[ControlUnit] ALU operation for address calculation is %s",
-             s.ALU_op == ALU_OP_ADD ? "ADD" : "SUB");
+    `LOG_TRACE(("[ControlUnit] ALU operation for address calculation is %s",
+             s.ALU_op == ALU_OP_ADD ? "ADD" : "SUB"))
 
     // If its pre offset we add/subtract the offset to the base register before the memory access
     if (P == ARM_LDR_STR_PRE_OFFSET) begin

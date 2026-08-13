@@ -1,3 +1,5 @@
+`include "gba/util/logger.svh"
+
 `ifndef MMU_SV
 `define MMU_SV 
 
@@ -21,18 +23,16 @@ module MockMMU (
 
     if (cpu_bus.addr == base_addr) begin
       cpu_bus.rdata = opcode;
-      $display("[MMU] Providing opcode %0d for read at base address %0d", opcode, base_addr);
+      `LOG_TRACE(("[MMU] Providing opcode %0d for read at base address %0d", opcode, base_addr))
     end else if (cpu_bus.read_en) begin
       if (memory.exists(cpu_bus.addr)) begin
         cpu_bus.rdata = memory[cpu_bus.addr];
-        $display("[MMU] Found match for read transaction at addr=%0d, data=%0d", cpu_bus.addr,
-                 memory[cpu_bus.addr]);
-        $fflush();
+        `LOG_TRACE(("[MMU] Found match for read transaction at addr=%0d, data=%0d", cpu_bus.addr,
+                 memory[cpu_bus.addr]))
       end else begin
         cpu_bus.rdata = cpu_bus.addr;
-        $display("[MMU] Providing data=%0d for read transaction at addr=%0d", cpu_bus.rdata,
-                 cpu_bus.addr);
-        $fflush();
+        `LOG_TRACE(("[MMU] Providing data=%0d for read transaction at addr=%0d", cpu_bus.rdata,
+                 cpu_bus.addr))
       end
     end
   end
@@ -41,10 +41,10 @@ module MockMMU (
     if (reset) begin
     end else if (cpu_bus.write_en) begin
       if (memory.exists(cpu_bus.addr)) begin
-        $display("[MMU] Overwriting memory at addr=%0d with data=%0d", cpu_bus.addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU] Overwriting memory at addr=%0d with data=%0d", cpu_bus.addr, cpu_bus.wdata))
       end else begin
-        $display("[MMU] Writing data=%0d for write transaction at addr=%0d", cpu_bus.wdata,
-                 cpu_bus.addr);
+        `LOG_TRACE(("[MMU] Writing data=%0d for write transaction at addr=%0d", cpu_bus.wdata,
+                 cpu_bus.addr))
       end
       memory[cpu_bus.addr] = cpu_bus.wdata;
     end

@@ -1,3 +1,5 @@
+`include "gba/util/logger.svh"
+
 import gba_types_pkg::*;
 import gba_cpu_types_pkg::*;
 import gba_control_types_pkg::*;
@@ -179,11 +181,11 @@ module ARM7TMDI (
   always_comb begin
     unique case (control_signals.A_bus_source)
       A_BUS_SRC_RN: begin
-        $display("Driving A bus with value from Rn (R%d): %0d", decoder_bus.decoded_regs.Rn,
-                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn));
+        `LOG_TRACE(("Driving A bus with value from Rn (R%d): %0d", decoder_bus.decoded_regs.Rn,
+                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn)))
         if (control_signals.A_bus_align) begin
-          $display("Aligning A bus address by masking off lower 2 bits: %0d", read_reg(
-                   regs, cpu_mode, decoder_bus.decoded_regs.Rn) & ~32'd3);
+          `LOG_TRACE(("Aligning A bus address by masking off lower 2 bits: %0d", read_reg(
+                   regs, cpu_mode, decoder_bus.decoded_regs.Rn) & ~32'd3))
           A_bus = (read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn)) & ~32'd3;
         end else begin
           A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn);
@@ -191,20 +193,20 @@ module ARM7TMDI (
       end
 
       A_BUS_SRC_IMM: begin
-        $display("Driving A bus with value from imm (%0d)", control_signals.A_bus_imm);
+        `LOG_TRACE(("Driving A bus with value from imm (%0d)", control_signals.A_bus_imm))
         A_bus = word_t'(control_signals.A_bus_imm);
       end
 
       A_BUS_SRC_RD: begin
-        $display("Driving A bus with value from Rd (R%d): %0d", decoder_bus.decoded_regs.Rd,
-                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rd));
+        `LOG_TRACE(("Driving A bus with value from Rd (R%d): %0d", decoder_bus.decoded_regs.Rd,
+                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rd)))
         A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rd);
       end
 
       A_BUS_SRC_RS: begin
         /// TODO pc_rs_add_4 heres
-        $display("Driving A bus with value from Rs (R%d): %0d", decoder_bus.decoded_regs.Rs,
-                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rs));
+        `LOG_TRACE(("Driving A bus with value from Rs (R%d): %0d", decoder_bus.decoded_regs.Rs,
+                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rs)))
         A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rs);
       end
 
@@ -230,21 +232,21 @@ module ARM7TMDI (
       B_BUS_SRC_IMM: begin
         if (control_signals.B_bus_sign_extend) begin
           B_bus = {{8{control_signals.B_bus_imm[23]}}, control_signals.B_bus_imm};
-          $display("Driving B bus with sign-extended immediate: %0d", B_bus);
+          `LOG_TRACE(("Driving B bus with sign-extended immediate: %0d", B_bus))
         end else begin
           B_bus = {8'b0, control_signals.B_bus_imm};
-          $display("Driving B bus with zero-extended immediate: %0d", B_bus);
+          `LOG_TRACE(("Driving B bus with zero-extended immediate: %0d", B_bus))
         end
       end
 
       B_BUS_SRC_READ_DATA: begin
         B_bus = read_data;
-        $display("Driving B bus with read_data value: %0d", read_data);
+        `LOG_TRACE(("Driving B bus with read_data value: %0d", read_data))
       end
 
       B_BUS_SRC_REG_RM: begin
-        $display("Driving B bus with value from Rm (R%0d): %0d", decoder_bus.decoded_regs.Rm,
-                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm));
+        `LOG_TRACE(("Driving B bus with value from Rm (R%0d): %0d", decoder_bus.decoded_regs.Rm,
+                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm)))
         B_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm);
       end
 
@@ -257,14 +259,14 @@ module ARM7TMDI (
       end
 
       B_BUS_SRC_REG_RN: begin
-        $display("Driving B bus with value from Rn (R%0d): %0d", decoder_bus.decoded_regs.Rn,
-                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn));
+        `LOG_TRACE(("Driving B bus with value from Rn (R%0d): %0d", decoder_bus.decoded_regs.Rn,
+                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn)))
         B_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn);
       end
 
       B_BUS_SRC_REG_RP: begin
-        $display("Driving B bus with value from Rp (R%0d): %0d", control_signals.Rp_imm, read_reg(
-                 regs, cpu_mode, control_signals.Rp_imm));
+        `LOG_TRACE(("Driving B bus with value from Rp (R%0d): %0d", control_signals.Rp_imm, read_reg(
+                 regs, cpu_mode, control_signals.Rp_imm)))
         B_bus = read_reg(regs, control_signals.force_user_mode ? CPU_MODE_USR : cpu_mode,
                          control_signals.Rp_imm);
       end
@@ -275,12 +277,12 @@ module ARM7TMDI (
 
       B_BUS_SRC_CPSR: begin
         B_bus = regs.CPSR;
-        $display("Driving B bus with value from CPSR: 0x%08x", B_bus);
+        `LOG_TRACE(("Driving B bus with value from CPSR: 0x%08x", B_bus))
       end
 
       B_BUS_SRC_SPSR: begin
         B_bus = read_spsr(regs, cpu_mode);
-        $display("Driving B bus with value from SPSR: 0x%08x", B_bus);
+        `LOG_TRACE(("Driving B bus with value from SPSR: 0x%08x", B_bus))
       end
     endcase
   end
@@ -305,20 +307,17 @@ module ARM7TMDI (
 
       if (control_signals.memory_advance_early_fetched_IR) begin
         IR <= early_fetched_IR;
-        $display("Advancing early fetched IR to main IR: 0x%08x", early_fetched_IR);
-        $fflush();
+        `LOG_TRACE(("Advancing early fetched IR to main IR: 0x%08x", early_fetched_IR))
       end
 
       if (control_signals.memory_read_en) begin
         if (control_signals.memory_latch_IR) begin
           IR <= bus.rdata;
-          $display("Latching IR with value: 0x%08x", bus.rdata);
-          $fflush();
+          `LOG_TRACE(("Latching IR with value: 0x%08x", bus.rdata))
 
         end else if (control_signals.memory_latch_early_IR) begin
           early_fetched_IR <= bus.rdata;
-          $display("Latching early fetched IR with value: 0x%08x", bus.rdata);
-          $fflush();
+          `LOG_TRACE(("Latching early fetched IR with value: 0x%08x", bus.rdata))
 
         end else begin
           if (control_signals.memory_byte_transfer) begin
@@ -327,12 +326,12 @@ module ARM7TMDI (
             if (control_signals.memory_signed_transfer) begin
               read_data <= {{24{bus.rdata[7]}}, bus.rdata[7:0]};
 
-              $display("Performing signed byte read, bus.rdata=0x%08x, B_bus[7:0]=0x%02x",
-                       bus.rdata, bus.rdata[7:0]);
+              `LOG_TRACE(("Performing signed byte read, bus.rdata=0x%08x, B_bus[7:0]=0x%02x",
+                       bus.rdata, bus.rdata[7:0]))
             end
 
-            $display("Performing byte read, bus.rdata=0x%08x, B_bus[7:0]=0x%02x", bus.rdata,
-                     bus.rdata[7:0]);
+            `LOG_TRACE(("Performing byte read, bus.rdata=0x%08x, B_bus[7:0]=0x%02x", bus.rdata,
+                     bus.rdata[7:0]))
           end else if (control_signals.memory_halfword_transfer) begin
 
             word_t result;
@@ -343,36 +342,36 @@ module ARM7TMDI (
             // https://mgba-emu.github.io/gbatek/#mis-aligned-ldrhldrsh-does-or-does-not-do-strange-things
             if (bus.addr[0] == 1'b1) begin
               result = ror32(bus.rdata, 8);
-              $display(
+              `LOG_TRACE((
                   "Performing unaligned halfword read with rotate, bus.addr[0]=%b, bus.rdata=0x%08x, rotated result=0x%08x",
-                  bus.addr[0], bus.rdata, result);
+                  bus.addr[0], bus.rdata, result))
 
               if (control_signals.memory_signed_transfer) begin
                 result = {{24{result[7]}}, result[7:0]};
 
-                $display(
+                `LOG_TRACE((
                     "Performing signed byte read (due to unaligned halfword), bus.rdata=0x%08x, B_bus[7:0]=0x%02x, result=0x%08x",
-                    bus.rdata, bus.rdata[7:0], result);
+                    bus.rdata, bus.rdata[7:0], result))
               end
             end else if (control_signals.memory_signed_transfer) begin
               result = {{16{result[15]}}, result[15:0]};
 
-              $display(
+              `LOG_TRACE((
                   "Performing signed halfword read, sign=%b, bus.rdata=0x%08x, B_bus[15:0]=0x%04x, result=0x%08x",
-                  bus.rdata[15], bus.rdata, bus.rdata[15:0], result);
+                  bus.rdata[15], bus.rdata, bus.rdata[15:0], result))
             end else result = {16'd0, result[15:0]};
 
-            $display("Performing halfword read, bus.rdata=0x%08x, B_bus[15:0]=0x%04x", bus.rdata,
-                     bus.rdata[15:0]);
+            `LOG_TRACE(("Performing halfword read, bus.rdata=0x%08x, B_bus[15:0]=0x%04x", bus.rdata,
+                     bus.rdata[15:0]))
 
             read_data <= result;
           end else if (control_signals.memory_signed_transfer) begin
             read_data <= {{16{bus.rdata[15]}}, bus.rdata[15:0]};
 
-            $display("Performing signed halfword read, bus.rdata=0x%08x, B_bus[15:0]=0x%04x",
-                     bus.rdata, bus.rdata[15:0]);
+            `LOG_TRACE(("Performing signed halfword read, bus.rdata=0x%08x, B_bus[15:0]=0x%04x",
+                     bus.rdata, bus.rdata[15:0]))
           end else begin
-            $display("Performing word read, bus.rdata=0x%08x", bus.rdata);
+            `LOG_TRACE(("Performing word read, bus.rdata=0x%08x", bus.rdata))
             read_data <= bus.rdata;
 
             // Misaligned word-load rotate quirk (ARM7TDMI)
@@ -380,8 +379,8 @@ module ARM7TMDI (
               logic [1:0] a;
               a = bus.addr[1:0];
               if (a != 2'b00) begin
-                $display("Misaligned word with a=%b, rotate=%d, prior=%d", a, ror32(
-                         bus.rdata, 32'({a, 3'b000})), bus.rdata);
+                `LOG_TRACE(("Misaligned word with a=%b, rotate=%d, prior=%d", a, ror32(
+                         bus.rdata, 32'({a, 3'b000})), bus.rdata))
                 read_data <= ror32(bus.rdata, 32'({a, 3'b000}));  // (a*8)
               end
             end
@@ -401,8 +400,7 @@ module ARM7TMDI (
       flush_req <= 1'b0;
 
       if (control_signals.pipeline_advance && flush_req_pending) begin
-        $display("Pipeline gba, checking for writebacks and flushes");
-        $fflush();
+        `LOG_TRACE(("Pipeline gba, checking for writebacks and flushes"))
 
         flush_req_pending <= 1'b0;
         flush_req <= 1'b1;
@@ -412,16 +410,16 @@ module ARM7TMDI (
           (control_signals.ALU_writeback == ALU_WB_REG_RN && decoder_bus.decoded_regs.Rn == 4'd15) ||
           (control_signals.ALU_writeback == ALU_WB_REG_RP && control_signals.Rp_imm == 4'd15)) begin
 
-        $display("ALU writeback to PC (R15) detected. ALU_writeback=%0d, Rd=%0d, Rn=%0d",
+        `LOG_TRACE(("ALU writeback to PC (R15) detected. ALU_writeback=%0d, Rd=%0d, Rn=%0d",
                  control_signals.ALU_writeback, decoder_bus.decoded_regs.Rd,
-                 decoder_bus.decoded_regs.Rn);
+                 decoder_bus.decoded_regs.Rn))
 
         if (control_signals.pipeline_advance) begin
           flush_req <= 1'b1;
-          $display("Requesting pipeline flush due to writeback to PC (R15)");
+          `LOG_TRACE(("Requesting pipeline flush due to writeback to PC (R15)"))
         end else begin
           flush_req_pending <= 1'b1;
-          $display("Setting flush_req_pending to ensure flush on next cycle.");
+          `LOG_TRACE(("Setting flush_req_pending to ensure flush on next cycle."))
         end
       end else if (control_signals.incrementer_writeback) begin
         unique case (execution_mode)
@@ -429,37 +427,35 @@ module ARM7TMDI (
             // PC = PC + 4
             `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd4, execution_mode,
                        1'b0)
-            $display("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd4);
-            $fflush();
+            `LOG_TRACE(("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd4))
           end
           MODE_THUMB: begin
             `WRITE_REG(regs, cpu_mode, 15, read_reg(regs, cpu_mode, 15) + 32'd2, execution_mode,
                        1'b0)
-            $display("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd2);
-            $fflush();
+            `LOG_TRACE(("Incrementing PC to: %0d", read_reg(regs, cpu_mode, 15) + 32'd2))
           end
         endcase
       end
 
-      $display("[CPU] Checking ALU flags writeback. ALU_set_flags=%b, restore_cpsr_from_spsr=%b",
-               control_signals.ALU_set_flags, control_signals.restore_cpsr_from_spsr);
+      `LOG_TRACE(("[CPU] Checking ALU flags writeback. ALU_set_flags=%b, restore_cpsr_from_spsr=%b",
+               control_signals.ALU_set_flags, control_signals.restore_cpsr_from_spsr))
 
       if (control_signals.set_thumb_mode) begin
         regs.CPSR[5] <= B_bus[0];
         `WRITE_REG(regs, cpu_mode, 4'd15, B_bus & ~32'd1, execution_mode, 1'b0)
         flush_req <= 1'b1;
-        $display("Setting Thumb mode bit in CPSR");
+        `LOG_TRACE(("Setting Thumb mode bit in CPSR"))
       end
 
       if (execution_mode == MODE_ARM && mode_has_spsr(
               cpu_mode
           ) && control_signals.restore_cpsr_from_spsr) begin
         regs.CPSR <= read_spsr(regs, cpu_mode);
-        $display("Restoring CPSR from SPSR_%0d: 0x%08x", cpu_mode, read_spsr(regs, cpu_mode));
+        `LOG_TRACE(("Restoring CPSR from SPSR_%0d: 0x%08x", cpu_mode, read_spsr(regs, cpu_mode)))
       end else if (control_signals.ALU_set_flags) begin
 
-        $display("Setting flags: N=%b, Z=%b, C=%b, V=%b", alu_bus.flags_out.n, alu_bus.flags_out.z,
-                 alu_bus.flags_out.c, alu_bus.flags_out.v);
+        `LOG_TRACE(("Setting flags: N=%b, Z=%b, C=%b, V=%b", alu_bus.flags_out.n, alu_bus.flags_out.z,
+                 alu_bus.flags_out.c, alu_bus.flags_out.v))
 
         regs.CPSR[31] <= alu_bus.flags_out.n;
         regs.CPSR[30] <= alu_bus.flags_out.z;
@@ -467,24 +463,22 @@ module ARM7TMDI (
         if (decoder_bus.instr_type != ARM_INSTR_MULTIPLY) begin
           regs.CPSR[29] <= alu_bus.flags_out.c;
           regs.CPSR[28] <= alu_bus.flags_out.v;
-          $display("ALU op was %0d, setting C flag to %b and V flag to %b", control_signals.ALU_op,
-                   alu_bus.flags_out.c, alu_bus.flags_out.v);
+          `LOG_TRACE(("ALU op was %0d, setting C flag to %b and V flag to %b", control_signals.ALU_op,
+                   alu_bus.flags_out.c, alu_bus.flags_out.v))
         end else begin
           // For multiply instructions, the C flag is set to destroyed (ARMV4 only -- on ARMV5 and later its ignored)
           regs.CPSR[29] <= 1'd0;
         end
 
-        $display("ALU op was %0d, setting C flag to %b", control_signals.ALU_op,
-                 alu_bus.flags_out.c);
-        $fflush();
+        `LOG_TRACE(("ALU op was %0d, setting C flag to %b", control_signals.ALU_op,
+                 alu_bus.flags_out.c))
       end else if (control_signals.mult_set_flags) begin
         regs.CPSR[31] <= multiplier_bus.flags.N;
         regs.CPSR[30] <= multiplier_bus.flags.Z;
         regs.CPSR[29] <= 1'd0;  // C flag is set to destroyed for multiply instructions (ARMv4)
 
-        $display("Multiplier set flags, setting N=%b, Z=%b", multiplier_bus.flags.N,
-                 multiplier_bus.flags.Z);
-        $fflush();
+        `LOG_TRACE(("Multiplier set flags, setting N=%b, Z=%b", multiplier_bus.flags.N,
+                 multiplier_bus.flags.Z))
       end
 
       if (control_signals.exception != EXCEPTION_NONE) begin
@@ -498,8 +492,8 @@ module ARM7TMDI (
 
         flush_req <= 1'b1;
 
-        $display("Performing CPU exception handling from %0d to %0d", cpu_mode,
-                 control_signals.exception);
+        `LOG_TRACE(("Performing CPU exception handling from %0d to %0d", cpu_mode,
+                 control_signals.exception))
       end
 
       unique case (control_signals.ALU_writeback)
@@ -507,15 +501,15 @@ module ARM7TMDI (
         ALU_WB_REG_RD: begin
           `WRITE_REG(regs, cpu_mode, decoder_bus.decoded_regs.Rd, alu_bus.result, execution_mode,
                      !control_signals.force_no_align_pc)
-          $display("Writing back ALU result %0d to Rd (R%d)", alu_bus.result,
-                   decoder_bus.decoded_regs.Rd);
+          `LOG_TRACE(("Writing back ALU result %0d to Rd (R%d)", alu_bus.result,
+                   decoder_bus.decoded_regs.Rd))
         end
         ALU_WB_REG_RS:
         `WRITE_REG(regs, cpu_mode, decoder_bus.decoded_regs.Rs, alu_bus.result, execution_mode,
                    !control_signals.force_no_align_pc)
         ALU_WB_REG_RN: begin
-          $display("Writing back ALU result %0d to Rn (R%d)", alu_bus.result,
-                   decoder_bus.decoded_regs.Rn);
+          `LOG_TRACE(("Writing back ALU result %0d to Rn (R%d)", alu_bus.result,
+                   decoder_bus.decoded_regs.Rn))
           `WRITE_REG(regs, control_signals.force_user_mode ? CPU_MODE_USR : cpu_mode,
                      decoder_bus.decoded_regs.Rn, alu_bus.result, execution_mode,
                      !control_signals.force_no_align_pc)
@@ -542,13 +536,13 @@ module ARM7TMDI (
 
           regs.CPSR <= apply_status_mask(alu_bus.result, regs.CPSR, mask);
 
-          $display("Writing back ALU result %0d to CPSR (masked=%b)", alu_bus.result, mask);
+          `LOG_TRACE(("Writing back ALU result %0d to CPSR (masked=%b)", alu_bus.result, mask))
         end
         ALU_WB_REG_SPSR: begin
           `WRITE_SPSR(
               regs, cpu_mode, apply_status_mask(
               alu_bus.result, read_spsr(regs, cpu_mode), control_signals.status_reg_write_mask))
-          $display("Writing back ALU result %0d to SPSR_%0d", alu_bus.result, cpu_mode);
+          `LOG_TRACE(("Writing back ALU result %0d to SPSR_%0d", alu_bus.result, cpu_mode))
         end
       endcase
     end
@@ -561,13 +555,13 @@ module ARM7TMDI (
   always_ff @(posedge clk) begin
     if (reset) begin
     end else begin
-      $display("[CPU] addr=%0d", bus.addr);
+      `LOG_TRACE(("[CPU] addr=%0d", bus.addr))
 
       if (control_signals.set_thumb_mode) begin
         bus.addr <= B_bus & ~32'd1;
-        $display(
+        `LOG_TRACE((
             "Setting address bus to new Thumb mode PC value due to set_thumb_mode control signal, B_bus=0x%08x, addr=0x%08x",
-            B_bus, bus.addr);
+            B_bus, bus.addr))
       end else begin
         unique case (control_signals.addr_bus_src)
           ADDR_SRC_NONE: begin
@@ -575,12 +569,12 @@ module ARM7TMDI (
           end
 
           ADDR_SRC_ALU: begin
-            $display("[CPU] Driving address bus with ALU result: %0d", alu_bus.result);
+            `LOG_TRACE(("[CPU] Driving address bus with ALU result: %0d", alu_bus.result))
             bus.addr <= alu_bus.result;
           end
 
           ADDR_SRC_PC: begin
-            $display("Setting address bus to PC value: 0x%08x", read_reg(regs, cpu_mode, 15));
+            `LOG_TRACE(("Setting address bus to PC value: 0x%08x", read_reg(regs, cpu_mode, 15)))
             unique case (execution_mode)
               MODE_ARM:   bus.addr <= read_reg(regs, cpu_mode, 15) & ~32'd3;
               MODE_THUMB: bus.addr <= read_reg(regs, cpu_mode, 15) & ~32'd1;
@@ -588,7 +582,7 @@ module ARM7TMDI (
           end
 
           ADDR_SRC_PC_RESTORE: begin
-            $display("Restoring address bus from PC value: 0x%08x", read_reg(regs, cpu_mode, 15));
+            `LOG_TRACE(("Restoring address bus from PC value: 0x%08x", read_reg(regs, cpu_mode, 15)))
             unique case (execution_mode)
               MODE_ARM:   bus.addr <= read_reg(regs, cpu_mode, 15) - 32'd4 & ~32'd3;
               MODE_THUMB: bus.addr <= read_reg(regs, cpu_mode, 15) - 32'd4 & ~32'd1;
@@ -603,12 +597,12 @@ module ARM7TMDI (
               MODE_THUMB: begin
                 if (control_signals.addr_incr_force_p4) begin
                   bus.addr <= bus.addr + 32'd4;
-                  $display("Incrementing address bus by 4 due to addr_incr_force_p4: new addr=%0d",
-                           bus.addr);
+                  `LOG_TRACE(("Incrementing address bus by 4 due to addr_incr_force_p4: new addr=%0d",
+                           bus.addr))
                 end else begin
                   bus.addr <= bus.addr + 32'd2;
-                  $display("Incrementing address bus for Thumb mode: new addr=%0d",
-                           bus.addr + 32'd2);
+                  `LOG_TRACE(("Incrementing address bus for Thumb mode: new addr=%0d",
+                           bus.addr + 32'd2))
                 end
               end
             endcase

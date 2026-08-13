@@ -1,3 +1,5 @@
+`include "gba/util/logger.svh"
+
 import gba_types_pkg::*;
 import gba_mmu_types_pkg::*;
 
@@ -28,8 +30,8 @@ module GBA_Memory #(
     if (reset) begin
       // TODO
     end else if (bus.write_en && selected) begin
-      $display("[Memory] Write to address %08X: %08X (index %0d), size:%0d", bus.addr, bus.wdata,
-               index, bus.transfer_size);
+      `LOG_TRACE(("[Memory] Write to address %08X: %08X (index %0d), size:%0d", bus.addr, bus.wdata,
+               index, bus.transfer_size))
       unique case (bus.transfer_size)
         ARM_BUS_SIZE_BYTE: begin
           mem[index] <= bus.wdata[7:0];

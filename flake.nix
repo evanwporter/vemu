@@ -2,9 +2,19 @@
 {
 	description = "A Nix-flake-based C/C++ development environment";
 
-	inputs.nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0"; # stable Nixpkgs
+	inputs = {
+		nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0"; # stable Nixpkgs
+		devkitNix = {
+			url = "github:bandithedoge/devkitNix";
+			inputs.nixpkgs.follows = "nixpkgs";
+		};
+	};
 
-	outputs = {self, ...} @ inputs: let
+	outputs = {
+		self,
+		devkitNix,
+		...
+	} @ inputs: let
 		supportedSystems = [
 			"x86_64-linux"
 		];
@@ -13,7 +23,11 @@
 				system:
 					f {
 						inherit system;
-						pkgs = import inputs.nixpkgs {inherit system;};
+						pkgs =
+							import inputs.nixpkgs {
+								inherit system;
+								overlays = [devkitNix.overlays.default];
+							};
 					}
 			);
 	in {
@@ -48,8 +62,15 @@
 									surfer
 									SDL2
 									libx11
+									nanoboyadvance
+									pkgs.devkitNix.devkitARM
 								]
 								++ lib.optionals (!llvmPkgs.stdenv.hostPlatform.isDarwin) [gdb];
+
+							shellHook = ''
+								export DEVKITPRO=${pkgs.devkitNix.devkitARM}/opt/devkitpro
+								export DEVKITARM=$DEVKITPRO/devkitARM
+							'';
 						};
 				}
 			);

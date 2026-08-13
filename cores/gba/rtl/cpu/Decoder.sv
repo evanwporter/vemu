@@ -1,3 +1,5 @@
+`include "gba/util/logger.svh"
+
 import gba_types_pkg::*;
 import gba_cpu_types_pkg::*;
 import gba_cpu_util_pkg::*;
@@ -32,7 +34,7 @@ module GBA_Decoder (
         IR <= bus.IR;
         check_cond <= 1'b1;
         execution_mode <= bus.execution_mode;
-        $display("[GBA_Decoder] Latched instruction 0x%08x into IR", bus.IR);
+        `LOG_TRACE(("[GBA_Decoder] Latched instruction 0x%08x into IR", bus.IR))
       end
     end
   end
@@ -51,19 +53,19 @@ module GBA_Decoder (
         end
 
         bus.decoded_regs.Rn = IR[19:16];
-        $display("[GBA_Decoder] Extracted Rn = R%0d from IR %b", bus.decoded_regs.Rn, IR[19:16]);
+        `LOG_TRACE(("[GBA_Decoder] Extracted Rn = R%0d from IR %b", bus.decoded_regs.Rn, IR[19:16]))
         bus.decoded_regs.Rd = IR[15:12];
         bus.decoded_regs.Rs = IR[11:8];
         bus.decoded_regs.Rm = IR[3:0];
 
-        $display("[GBA_Decoder] Decoding instruction 0x%08x", IR);
+        `LOG_TRACE(("[GBA_Decoder] Decoding instruction 0x%08x", IR))
 
         priority casez (IR)
           // Branch and Branch Exchange
           32'b????_0001_0010_1111_1111_1111_0001_????: begin
             bus.instr_type = ARM_INSTR_BRANCH_EX;
             bus.decoded_regs.Rn = IR[3:0];
-            $display("[GBA_Decoder] Detected BX instruction with IR=0x%08x", IR);
+            `LOG_TRACE(("[GBA_Decoder] Detected BX instruction with IR=0x%08x", IR))
           end
 
           // Block Data Transfer
@@ -80,7 +82,7 @@ module GBA_Decoder (
               bus.instr_type = ARM_INSTR_STM;
             end
 
-            $display("[GBA_Decoder] Detected block data transfer instruction with IR=0x%08x", IR);
+            `LOG_TRACE(("[GBA_Decoder] Detected block data transfer instruction with IR=0x%08x", IR))
           end
 
           // Branch
@@ -93,7 +95,7 @@ module GBA_Decoder (
             bus.decoded_regs.Rd = 4'd14;
             bus.decoded_regs.Rs = 4'd2;
 
-            $display("[GBA_Decoder] Detected B instruction with IR=0x%08x", IR);
+            `LOG_TRACE(("[GBA_Decoder] Detected B instruction with IR=0x%08x", IR))
           end
 
           // Branch with Link
@@ -105,7 +107,7 @@ module GBA_Decoder (
             bus.decoded_regs.Rn = 4'd15;
             bus.decoded_regs.Rd = 4'd14;
 
-            $display("[GBA_Decoder] Detected BL instruction with IR=0x%08x", IR);
+            `LOG_TRACE(("[GBA_Decoder] Detected BL instruction with IR=0x%08x", IR))
           end
 
           // Software Interrupt
@@ -118,7 +120,7 @@ module GBA_Decoder (
             bus.decoded_regs.Rn = 4'd15;
             bus.decoded_regs.Rd = 4'd14;
 
-            $display("[GBA_Decoder] Detected SWI instruction with IR=0x%08x", IR);
+            `LOG_TRACE(("[GBA_Decoder] Detected SWI instruction with IR=0x%08x", IR))
           end
 
           // Single Data Transfer
@@ -142,14 +144,14 @@ module GBA_Decoder (
               bus.word.arm.ls.offset.imm12 = IR[11:0];
             end
 
-            $display("[GBA_Decoder] Detected single data transfer instruction with IR=0x%08x", IR);
+            `LOG_TRACE(("[GBA_Decoder] Detected single data transfer instruction with IR=0x%08x", IR))
           end
 
           // Single Data Swap
           32'b????_0001_0???_????_????_0000_1001_????: begin
             bus.instr_type = ARM_INSTR_SWAP;
             bus.word.arm.swap.B = bit_length_flag_t'(IR[22]);
-            $display("[GBA_Decoder] Detected single data swap instruction with IR=0x%08x", IR);
+            `LOG_TRACE(("[GBA_Decoder] Detected single data swap instruction with IR=0x%08x", IR))
           end
 
           // Multiply
@@ -162,12 +164,12 @@ module GBA_Decoder (
 
             bus.word.arm.mul.S = IR[20];
 
-            $display("[GBA_Decoder] Detected multiply instruction with IR=0x%08x", IR);
+            `LOG_TRACE(("[GBA_Decoder] Detected multiply instruction with IR=0x%08x", IR))
           end
 
           // // Multiply Long
           // 32'b????_0000_1???_????_????_????_1001_????: begin
-          //   $display("[GBA_Decoder] Detected multiply long instruction with IR=0x%08x", IR);
+          //   `LOG_TRACE(("[GBA_Decoder] Detected multiply long instruction with IR=0x%08x", IR))
           // end
 
           // Halfword Data Transfer
@@ -187,18 +189,18 @@ module GBA_Decoder (
 
             bus.word.arm.ls_half.opcode = signed_halfword_flag_t'(IR[6:5]);
 
-            $display(
+            `LOG_TRACE((
                 "[GBA_Decoder] Detected halfword data transfer register instruction with IR=0x%08x",
-                IR);
+                IR))
           end
 
           // PSR Transfer MRS
           32'b????_0001_0?00_1111_????_????_????_????: begin
             bus.instr_type = ARM_INSTR_MRS;
             bus.word.arm.mrs.psr = psr_transfer_t'(IR[22]);
-            $display("[ControlUnit] Detected MRS instruction with IR=0x%08x, accessing %s", IR,
-                     psr_transfer_t'(IR[22]) == ARM_PSR_CPSR ? "CPSR" : "SPSR");
-            $display("[GBA_Decoder] Detected MRS instruction with IR=0x%08x", IR);
+            `LOG_TRACE(("[ControlUnit] Detected MRS instruction with IR=0x%08x, accessing %s", IR,
+                     psr_transfer_t'(IR[22]) == ARM_PSR_CPSR ? "CPSR" : "SPSR"))
+            `LOG_TRACE(("[GBA_Decoder] Detected MRS instruction with IR=0x%08x", IR))
           end
 
           // PSR Transfer MSR
@@ -216,14 +218,13 @@ module GBA_Decoder (
             bus.word.arm.msr.imm8 = IR[7:0];
 
             bus.word.arm.msr.psr = psr_transfer_t'(IR[22]);
-            $display("[GBA_Decoder] Detected MSR instruction with IR=0x%08x", IR);
+            `LOG_TRACE(("[GBA_Decoder] Detected MSR instruction with IR=0x%08x", IR))
           end
 
           // Data Processing
           32'b????_00??_????_????_????_????_????_????: begin
 
-            $display("[GBA_Decoder] Detected data processing instruction with IR=0x%08x", IR);
-            $fflush();
+            `LOG_TRACE(("[GBA_Decoder] Detected data processing instruction with IR=0x%08x", IR))
 
             // Notable bits
             // 2nd Operand
@@ -246,10 +247,10 @@ module GBA_Decoder (
               bus.word.arm.data_proc_imm.opcode = alu_op_t'(IR[24:21]);
               bus.instr_type = ARM_INSTR_DATAPROC_IMM;
 
-              $display(
+              `LOG_TRACE((
                   "Decoded data processing immediate instruction with opcode=%0d, set_flags=%0b, imm8=0x%02x, rotate=0x%01x",
                   bus.word.arm.data_proc_imm.opcode, bus.word.arm.data_proc_imm.set_flags,
-                  bus.word.arm.data_proc_imm.imm8, bus.word.arm.data_proc_imm.rotate);
+                  bus.word.arm.data_proc_imm.imm8, bus.word.arm.data_proc_imm.rotate))
             end else if (IR[4] == 1'b0) begin  // IR[25] == 1'b0 is implied
               // Register with immediate shift
               bus.word.arm.data_proc_reg_imm.shift_amount = IR[11:7];
@@ -268,17 +269,17 @@ module GBA_Decoder (
 
           default: begin
             // TODO error
-            $display("[GBA_Decoder] Unrecognized instruction with IR=0x%08x", IR);
+            `LOG_TRACE(("[GBA_Decoder] Unrecognized instruction with IR=0x%08x", IR))
           end
         endcase
       end
 
       MODE_THUMB: begin
-        $display("[GBA_Decoder] Decoding THUMB instruction 0x%04x", IR_THUMB);
+        `LOG_TRACE(("[GBA_Decoder] Decoding THUMB instruction 0x%04x", IR_THUMB))
 
         bus.decoded_regs.Rn = 4'(IR_THUMB[8:6]);
-        $display("[GBA_Decoder] Extracted Rn = R%0d from IR %b", bus.decoded_regs.Rn,
-                 IR_THUMB[15:12]);
+        `LOG_TRACE(("[GBA_Decoder] Extracted Rn = R%0d from IR %b", bus.decoded_regs.Rn,
+                 IR_THUMB[15:12]))
         bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
         bus.decoded_regs.Rs = 4'(IR_THUMB[5:3]);
 
@@ -292,7 +293,7 @@ module GBA_Decoder (
             bus.decoded_regs.Rn = 4'd15;
             bus.decoded_regs.Rd = 4'd14;
 
-            $display("[GBA_Decoder] Detected THUMB SWI instruction with IR=0x%08x", IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Detected THUMB SWI instruction with IR=0x%08x", IR_THUMB))
           end
 
           // Unconditional Branch
@@ -305,7 +306,7 @@ module GBA_Decoder (
 
             bus.word.arm.branch.imm24 = {{13{IR_THUMB[10]}}, IR_THUMB[10:0]};
 
-            $display("[GBA_Decoder] Detected THUMB B instruction with IR=0x%08x", IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Detected THUMB B instruction with IR=0x%08x", IR_THUMB))
           end
 
           // Conditional Branch
@@ -321,7 +322,7 @@ module GBA_Decoder (
 
             bus.word.arm.branch.imm24 = {{16{IR_THUMB[7]}}, IR_THUMB[7:0]};
 
-            $display("[GBA_Decoder] Detected THUMB B<cond> instruction with IR=0x%08x", IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Detected THUMB B<cond> instruction with IR=0x%08x", IR_THUMB))
           end
 
           // Block Data Transfer
@@ -345,7 +346,7 @@ module GBA_Decoder (
 
             bus.decoded_regs.Rn = 4'(IR_THUMB[10:8]);
 
-            $display("[GBA_Decoder] Detected THUMB LDM/STM instruction with IR=0x%08x", IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Detected THUMB LDM/STM instruction with IR=0x%08x", IR_THUMB))
           end
 
           // Long Branch with Link
@@ -360,7 +361,7 @@ module GBA_Decoder (
               bus.decoded_regs.Rd = 4'd14;
 
               bus.word.arm.branch.imm24 = {{13{IR_THUMB[10]}}, IR_THUMB[10:0]};
-              $display("[GBA_Decoder] Detected THUMB BL instruction with IR=0x%08x", IR_THUMB);
+              `LOG_TRACE(("[GBA_Decoder] Detected THUMB BL instruction with IR=0x%08x", IR_THUMB))
             end else begin
               bus.instr_type = ARM_INSTR_THUMB_LONG_BRANCH_LINK_1;
 
@@ -369,8 +370,8 @@ module GBA_Decoder (
               bus.decoded_regs.Rd = 4'd14;
 
               bus.word.arm.branch.imm24 = 24'(IR_THUMB[10:0]);
-              $display("[GBA_Decoder] Detected THUMB BL instruction (2nd half) with Imm=0x%06x",
-                       24'(IR_THUMB[10:0]));
+              `LOG_TRACE(("[GBA_Decoder] Detected THUMB BL instruction (2nd half) with Imm=0x%06x",
+                       24'(IR_THUMB[10:0])))
             end
           end
 
@@ -389,7 +390,7 @@ module GBA_Decoder (
             bus.decoded_regs.Rd = 4'd13;
             bus.decoded_regs.Rn = 4'd13;
 
-            $display("[GBA_Decoder] Detected THUMB ADD SP instruction with IR=0x%08x", IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Detected THUMB ADD SP instruction with IR=0x%08x", IR_THUMB))
           end
 
           // Push / Pop Registers
@@ -415,8 +416,8 @@ module GBA_Decoder (
                 bus.word.arm.block.reg_list[15] = 1'b1;  // PC = R15
               end
 
-              $display("[GBA_Decoder] Detected THUMB POP instruction (reg_list=0x%02x, PC=%0d)",
-                       IR_THUMB[7:0], IR_THUMB[8]);
+              `LOG_TRACE(("[GBA_Decoder] Detected THUMB POP instruction (reg_list=0x%02x, PC=%0d)",
+                       IR_THUMB[7:0], IR_THUMB[8]))
 
             end else begin
               // PUSH = STMDB SP!
@@ -429,10 +430,10 @@ module GBA_Decoder (
                 bus.word.arm.block.reg_list[14] = 1'b1;  // LR = R14
               end
 
-              $display("[GBA_Decoder] Detected THUMB PUSH instruction (reg_list=0x%02x, LR=%0d)",
-                       IR_THUMB[7:0], IR_THUMB[8]);
+              `LOG_TRACE(("[GBA_Decoder] Detected THUMB PUSH instruction (reg_list=0x%02x, LR=%0d)",
+                       IR_THUMB[7:0], IR_THUMB[8]))
             end
-            $display("[GBA_Decoder] Detected THUMB PUSH/POP instruction with IR=0x%08x", IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Detected THUMB PUSH/POP instruction with IR=0x%08x", IR_THUMB))
           end
 
           // Load / Store Halfword
@@ -455,7 +456,7 @@ module GBA_Decoder (
             bus.decoded_regs.Rn = 4'(IR_THUMB[5:3]);
             bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
 
-            $display("[GBA_Decoder] Detected THUMB LDRH/STRH instruction with IR=0x%08x", IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Detected THUMB LDRH/STRH instruction with IR=0x%08x", IR_THUMB))
           end
 
           // SP Relative Load / Store
@@ -474,8 +475,8 @@ module GBA_Decoder (
             bus.decoded_regs.Rn = 4'd13;  // SP
             bus.decoded_regs.Rd = 4'(IR_THUMB[10:8]);
 
-            $display("[GBA_Decoder] Detected THUMB LDR/STR SP instruction with IR=0x%08x",
-                     IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Detected THUMB LDR/STR SP instruction with IR=0x%08x",
+                     IR_THUMB))
           end
 
           // Load Address
@@ -497,8 +498,8 @@ module GBA_Decoder (
             bus.word.arm.data_proc_imm.rotate = 4'd1;
             bus.word.arm.data_proc_imm.use_lsl = 1'b1;
 
-            $display("[GBA_Decoder] Detected THUMB ADD Rd, PC, #imm instruction with IR=0x%08x",
-                     IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Detected THUMB ADD Rd, PC, #imm instruction with IR=0x%08x",
+                     IR_THUMB))
           end
 
           // Load / Store with Immediate Offset
@@ -516,9 +517,9 @@ module GBA_Decoder (
             bus.decoded_regs.Rn = 4'(IR_THUMB[5:3]);
             bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
 
-            $display(
+            `LOG_TRACE((
                 "[GBA_Decoder] Detected THUMB LDR/STR with immediate offset instruction with IR=0x%08x",
-                IR_THUMB);
+                IR_THUMB))
           end
 
           // Load / Store with Register Offset
@@ -534,9 +535,9 @@ module GBA_Decoder (
             bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
             bus.decoded_regs.Rm = 4'(IR_THUMB[10:6]);
 
-            $display(
+            `LOG_TRACE((
                 "[GBA_Decoder] Detected THUMB LDR/STR with register offset instruction with IR=0x%08x",
-                IR_THUMB);
+                IR_THUMB))
           end
 
           // Load / Store Sign-Extended Byte / Halfword
@@ -571,15 +572,15 @@ module GBA_Decoder (
             bus.decoded_regs.Rn = 4'(IR_THUMB[5:3]);
             bus.decoded_regs.Rd = 4'(IR_THUMB[2:0]);
 
-            $display(
+            `LOG_TRACE((
                 "[GBA_Decoder] Detected THUMB STRH/LDSB/LDRSB/LDRSH instruction with IR=0x%08x",
-                IR_THUMB);
+                IR_THUMB))
           end
 
           // PC Relative Load
           16'b0100_1???_????_????: begin
-            $display("[GBA_Decoder] Detected THUMB PC-relative load instruction with IR=0x%08x",
-                     IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Detected THUMB PC-relative load instruction with IR=0x%08x",
+                     IR_THUMB))
 
             bus.word.arm.ls.I = ARM_LDR_STR_IMMEDIATE;
             bus.word.arm.ls.P = ARM_LDR_STR_PRE_OFFSET;
@@ -601,8 +602,8 @@ module GBA_Decoder (
           16'b0100_01??_????_????: begin
             unique case (IR_THUMB[9:8])
               2'd0: begin
-                $display("[GBA_Decoder] Detected THUMB ADD Rd, Hs instruction with IR=0x%08x",
-                         IR_THUMB);
+                `LOG_TRACE(("[GBA_Decoder] Detected THUMB ADD Rd, Hs instruction with IR=0x%08x",
+                         IR_THUMB))
                 bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
 
                 bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_ADD;
@@ -620,8 +621,8 @@ module GBA_Decoder (
               end
 
               2'd1: begin
-                $display("[GBA_Decoder] Detected THUMB CMP Rd, Hs instruction with IR=0x%08x",
-                         IR_THUMB);
+                `LOG_TRACE(("[GBA_Decoder] Detected THUMB CMP Rd, Hs instruction with IR=0x%08x",
+                         IR_THUMB))
                 bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
 
                 bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_CMP;
@@ -637,8 +638,8 @@ module GBA_Decoder (
 
               2'd2: begin
                 // TODO: Nop if R8 == R8
-                $display("[GBA_Decoder] Detected THUMB MOV Rd, Hs instruction with IR=0x%08x",
-                         IR_THUMB);
+                `LOG_TRACE(("[GBA_Decoder] Detected THUMB MOV Rd, Hs instruction with IR=0x%08x",
+                         IR_THUMB))
                 bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
 
                 bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_MOV;
@@ -654,9 +655,9 @@ module GBA_Decoder (
               end
 
               2'd3: begin
-                $display(
+                `LOG_TRACE((
                     "[GBA_Decoder] Detected THUMB BX instruction with Hs as operand instruction with IR=0x%08x",
-                    IR_THUMB);
+                    IR_THUMB))
 
                 if (IR_THUMB[7] == 1'b0) begin
                   bus.instr_type = ARM_INSTR_BRANCH_EX;
@@ -664,9 +665,9 @@ module GBA_Decoder (
                   // TODO
                   bus.instr_type = ARM_INSTR_BRANCH_EX;
 
-                  $display(
+                  `LOG_TRACE((
                       "[GBA_Decoder] Detected THUMB BLX instruction with Hs as operand instruction with IR=0x%08x, but BLX is not yet implemented, treating as BX for now",
-                      IR_THUMB);
+                      IR_THUMB))
                 end
 
                 // For BX Rn (ARM) == Rs (THUMB)
@@ -676,9 +677,9 @@ module GBA_Decoder (
               end
             endcase
 
-            $display(
+            `LOG_TRACE((
                 "[GBA_Decoder] Detected THUMB Hi register operation or branch exchange instruction with IR=0x%08x",
-                IR_THUMB);
+                IR_THUMB))
           end
 
           // ALU Operations
@@ -686,12 +687,12 @@ module GBA_Decoder (
           // Rs: 5-3
           // Rd: 2-0
           16'b0100_00??_????_????: begin
-            $display("[GBA_Decoder] Detected THUMB ALU operation instruction with IR=0x%08x",
-                     IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Detected THUMB ALU operation instruction with IR=0x%08x",
+                     IR_THUMB))
 
             unique case (IR_THUMB[9:6])
               4'h0, 4'h1, 4'h5, 4'h6, 4'h8, 4'hA, 4'hB, 4'hC, 4'hE, 4'hF: begin
-                $display("[GBA_Decoder] Detected THUMB AND instruction with IR=0x%08x", IR_THUMB);
+                `LOG_TRACE(("[GBA_Decoder] Detected THUMB AND instruction with IR=0x%08x", IR_THUMB))
                 bus.word.arm.data_proc_reg_imm.opcode = decoder_util_pkg::THUMB_ALU_LUT[IR_THUMB[9:6]];
 
                 bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
@@ -707,8 +708,8 @@ module GBA_Decoder (
               end
 
               4'h2, 4'h3, 4'h4, 4'h7: begin
-                $display("[GBA_Decoder] Detected THUMB LSL/LSR/ASR/ROR instruction with IR=0x%08x",
-                         IR_THUMB);
+                `LOG_TRACE(("[GBA_Decoder] Detected THUMB LSL/LSR/ASR/ROR instruction with IR=0x%08x",
+                         IR_THUMB))
                 bus.word.arm.data_proc_reg_reg.opcode = ALU_OP_MOV;
                 bus.instr_type = ARM_INSTR_DATAPROC_REG_REG;
 
@@ -721,7 +722,7 @@ module GBA_Decoder (
               end
 
               4'h9: begin
-                $display("[GBA_Decoder] Detected THUMB NEG instruction with IR=0x%08x", IR_THUMB);
+                `LOG_TRACE(("[GBA_Decoder] Detected THUMB NEG instruction with IR=0x%08x", IR_THUMB))
                 bus.word.arm.data_proc_imm.opcode = ALU_OP_SUB_REVERSED;
                 bus.instr_type = ARM_INSTR_DATAPROC_IMM;
 
@@ -735,7 +736,7 @@ module GBA_Decoder (
               end
 
               4'hD: begin
-                $display("[GBA_Decoder] Detected THUMB MUL instruction with IR=0x%08x", IR_THUMB);
+                `LOG_TRACE(("[GBA_Decoder] Detected THUMB MUL instruction with IR=0x%08x", IR_THUMB))
                 bus.instr_type = ARM_INSTR_MULTIPLY;
                 bus.word.arm.mul.opcode = ARM_MUL;
 
@@ -750,9 +751,9 @@ module GBA_Decoder (
 
           // Move / Compare / Add / Subtract Immediate
           16'b001?_????_????_????: begin
-            $display(
+            `LOG_TRACE((
                 "[GBA_Decoder] Detected THUMB move/compare/add/subtract immediate instruction with IR=0x%08x",
-                IR_THUMB);
+                IR_THUMB))
 
             // Performs
             // Rd = Rd op imm8
@@ -767,28 +768,28 @@ module GBA_Decoder (
 
             unique case (IR_THUMB[12:11])
               2'b00: begin
-                $display("[GBA_Decoder] Detected THUMB MOV immediate instruction with IR=0x%08x",
-                         IR_THUMB);
+                `LOG_TRACE(("[GBA_Decoder] Detected THUMB MOV immediate instruction with IR=0x%08x",
+                         IR_THUMB))
                 bus.word.arm.data_proc_imm.opcode = ALU_OP_MOV;
                 bus.instr_type = ARM_INSTR_DATAPROC_IMM;
               end
               2'b01: begin
-                $display(
+                `LOG_TRACE((
                     "[GBA_Decoder] Detected THUMB CMP instruction with register operand with IR=0x%08x",
-                    IR_THUMB);
+                    IR_THUMB))
                 bus.word.arm.data_proc_imm.opcode = ALU_OP_CMP;
                 bus.instr_type = ARM_INSTR_DATAPROC_IMM;
               end
               2'b10: begin
-                $display("[GBA_Decoder] Detected THUMB add immediate instruction with IR=0x%08x",
-                         IR_THUMB);
+                `LOG_TRACE(("[GBA_Decoder] Detected THUMB add immediate instruction with IR=0x%08x",
+                         IR_THUMB))
                 bus.word.arm.data_proc_imm.opcode = ALU_OP_ADD;
                 bus.instr_type = ARM_INSTR_DATAPROC_IMM;
               end
               2'b11: begin
-                $display(
+                `LOG_TRACE((
                     "[GBA_Decoder] Detected THUMB subtract immediate instruction with IR=0x%08x",
-                    IR_THUMB);
+                    IR_THUMB))
                 bus.word.arm.data_proc_imm.opcode = ALU_OP_SUB;
                 bus.instr_type = ARM_INSTR_DATAPROC_IMM;
               end
@@ -806,9 +807,9 @@ module GBA_Decoder (
             //      We can use this to simplify the logic
             unique case (IR_THUMB[10:9])
               2'b00: begin
-                $display(
+                `LOG_TRACE((
                     "[GBA_Decoder] Detected THUMB add instruction with register operand with IR=0x%08x",
-                    IR_THUMB);
+                    IR_THUMB))
                 bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_ADD;
                 bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
 
@@ -818,9 +819,9 @@ module GBA_Decoder (
                 bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
               end
               2'b01: begin
-                $display(
+                `LOG_TRACE((
                     "[GBA_Decoder] Detected THUMB subtract instruction with register operand with IR=0x%08x",
-                    IR_THUMB);
+                    IR_THUMB))
                 bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_SUB;
                 bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
 
@@ -830,9 +831,9 @@ module GBA_Decoder (
                 bus.word.arm.data_proc_reg_imm.set_flags = 1'b1;
               end
               2'b10: begin
-                $display(
+                `LOG_TRACE((
                     "[GBA_Decoder] Detected THUMB add instruction with immediate operand with IR=0x%08x",
-                    IR_THUMB);
+                    IR_THUMB))
                 bus.word.arm.data_proc_imm.opcode = ALU_OP_ADD;
                 bus.instr_type = ARM_INSTR_DATAPROC_IMM;
                 bus.word.arm.data_proc_imm.rotate = 0;
@@ -841,9 +842,9 @@ module GBA_Decoder (
                 bus.word.arm.data_proc_imm.imm8 = 8'(IR_THUMB[8:6]);
               end
               2'b11: begin
-                $display(
+                `LOG_TRACE((
                     "[GBA_Decoder] Detected THUMB subtract instruction with immediate operand with IR=0x%08x",
-                    IR_THUMB);
+                    IR_THUMB))
                 bus.word.arm.data_proc_imm.opcode = ALU_OP_SUB;
                 bus.instr_type = ARM_INSTR_DATAPROC_IMM;
                 bus.word.arm.data_proc_imm.rotate = 0;
@@ -856,9 +857,9 @@ module GBA_Decoder (
 
           // Move Shifted Register
           16'b000?_????_????_????: begin
-            $display(
+            `LOG_TRACE((
                 "[GBA_Decoder] Detected THUMB move shifted register instruction with IR=0x%08x",
-                IR_THUMB);
+                IR_THUMB))
             bus.instr_type = ARM_INSTR_DATAPROC_REG_IMM;
 
             bus.word.arm.data_proc_reg_imm.opcode = ALU_OP_MOV;
@@ -874,7 +875,7 @@ module GBA_Decoder (
 
           default: begin
             // TODO error
-            $display("[GBA_Decoder] Unrecognized instruction with IR=0x%08x", IR_THUMB);
+            `LOG_TRACE(("[GBA_Decoder] Unrecognized instruction with IR=0x%08x", IR_THUMB))
           end
         endcase
       end

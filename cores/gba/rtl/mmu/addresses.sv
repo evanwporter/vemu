@@ -31,8 +31,8 @@ package gba_mmu_addresses_pkg;
   localparam word_t Palette_end = 32'h050003FF;
   localparam word_t Palette_len = Palette_end - Palette_start + 1;
 
-  localparam word_t VRAM_start = 32'h05000000;
-  localparam word_t VRAM_end = 32'h050003FF;
+  localparam word_t VRAM_start = 32'h06000000;
+  localparam word_t VRAM_end = 32'h06017FFF;
   localparam word_t VRAM_len = VRAM_end - VRAM_start + 1;
 
   localparam word_t OAM_start = 32'h07000000;

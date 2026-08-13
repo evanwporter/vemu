@@ -1,3 +1,5 @@
+`include "gba/util/logger.svh"
+
 import gba_types_pkg::*;
 import gba_mmu_types_pkg::*;
 import gba_mmu_addresses_pkg::*;
@@ -167,87 +169,87 @@ module GBA_MMU (
     // READ LOGS
     if (cpu_bus.read_en) begin
       if (bios_selected)
-        $display("[MMU][READ ] BIOS        addr=%h data=%h", effective_addr, bios_bus.rdata);
+        `LOG_TRACE(("[MMU][READ ] BIOS        addr=%h data=%h", effective_addr, bios_bus.rdata))
 
       else if (wram_board_selected)
-        $display("[MMU][READ ] WRAM_BOARD  addr=%h data=%h", effective_addr, wram_board_bus.rdata);
+        `LOG_TRACE(("[MMU][READ ] WRAM_BOARD  addr=%h data=%h", effective_addr, wram_board_bus.rdata))
 
       else if (wram_chip_selected)
-        $display("[MMU][READ ] WRAM_CHIP   addr=%h data=%h", effective_addr, wram_chip_bus.rdata);
+        `LOG_TRACE(("[MMU][READ ] WRAM_CHIP   addr=%h data=%h", effective_addr, wram_chip_bus.rdata))
 
       else if (ppu_io_selected)
-        $display("[MMU][READ ] PPU_IO      addr=%h data=%h", effective_addr, ppu_io_bus.rdata);
+        `LOG_TRACE(("[MMU][READ ] PPU_IO      addr=%h data=%h", effective_addr, ppu_io_bus.rdata))
 
       else if (io_selected)
-        $display(
+        `LOG_TRACE((
             "[MMU][READ ] GENERIC_IO  addr=%h data=%h", effective_addr, io_bus.rdata
-        );
+        ))
 
       else if (palette_selected)
-        $display("[MMU][READ ] PALETTE     addr=%h data=%h", effective_addr, palette_bus.rdata);
+        `LOG_TRACE(("[MMU][READ ] PALETTE     addr=%h data=%h", effective_addr, palette_bus.rdata))
 
       else if (vram_selected)
-        $display("[MMU][READ ] VRAM        addr=%h data=%h", effective_addr, vram_bus.rdata);
+        `LOG_TRACE(("[MMU][READ ] VRAM        addr=%h data=%h", effective_addr, vram_bus.rdata))
 
       else if (oam_selected)
-        $display("[MMU][READ ] OAM         addr=%h data=%h", effective_addr, oam_bus.rdata);
+        `LOG_TRACE(("[MMU][READ ] OAM         addr=%h data=%h", effective_addr, oam_bus.rdata))
 
       else if (gamepak_ws0_selected)
-        $display("[MMU][READ ] GAMEPAK_WS0 addr=%h data=%h", effective_addr, gamepak_ws0_bus.rdata);
+        `LOG_TRACE(("[MMU][READ ] GAMEPAK_WS0 addr=%h data=%h", effective_addr, gamepak_ws0_bus.rdata))
 
       else if (gamepak_ws1_selected)
-        $display("[MMU][READ ] GAMEPAK_WS1 addr=%h data=%h", effective_addr, gamepak_ws1_bus.rdata);
+        `LOG_TRACE(("[MMU][READ ] GAMEPAK_WS1 addr=%h data=%h", effective_addr, gamepak_ws1_bus.rdata))
 
       else if (gamepak_ws2_selected)
-        $display("[MMU][READ ] GAMEPAK_WS2 addr=%h data=%h", effective_addr, gamepak_ws2_bus.rdata);
+        `LOG_TRACE(("[MMU][READ ] GAMEPAK_WS2 addr=%h data=%h", effective_addr, gamepak_ws2_bus.rdata))
 
       else if (gamepak_sram_selected)
-        $display(
+        `LOG_TRACE((
             "[MMU][READ ] SRAM        addr=%h data=%h", effective_addr, gamepak_sram_bus.rdata
-        );
+        ))
 
-      else $display("[MMU][READ ] UNKNOWN     addr=%h data=%h", effective_addr, cpu_bus.rdata);
+      else `LOG_TRACE(("[MMU][READ ] UNKNOWN     addr=%h data=%h", effective_addr, cpu_bus.rdata))
     end
 
     // WRITE LOGS
     if (cpu_bus.write_en) begin
       if (bios_selected)
-        $display("[MMU][WRITE] BIOS        addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] BIOS        addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
       else if (wram_board_selected)
-        $display("[MMU][WRITE] WRAM_BOARD  addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] WRAM_BOARD  addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
       else if (wram_chip_selected)
-        $display("[MMU][WRITE] WRAM_CHIP   addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] WRAM_CHIP   addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
       else if (ppu_io_selected)
-        $display("[MMU][WRITE] PPU_IO      addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] PPU_IO      addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
       else if (io_selected)
-        $display("[MMU][WRITE] GENERIC_IO  addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] GENERIC_IO  addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
       else if (palette_selected)
-        $display("[MMU][WRITE] PALETTE     addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] PALETTE     addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
       else if (vram_selected)
-        $display("[MMU][WRITE] VRAM        addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] VRAM        addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
       else if (oam_selected)
-        $display("[MMU][WRITE] OAM         addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] OAM         addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
       else if (gamepak_ws0_selected)
-        $display("[MMU][WRITE] GAMEPAK_WS0 addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] GAMEPAK_WS0 addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
       else if (gamepak_ws1_selected)
-        $display("[MMU][WRITE] GAMEPAK_WS1 addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] GAMEPAK_WS1 addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
       else if (gamepak_ws2_selected)
-        $display("[MMU][WRITE] GAMEPAK_WS2 addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] GAMEPAK_WS2 addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
       else if (gamepak_sram_selected)
-        $display("[MMU][WRITE] SRAM        addr=%h data=%h", effective_addr, cpu_bus.wdata);
+        `LOG_TRACE(("[MMU][WRITE] SRAM        addr=%h data=%h", effective_addr, cpu_bus.wdata))
 
-      else $display("[MMU][WRITE] UNKNOWN     addr=%h data=%h", effective_addr, cpu_bus.wdata);
+      else `LOG_TRACE(("[MMU][WRITE] UNKNOWN     addr=%h data=%h", effective_addr, cpu_bus.wdata))
     end
   end
 
