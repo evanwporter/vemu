@@ -1,3 +1,14 @@
 CompileFlags:
-    #C++20
-    Add: [-std=c++20, -xc++-module, -fprebuilt-module-path=build/ ]  
+    CompilationDatabase: build/debug/clangd
+    Remove:
+        - -mthumb-interwork
+        - -mthumb
+        - -marm
+        - -mcpu=*
+        - -mtune=*
+
+---
+If:
+    PathMatch: .*\.cppm$
+CompileFlags:
+    Add: [-std=c++20, -xc++-module, -fprebuilt-module-path=build/]

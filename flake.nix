@@ -64,6 +64,8 @@
 									libx11
 									nanoboyadvance
 									pkgs.devkitNix.devkitARM
+									compiledb
+									jq
 								]
 								++ lib.optionals (!llvmPkgs.stdenv.hostPlatform.isDarwin) [gdb];
 
