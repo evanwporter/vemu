@@ -1,36 +1,36 @@
 name: gb
 
 on:
-  workflow_dispatch:
-  push:
-    branches: [main]
-  pull_request:
-    paths:
-      - cores/gb/**
-      - cores/common/**
-      - CMakeLists.txt
-      - CMakePresets.json
-      - flake.nix
-      - flake.lock
-      - .github/workflows/gb.yaml
+    workflow_dispatch:
+    push:
+        branches: [main]
+    pull_request:
+        paths:
+            - cores/gb/**
+            - cores/common/**
+            - CMakeLists.txt
+            - CMakePresets.json
+            - flake.nix
+            - flake.lock
+            - .github/workflows/gb.yaml
 
 jobs:
-  build-and-test:
-    runs-on: ubuntu-latest
+    build-and-test:
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          submodules: recursive
+        steps:
+            - uses: actions/checkout@v4
+              with:
+                  submodules: recursive
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
+            - name: Install Nix
+              uses: cachix/install-nix-action@v31
 
-      - name: Configure
-        run: nix develop --command cmake --preset debug --fresh
+            - name: Configure
+              run: nix develop --command cmake --preset debug --fresh
 
-      - name: Build
-        run: nix develop --command cmake --build --preset debug --target test_gb
+            - name: Build
+              run: nix develop --command cmake --build --preset debug --target test_gb
 
-      - name: Run tests
-        run: nix develop --command ctest --test-dir build/debug -R '^test_gb$' -V
+            - name: Run tests
+              run: nix develop --command ctest --test-dir build/debug -R '^test_gb$' -V
