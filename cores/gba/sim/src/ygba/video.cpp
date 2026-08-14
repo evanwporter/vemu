@@ -1,0 +1,750 @@
+// Copyright (c) 2021 Ridge Shrubsall
+// SPDX-License-Identifier: BSD-3-Clause
+
+#include "video.h"
+
+#include <cassert>
+#include <cmath>
+#include <cstring>
+#include <cstdio>
+#include <stdint.h>
+
+#include "cpu.h"
+#include "io.h"
+
+io_registers ioreg;
+static const uint8_t* palette_ram;
+static const uint8_t* video_ram;
+static const uint8_t* object_ram;
+static uint32_t* screen_pixels;
+
+enum ScanlineFlags {
+    EnableBlend = 1,
+    SpriteTransparency = 2,
+    SpriteMask = 4
+};
+
+struct ScanlineInfo {
+    uint16_t top;
+    uint16_t bottom;
+    uint8_t top_bg;
+    uint8_t bottom_bg;
+    uint8_t flags;
+};
+
+ScanlineInfo scanline[SCREEN_WIDTH];
+
+bool active_compute_sprite_masks;
+bool active_sprite_transparency;
+bool active_sprite_mask;
+
+enum WindowRegion {
+    None = 0,
+    Win0 = 1,
+    Win1 = 2,
+    WinObj = 3,
+    WinOut = 4
+};
+
+struct WindowInfo {
+    int left;
+    int top;
+    int right;
+    int bottom;
+};
+
+WindowInfo win0, win1;
+
+static bool is_point_in_window(WindowInfo window, int x, int y) {
+    bool x_ok = false;
+    bool y_ok = false;
+
+    if (window.left < window.right) {
+        x_ok = (x >= window.left && x < window.right);
+    } else if (window.left > window.right) {
+        x_ok = (x >= window.left || x < window.right);
+    }
+    if (window.top < window.bottom) {
+        y_ok = (y >= window.top && y < window.bottom);
+    } else if (window.top > window.bottom) {
+        y_ok = (y >= window.top || y < window.bottom);
+    }
+
+    return (x_ok && y_ok);
+}
+
+static WindowRegion window_find_region(int x, int y) {
+    bool enable_win0 = (ioreg.dispcnt.w & DCNT_WIN0);
+    bool enable_win1 = (ioreg.dispcnt.w & DCNT_WIN1);
+    bool enable_winobj = (ioreg.dispcnt.w & DCNT_WINOBJ);
+    bool enable_winout = (enable_win0 || enable_win1 || enable_winobj);
+
+    bool inside_win0 = (enable_win0 && is_point_in_window(win0, x, y));
+    bool inside_win1 = (enable_win1 && is_point_in_window(win1, x, y));
+    bool inside_winobj = (enable_winobj && (scanline[x].flags & ScanlineFlags::SpriteMask));
+
+    if (inside_win0) {
+        return WindowRegion::Win0;
+    } else if (inside_win1) {
+        return WindowRegion::Win1;
+    } else if (inside_winobj) {
+        return WindowRegion::WinObj;
+    } else if (enable_winout) {
+        return WindowRegion::WinOut;
+    }
+
+    return WindowRegion::None;
+}
+
+static bool window_enable_blend(WindowRegion region) {
+    switch (region) {
+    case WindowRegion::None:
+        break;
+    case WindowRegion::Win0:
+        return BIT(ioreg.winin.w, 5);
+    case WindowRegion::Win1:
+        return BIT(ioreg.winin.w, 13);
+    case WindowRegion::WinObj:
+        return BIT(ioreg.winout.w, 13);
+    case WindowRegion::WinOut:
+        return BIT(ioreg.winout.w, 5);
+    }
+
+    return true;
+}
+
+static bool window_bg_visible(WindowRegion region, int bg) {
+    switch (region) {
+    case WindowRegion::None:
+        break;
+    case WindowRegion::Win0:
+        return BIT(ioreg.winin.w, bg);
+    case WindowRegion::Win1:
+        return BIT(ioreg.winin.w, 8 + bg);
+    case WindowRegion::WinObj:
+        return BIT(ioreg.winout.w, 8 + bg);
+    case WindowRegion::WinOut:
+        return BIT(ioreg.winout.w, bg);
+    }
+
+    return true;
+}
+
+static double fixed1p4_to_double(int8_t x) {
+    return (x >> 4) + ((x & 0xf) / 16.0);
+}
+
+static double fixed8p8_to_double(int16_t x) {
+    return (x >> 8) + ((x & 0xff) / 256.0);
+}
+
+static double fixed20p8_to_double(int32_t x) {
+    SIGN_EXTEND(x, 27);
+    return (x >> 8) + ((x & 0xff) / 256.0);
+}
+
+bool video_in_bitmap_mode() {
+    uint16_t mode = ioreg.dispcnt.w & 7;
+    return (mode >= 3 && mode <= 5);
+}
+
+static uint32_t rgb555_to_rgb888(uint16_t pixel) {
+    int red = BITS(pixel, 0, 4);
+    int green = BITS(pixel, 5, 9);
+    int blue = BITS(pixel, 10, 14);
+
+    red = (red << 3) | (red >> 2);
+    green = (green << 3) | (green >> 2);
+    blue = (blue << 3) | (blue >> 2);
+
+    return 0xff << 24 | blue << 16 | green << 8 | red;
+}
+
+static uint16_t rgb565_blend(uint16_t a, uint16_t b, double weight_a, double weight_b) {
+    int red_a = BITS(a, 0, 4);
+    int green_a = BITS(a, 5, 9) << 1 | BIT(a, 15);
+    int blue_a = BITS(a, 10, 14);
+
+    int red_b = BITS(b, 0, 4);
+    int green_b = BITS(b, 5, 9) << 1 | BIT(b, 15);
+    int blue_b = BITS(b, 10, 14);
+
+    int red = red_a * weight_a + red_b * weight_b;
+    int green = green_a * weight_a + green_b * weight_b;
+    int blue = blue_a * weight_a + blue_b * weight_b;
+
+    if (red > 31)
+        red = 31;
+    if (green > 63)
+        green = 63;
+    if (blue > 31)
+        blue = 31;
+
+    return BIT(green, 0) << 15 | BITS(blue, 0, 4) << 10 | BITS(green, 1, 5) << 5 | BITS(red, 0, 4);
+}
+
+static void draw_forced_blank(int y) {
+    assert(y >= 0 && y < SCREEN_HEIGHT);
+
+    for (int x = 0; x < SCREEN_WIDTH; x++) {
+        screen_pixels[y * SCREEN_WIDTH + x] = 0xffffffff;
+    }
+}
+
+static void reset_scanline() {
+    std::memset(scanline, 0, sizeof(scanline));
+}
+
+static void draw_backdrop(int y) {
+    assert(y >= 0 && y < SCREEN_HEIGHT);
+
+    uint16_t pixel = *(uint16_t*)&palette_ram[0];
+
+    for (int x = 0; x < SCREEN_WIDTH; x++) {
+        scanline[x].top = pixel;
+        scanline[x].bottom = pixel;
+        scanline[x].top_bg = 5;
+        scanline[x].bottom_bg = 5;
+
+        WindowRegion window_region = window_find_region(x, y);
+        bool enable_blend = window_enable_blend(window_region);
+
+        if (enable_blend) {
+            scanline[x].flags |= ScanlineFlags::EnableBlend;
+        }
+    }
+}
+
+static void draw_pixel_if_visible(int bg, int x, int y, uint16_t pixel) {
+    if (x < 0 || x >= SCREEN_WIDTH)
+        return;
+    assert(y >= 0 && y < SCREEN_HEIGHT);
+
+    if (active_compute_sprite_masks) {
+        scanline[x].flags |= ScanlineFlags::SpriteMask;
+        return;
+    }
+
+    if (active_sprite_transparency) {
+        scanline[x].flags |= ScanlineFlags::SpriteTransparency;
+    } else {
+        scanline[x].flags &= ~ScanlineFlags::SpriteTransparency;
+    }
+
+    if (active_sprite_mask)
+        return;
+
+    WindowRegion window_region = window_find_region(x, y);
+    bool bg_visible = window_bg_visible(window_region, bg);
+    if (!bg_visible)
+        return;
+
+    bool occluding_sprites = (bg == 4 && scanline[x].top_bg == 4);
+    if (!occluding_sprites) {
+        scanline[x].bottom = scanline[x].top;
+        scanline[x].bottom_bg = scanline[x].top_bg;
+    }
+
+    scanline[x].top = pixel;
+    scanline[x].top_bg = bg;
+}
+
+static void compose_scanline(int y) {
+    assert(y >= 0 && y < SCREEN_HEIGHT);
+
+    int blend_top_bgs = BITS(ioreg.bldcnt.w, 0, 5);
+    int blend_mode_default = BITS(ioreg.bldcnt.w, 6, 7);
+    int blend_bottom_bgs = BITS(ioreg.bldcnt.w, 8, 13);
+    double weight_a = fixed1p4_to_double(BITS(ioreg.bldalpha.w, 0, 4));
+    double weight_b = fixed1p4_to_double(BITS(ioreg.bldalpha.w, 8, 12));
+    double weight_y = fixed1p4_to_double(BITS(ioreg.bldy.w, 0, 4));
+
+    if (weight_a > 1.0)
+        weight_a = 1.0;
+    if (weight_b > 1.0)
+        weight_b = 1.0;
+    if (weight_y > 1.0)
+        weight_y = 1.0;
+
+    const uint16_t white = 0xffff;
+    const uint16_t black = 0;
+
+    for (int x = 0; x < SCREEN_WIDTH; x++) {
+        uint16_t top = scanline[x].top;
+        uint16_t bottom = scanline[x].bottom;
+        uint8_t top_bg = scanline[x].top_bg;
+        uint8_t bottom_bg = scanline[x].bottom_bg;
+        bool enable_blend = scanline[x].flags & ScanlineFlags::EnableBlend;
+        bool sprite_transparency = scanline[x].flags & ScanlineFlags::SpriteTransparency;
+
+        bool top_ok = BIT(blend_top_bgs, top_bg);
+        bool bottom_ok = BIT(blend_bottom_bgs, bottom_bg);
+
+        int blend_mode = blend_mode_default;
+        bool valid_blend = enable_blend && top_ok && (bottom_ok || blend_mode != 1);
+
+        if (sprite_transparency) {
+            bool force_alpha_blend = bottom_ok;
+            if (force_alpha_blend) {
+                blend_mode = 1;
+                valid_blend = true;
+            }
+        }
+
+        uint16_t pixel = top;
+        if (valid_blend) {
+            switch (blend_mode) {
+            case 1:
+                pixel = rgb565_blend(top, bottom, weight_a, weight_b);
+                break;
+            case 2:
+                pixel = rgb565_blend(top, white, 1.0 - weight_y, weight_y);
+                break;
+            case 3:
+                pixel = rgb565_blend(top, black, 1.0 - weight_y, weight_y);
+                break;
+            }
+        }
+        screen_pixels[y * SCREEN_WIDTH + x] = rgb555_to_rgb888(pixel);
+    }
+}
+
+static bool tile_access(uint32_t tile_address, int x, int y, bool hflip, bool vflip, bool colors_256, uint32_t palette_offset, int palette_no, uint16_t* pixel) {
+    assert(x >= 0 && x < 8 && y >= 0 && y < 8);
+
+    if (hflip)
+        x = 7 - x;
+    if (vflip)
+        y = 7 - y;
+
+    const uint8_t* tile = &video_ram[tile_address];
+
+    if (colors_256) {
+        uint32_t tile_offset = y * 8 + x;
+        uint8_t pixel_index = tile[tile_offset];
+        if (pixel_index != 0) {
+            *pixel = *(uint16_t*)&palette_ram[palette_offset + pixel_index * 2];
+            return true;
+        }
+    } else {
+        uint32_t tile_offset = y * 4 + x / 2;
+        uint8_t pixel_indexes = tile[tile_offset];
+        uint8_t pixel_index = (pixel_indexes >> (x % 2 == 1 ? 4 : 0)) & 0xf;
+        if (pixel_index != 0) {
+            *pixel = *(uint16_t*)&palette_ram[palette_offset + palette_no * 32 + pixel_index * 2];
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static bool bg_regular_access(int x, int y, int w, int h, uint32_t tile_base, uint32_t map_base, uint32_t screen_size, bool colors_256, uint16_t* pixel) {
+    assert(x >= 0 && x < w && y >= 0 && y < h);
+
+    int map_x = (x / 8) % (w / 8);
+    int map_y = (y / 8) % (h / 8);
+    int quad_x = 32 * 32;
+    int quad_y = 32 * 32 * (screen_size == 3 ? 2 : 1);
+    uint32_t map_index = (map_y / 32) * quad_y + (map_x / 32) * quad_x + (map_y % 32) * 32 + (map_x % 32);
+    uint16_t info = *(uint16_t*)&video_ram[map_base + map_index * 2];
+    int tile_no = BITS(info, 0, 9);
+    bool hflip = BIT(info, 10);
+    bool vflip = BIT(info, 11);
+    int palette_no = BITS(info, 12, 15);
+
+    uint32_t tile_address = tile_base + tile_no * (colors_256 ? 64 : 32);
+    if (tile_address >= 0x10000)
+        return false;
+    return tile_access(tile_address, x % 8, y % 8, hflip, vflip, colors_256, 0, palette_no, pixel);
+}
+
+static bool bg_affine_access(int x, int y, int w, int h, uint32_t tile_base, uint32_t map_base, uint16_t* pixel) {
+    if (x < 0 || x >= w || y < 0 || y >= h)
+        return false;
+
+    int map_x = (x / 8) % (w / 8);
+    int map_y = (y / 8) % (h / 8);
+    uint32_t map_index = map_y * (w / 8) + map_x;
+    uint8_t info = video_ram[map_base + map_index];
+    int tile_no = info;
+
+    uint32_t tile_address = tile_base + tile_no * 64;
+    if (tile_address >= 0x10000)
+        return false;
+    return tile_access(tile_address, x % 8, y % 8, false, false, true, 0, 0, pixel);
+}
+
+static bool sprite_access(int tile_no, int x, int y, int w, int h, bool hflip, bool vflip, bool colors_256, int palette_no, int mode, uint16_t* pixel) {
+    if (x < 0 || x >= w || y < 0 || y >= h)
+        return false;
+
+    if (hflip)
+        x = w - 1 - x;
+    if (vflip)
+        y = h - 1 - y;
+
+    bool obj_1d = (ioreg.dispcnt.w & DCNT_OBJ_1D);
+    int stride = (obj_1d ? (w / 8) : (colors_256 ? 16 : 32));
+    int increment = (colors_256 ? 2 : 1);
+    int count_y = (y / 8) * stride * increment;
+    int count_x = (x / 8) * increment;
+
+    tile_no += count_y;
+    if (obj_1d) {
+        tile_no += count_x;
+    } else {
+        tile_no = (tile_no & ~0x1f) | ((tile_no + count_x) & 0x1f);
+    }
+    tile_no &= 0x3ff;
+
+    bool bitmap_mode = (mode >= 3 && mode <= 5);
+    if (bitmap_mode && tile_no < 512)
+        return false;
+
+    uint32_t tile_address = 0x10000 + tile_no * 32;
+    return tile_access(tile_address, x % 8, y % 8, false, false, colors_256, 0x200, palette_no, pixel);
+}
+
+const int sprite_width_lookup[4][4] = { { 8, 16, 32, 64 }, { 16, 32, 32, 64 }, { 8, 8, 16, 32 }, { 8, 8, 8, 8 } };
+const int sprite_height_lookup[4][4] = { { 8, 16, 32, 64 }, { 8, 8, 16, 32 }, { 16, 32, 32, 64 }, { 8, 8, 8, 8 } };
+
+static void draw_sprites(int mode, int pri, int y) {
+    for (int n = 127; n >= 0; n--) {
+        uint16_t attr0 = *(uint16_t*)&object_ram[n * 8];
+        uint16_t attr1 = *(uint16_t*)&object_ram[n * 8 + 2];
+        uint16_t attr2 = *(uint16_t*)&object_ram[n * 8 + 4];
+
+        int sprite_y = BITS(attr0, 0, 7);
+        int obj_mode = BITS(attr0, 8, 9);
+        int gfx_mode = BITS(attr0, 10, 11);
+        // bool mosaic = BIT(attr0, 12);
+        bool colors_256 = BIT(attr0, 13);
+        int shape = BITS(attr0, 14, 15);
+
+        if (active_compute_sprite_masks && gfx_mode != 2)
+            continue;
+        if (gfx_mode == 3)
+            gfx_mode = 0;
+
+        int sprite_x = BITS(attr1, 0, 8);
+        int affine_index = BITS(attr1, 9, 13);
+        bool hflip = BIT(attr1, 12);
+        bool vflip = BIT(attr1, 13);
+        int size = BITS(attr1, 14, 15);
+
+        int tile_no = BITS(attr2, 0, 9);
+        int priority = BITS(attr2, 10, 11);
+        int palette_no = BITS(attr2, 12, 15);
+
+        if (obj_mode == 2 || priority != pri)
+            continue;
+
+        bool is_affine = (obj_mode == 1 || obj_mode == 3);
+        int bbox_scale = (obj_mode == 3 ? 2 : 1);
+
+        int sprite_width = sprite_width_lookup[shape][size];
+        int sprite_height = sprite_height_lookup[shape][size];
+        int bbox_width = sprite_width * bbox_scale;
+        int bbox_height = sprite_height * bbox_scale;
+
+        if (sprite_x + bbox_width >= 512)
+            sprite_x -= 512;
+        if (sprite_y + bbox_height >= 256)
+            sprite_y -= 256;
+
+        if (y < sprite_y || y >= sprite_y + bbox_height)
+            continue;
+
+        int sprite_cx = sprite_width / 2;
+        int sprite_cy = sprite_height / 2;
+        int bbox_cx = bbox_width / 2;
+        int bbox_cy = bbox_height / 2;
+
+        double pa, pb, pc, pd;
+        if (is_affine) {
+            pa = fixed8p8_to_double(*(uint16_t*)&object_ram[affine_index * 32 + 6]);
+            pb = fixed8p8_to_double(*(uint16_t*)&object_ram[affine_index * 32 + 14]);
+            pc = fixed8p8_to_double(*(uint16_t*)&object_ram[affine_index * 32 + 22]);
+            pd = fixed8p8_to_double(*(uint16_t*)&object_ram[affine_index * 32 + 30]);
+            hflip = false;
+            vflip = false;
+        } else {
+            pa = pd = 1.0;
+            pb = pc = 0.0;
+        }
+
+        active_sprite_transparency = (gfx_mode == 1);
+        active_sprite_mask = (gfx_mode == 2);
+
+        int j = y - sprite_y;
+        for (int i = 0; i < bbox_width; i++) {
+            int texture_x = sprite_cx + std::floor(pa * (i - bbox_cx) + pb * (j - bbox_cy));
+            int texture_y = sprite_cy + std::floor(pc * (i - bbox_cx) + pd * (j - bbox_cy));
+            uint16_t pixel;
+            bool ok = sprite_access(tile_no, texture_x, texture_y, sprite_width, sprite_height, hflip, vflip, colors_256, palette_no, mode, &pixel);
+            if (ok)
+                draw_pixel_if_visible(4, sprite_x + i, y, pixel);
+        }
+
+        active_sprite_transparency = false;
+        active_sprite_mask = false;
+    }
+}
+
+static void compute_sprite_masks(int mode, int y) {
+    active_compute_sprite_masks = true;
+
+    for (int pri = 3; pri >= 0; pri--) {
+        draw_sprites(mode, pri, y);
+    }
+
+    active_compute_sprite_masks = false;
+}
+
+const int bg_width_lookup[2][4] = { { 256, 512, 256, 512 }, { 128, 256, 512, 1024 } };
+const int bg_height_lookup[2][4] = { { 256, 256, 512, 512 }, { 128, 256, 512, 1024 } };
+
+static void draw_tiled_bg(int mode, int bg, int y) {
+    if (mode == 1 && bg == 3)
+        return;
+    if (mode == 2 && (bg == 0 || bg == 1))
+        return;
+
+    uint32_t bgcnt = ioreg.bgcnt[bg].w;
+    int hofs = ioreg.bg_text[bg].x.w;
+    int vofs = ioreg.bg_text[bg].y.w;
+
+    uint32_t tile_base = BITS(bgcnt, 2, 3) * 0x4000;
+    uint32_t map_base = BITS(bgcnt, 8, 12) * 0x800;
+    bool overflow_wraps = BIT(bgcnt, 13);
+    uint32_t screen_size = BITS(bgcnt, 14, 15);
+    bool colors_256 = BIT(bgcnt, 7);
+
+    bool is_affine = ((mode == 1 && bg == 2) || (mode == 2 && (bg == 2 || bg == 3)));
+    double affine_x, affine_y;
+    double pa, pc;
+    if (is_affine) {
+        affine_x = ioreg.bg_affine[bg - 2].x;
+        affine_y = ioreg.bg_affine[bg - 2].y;
+        pa = fixed8p8_to_double(ioreg.bg_affine[bg - 2].pa.w);
+        pc = fixed8p8_to_double(ioreg.bg_affine[bg - 2].pc.w);
+    } else {
+        affine_x = 0.0;
+        affine_y = 0.0;
+        pa = 0.0;
+        pc = 0.0;
+    }
+
+    int bg_width = bg_width_lookup[is_affine][screen_size];
+    int bg_height = bg_height_lookup[is_affine][screen_size];
+
+    for (int x = 0; x < SCREEN_WIDTH; x++) {
+        int i = (is_affine ? std::floor(affine_x) : x + hofs);
+        int j = (is_affine ? std::floor(affine_y) : y + vofs);
+        if (!is_affine || overflow_wraps) {
+            i &= bg_width - 1;
+            j &= bg_height - 1;
+        }
+        uint16_t pixel;
+        bool ok;
+        if (is_affine) {
+            ok = bg_affine_access(i, j, bg_width, bg_height, tile_base, map_base, &pixel);
+        } else {
+            ok = bg_regular_access(i, j, bg_width, bg_height, tile_base, map_base, screen_size, colors_256, &pixel);
+        }
+        if (ok)
+            draw_pixel_if_visible(bg, x, y, pixel);
+        affine_x += pa;
+        affine_y += pc;
+    }
+}
+
+static void draw_tiled(int mode, int y) {
+    for (int pri = 3; pri >= 0; pri--) {
+        for (int bg = 3; bg >= 0; bg--) {
+            bool bg_visible = BIT(ioreg.dispcnt.w, 8 + bg);
+            uint16_t priority = BITS(ioreg.bgcnt[bg].w, 0, 1);
+
+            if (bg_visible && priority == pri) {
+                draw_tiled_bg(mode, bg, y);
+            }
+        }
+
+        bool obj_visible = (ioreg.dispcnt.w & DCNT_OBJ);
+
+        if (obj_visible) {
+            draw_sprites(mode, pri, y);
+        }
+    }
+}
+
+static bool bitmap_access(int x, int y, int mode, uint16_t* pixel) {
+    int w = (mode == 5 ? 160 : SCREEN_WIDTH);
+    int h = (mode == 5 ? 128 : SCREEN_HEIGHT);
+
+    if (x < 0 || x >= w || y < 0 || y >= h)
+        return false;
+
+    if (mode == 4) {
+        bool page_flip = (ioreg.dispcnt.w & DCNT_PAGE);
+        uint8_t pixel_index = video_ram[(page_flip ? 0xa000 : 0) + y * w + x];
+        if (pixel_index != 0) {
+            *pixel = *(uint16_t*)&palette_ram[pixel_index * 2];
+            return true;
+        }
+    } else {
+        *pixel = *(uint16_t*)&video_ram[(y * w + x) * 2];
+        return true;
+    }
+
+    return false;
+}
+
+static void draw_bitmap(int mode, int y) {
+    for (int pri = 3; pri >= 0; pri--) {
+        const int bg = 2;
+
+        bool bg_visible = BIT(ioreg.dispcnt.w, 8 + bg);
+        uint16_t priority = BITS(ioreg.bgcnt[bg].w, 0, 1);
+
+        if (bg_visible && priority == pri) {
+            double affine_x = ioreg.bg_affine[bg - 2].x;
+            double affine_y = ioreg.bg_affine[bg - 2].y;
+            double pa = fixed8p8_to_double(ioreg.bg_affine[bg - 2].pa.w);
+            double pc = fixed8p8_to_double(ioreg.bg_affine[bg - 2].pc.w);
+
+            for (int x = 0; x < SCREEN_WIDTH; x++) {
+                int i = std::floor(affine_x);
+                int j = std::floor(affine_y);
+                uint16_t pixel;
+                bool ok = bitmap_access(i, j, mode, &pixel);
+                if (ok)
+                    draw_pixel_if_visible(bg, x, y, pixel);
+                affine_x += pa;
+                affine_y += pc;
+            }
+        }
+
+        bool obj_visible = (ioreg.dispcnt.w & DCNT_OBJ);
+
+        if (obj_visible) {
+            draw_sprites(mode, pri, y);
+        }
+    }
+}
+
+static void video_draw_scanline() {
+    win0.right = ioreg.winh[0].b.b0;
+    win0.left = ioreg.winh[0].b.b1;
+    win0.bottom = ioreg.winv[0].b.b0;
+    win0.top = ioreg.winv[0].b.b1;
+    win1.right = ioreg.winh[1].b.b0;
+    win1.left = ioreg.winh[1].b.b1;
+    win1.bottom = ioreg.winv[1].b.b0;
+    win1.top = ioreg.winv[1].b.b1;
+
+    bool forced_blank = (ioreg.dispcnt.w & DCNT_BLANK);
+    int mode = BITS(ioreg.dispcnt.w, 0, 2);
+    int y = ioreg.vcount.w;
+
+    if (forced_blank) {
+        draw_forced_blank(y);
+        return;
+    }
+
+    reset_scanline();
+    compute_sprite_masks(mode, y);
+    draw_backdrop(y);
+
+    switch (mode) {
+    case 0:
+    case 1:
+    case 2:
+        // case 6:
+        // case 7:
+        draw_tiled(mode, y);
+        break;
+
+    case 3:
+    case 4:
+    case 5:
+        draw_bitmap(mode, y);
+        break;
+
+    default:
+        assert(false);
+        break;
+    }
+
+    compose_scanline(y);
+}
+
+static void video_bg_affine_reset(int i) {
+    ioreg.bg_affine[i].x = fixed20p8_to_double(ioreg.bg_affine[i].x0.dw);
+    ioreg.bg_affine[i].y = fixed20p8_to_double(ioreg.bg_affine[i].y0.dw);
+}
+
+static void video_bg_affine_update() {
+    for (int i = 0; i < 2; i++) {
+        ioreg.bg_affine[i].x += fixed8p8_to_double(ioreg.bg_affine[i].pb.w);
+        ioreg.bg_affine[i].y += fixed8p8_to_double(ioreg.bg_affine[i].pd.w);
+    }
+}
+
+void video_render_frame(const uint32_t* registers,
+    const uint8_t* palette,
+    const uint8_t* vram,
+    const uint8_t* oam,
+    uint32_t* framebuffer) {
+    auto read16 = [registers](int offset) {
+        return static_cast<uint16_t>(registers[offset / 4] >> ((offset % 4) * 8));
+    };
+    auto read32 = [registers](int offset) {
+        return registers[offset / 4];
+    };
+
+    ioreg.dispcnt.w = read16(REG_DISPCNT);
+    for (int i = 0; i < 4; ++i) {
+        ioreg.bgcnt[i].w = read16(REG_BG0CNT + i * 2);
+        ioreg.bg_text[i].x.w = read16(REG_BG0HOFS + i * 4);
+        ioreg.bg_text[i].y.w = read16(REG_BG0VOFS + i * 4);
+    }
+    for (int i = 0; i < 2; ++i) {
+        const int base = REG_BG2PA + i * 0x10;
+        ioreg.bg_affine[i].pa.w = read16(base);
+        ioreg.bg_affine[i].pb.w = read16(base + 2);
+        ioreg.bg_affine[i].pc.w = read16(base + 4);
+        ioreg.bg_affine[i].pd.w = read16(base + 6);
+        ioreg.bg_affine[i].x0.dw = read32(base + 8);
+        ioreg.bg_affine[i].y0.dw = read32(base + 12);
+    }
+    for (int i = 0; i < 2; ++i) {
+        ioreg.winh[i].w = read16(REG_WIN0H + i * 2);
+        ioreg.winv[i].w = read16(REG_WIN0V + i * 2);
+    }
+    ioreg.winin.w = read16(REG_WININ);
+    ioreg.winout.w = read16(REG_WINOUT);
+    ioreg.mosaic.w = read16(REG_MOSAIC);
+    ioreg.bldcnt.w = read16(REG_BLDCNT);
+    ioreg.bldalpha.w = read16(REG_BLDALPHA);
+    ioreg.bldy.w = read16(REG_BLDY);
+
+    palette_ram = palette;
+    video_ram = vram;
+    object_ram = oam;
+    screen_pixels = framebuffer;
+    video_bg_affine_reset(0);
+    video_bg_affine_reset(1);
+    for (int y = 0; y < SCREEN_HEIGHT; ++y) {
+        ioreg.vcount.w = y;
+        video_draw_scanline();
+        video_bg_affine_update();
+    }
+    static int debug_frame;
+    if (++debug_frame == 100) {
+        int changed = 0;
+        for (int i = 0; i < SCREEN_WIDTH * SCREEN_HEIGHT; ++i) changed += framebuffer[i] != framebuffer[0];
+        std::fprintf(stderr, "changed=%d palette=%02x%02x map=%02x%02x\n", changed, palette[3], palette[2], vram[0xfa13], vram[0xfa12]);
+    }
+}

@@ -1,4 +1,5 @@
 #include "gba.hpp"
+#include "ygba/video.h"
 #include "verilated_vcd_c.h"
 
 #include <SDL2/SDL.h>
@@ -304,10 +305,10 @@ bool GameboyAdvanceHarness::step() {
 }
 
 bool GameboyAdvanceHarness::run() {
-    constexpr int width = 240;
-    constexpr int height = 160;
+    constexpr int width = SCREEN_WIDTH;
+    constexpr int height = SCREEN_HEIGHT;
     constexpr int scale = 3;
-    constexpr int cycles_per_frame = 200'000;
+    constexpr int cycles_per_frame = CYCLES_FRAME;
 
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
         std::cerr << "SDL initialization failed: " << SDL_GetError() << "\n";
@@ -315,7 +316,7 @@ bool GameboyAdvanceHarness::run() {
     }
 
     SDL_Window* window = SDL_CreateWindow(
-        "GBA - Mode 3",
+        "GBA",
         SDL_WINDOWPOS_CENTERED,
         SDL_WINDOWPOS_CENTERED,
         width * scale,
@@ -327,7 +328,7 @@ bool GameboyAdvanceHarness::run() {
     SDL_Texture* texture = renderer
         ? SDL_CreateTexture(
               renderer,
-              SDL_PIXELFORMAT_ARGB8888,
+              SDL_PIXELFORMAT_ABGR8888,
               SDL_TEXTUREACCESS_STREAMING,
               width,
               height)
@@ -346,7 +347,6 @@ bool GameboyAdvanceHarness::run() {
     }
 
     std::array<u32, width * height> framebuffer { };
-    auto& vram = top->rootp->GameboyAdvance__DOT__ppu__DOT__VRAM__DOT__mem;
     bool running = true;
 
     while (running) {
@@ -359,24 +359,12 @@ bool GameboyAdvanceHarness::run() {
         for (int i = 0; i < cycles_per_frame && running; ++i)
             tick();
 
-        const auto mode = top->rootp->GameboyAdvance__DOT__ppu__DOT__regs[0] & 0x7;
-
-        if (mode == 3) {
-            std::cout << "Rendering frame in Mode 3\n";
-        }
-
-        for (std::size_t pixel_index = 0; pixel_index < framebuffer.size(); ++pixel_index) {
-            const std::size_t byte_index = pixel_index * 2;
-            const u16 pixel = static_cast<u16>(vram[byte_index])
-                | static_cast<u16>(vram[byte_index + 1] << 8);
-            const u8 red = static_cast<u8>(((pixel >> 0) & 0x1F) * 255 / 31);
-            const u8 green = static_cast<u8>(((pixel >> 5) & 0x1F) * 255 / 31);
-            const u8 blue = static_cast<u8>(((pixel >> 10) & 0x1F) * 255 / 31);
-            framebuffer[pixel_index] = 0xFF000000u
-                | (static_cast<u32>(red) << 16)
-                | (static_cast<u32>(green) << 8)
-                | blue;
-        }
+        auto* root = top->rootp;
+        video_render_frame(root->GameboyAdvance__DOT__ppu__DOT__regs.data(),
+            &root->GameboyAdvance__DOT__Palette__DOT__mem[0],
+            &root->GameboyAdvance__DOT__ppu__DOT__VRAM__DOT__mem[0],
+            &root->GameboyAdvance__DOT__OAM__DOT__mem[0],
+            framebuffer.data());
 
         SDL_UpdateTexture(texture, nullptr, framebuffer.data(), width * sizeof(u32));
         SDL_RenderClear(renderer);
