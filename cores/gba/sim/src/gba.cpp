@@ -1,6 +1,6 @@
 #include "gba.hpp"
-#include "ygba/video.h"
 #include "verilated_vcd_c.h"
+#include "ygba/video.h"
 
 #include <SDL2/SDL.h>
 #include <VGameboyAdvance.h>
@@ -217,6 +217,12 @@ void GameboyAdvanceHarness::set_initial_state() {
     auto& regs = top->rootp->GameboyAdvance__DOT__cpu_inst__DOT__regs;
 
     if (options.skip_boot_rom) {
+        auto& ppu_regs = top->rootp->GameboyAdvance__DOT__ppu__DOT__regs;
+        ppu_regs[8] = 0x00000100; // BG2PA = 1.0, BG2PB = 0.0
+        ppu_regs[9] = 0x01000000; // BG2PC = 0.0, BG2PD = 1.0
+        ppu_regs[12] = 0x00000100; // BG3PA = 1.0, BG3PB = 0.0
+        ppu_regs[13] = 0x01000000; // BG3PC = 0.0, BG3PD = 1.0
+
         regs.__PVT__common.__PVT__r0 = 0x00000000;
         regs.__PVT__common.__PVT__r1 = 0x00000000;
         regs.__PVT__common.__PVT__r2 = 0x00000000;
@@ -360,11 +366,7 @@ bool GameboyAdvanceHarness::run() {
             tick();
 
         auto* root = top->rootp;
-        video_render_frame(root->GameboyAdvance__DOT__ppu__DOT__regs.data(),
-            &root->GameboyAdvance__DOT__Palette__DOT__mem[0],
-            &root->GameboyAdvance__DOT__ppu__DOT__VRAM__DOT__mem[0],
-            &root->GameboyAdvance__DOT__OAM__DOT__mem[0],
-            framebuffer.data());
+        video_render_frame(root->GameboyAdvance__DOT__ppu__DOT__regs.data(), &root->GameboyAdvance__DOT__Palette__DOT__mem[0], &root->GameboyAdvance__DOT__ppu__DOT__VRAM__DOT__mem[0], &root->GameboyAdvance__DOT__OAM__DOT__mem[0], framebuffer.data());
 
         SDL_UpdateTexture(texture, nullptr, framebuffer.data(), width * sizeof(u32));
         SDL_RenderClear(renderer);
