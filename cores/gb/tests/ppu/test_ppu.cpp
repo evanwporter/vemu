@@ -146,7 +146,7 @@ TEST_P(PPUFrameTest, RendersCorrectFrame) {
 
     gpu.exit();
 
-    const fs::path golden = std::filesystem::path(__FILE__).parent_path() / "golden" / (param.name + ".ppm");
+    const fs::path golden = std::filesystem::path(__FILE__).parent_path().parent_path() / "golden" / (param.name + ".ppm");
 
     if (test_config().update) {
         fs::create_directories(golden.parent_path());
