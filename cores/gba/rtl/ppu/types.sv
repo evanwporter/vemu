@@ -1,3 +1,5 @@
+import gba_types_pkg::*;
+
 package gba_ppu_types_pkg;
   typedef enum logic [2:0] {
     BG_MODE_0 = 3'd0,
@@ -104,9 +106,7 @@ package gba_ppu_types_pkg;
   } bg_reference_point_t;
 
   /// BG2PA-D and BG3PA-D signed 7.8 fixed-point affine parameters.
-  typedef struct packed {
-    logic signed [15:0] value;
-  } bg_affine_parameter_t;
+  typedef struct packed {logic signed [15:0] value;} bg_affine_parameter_t;
 
   /// WIN0H/WIN1H.
   typedef struct packed {
@@ -145,10 +145,10 @@ package gba_ppu_types_pkg;
   /// 0x0400004C MOSAIC.
   typedef struct packed {
     logic [15:0] reserved_31_16;
-    logic [3:0] obj_vertical_size_minus_one;
-    logic [3:0] obj_horizontal_size_minus_one;
-    logic [3:0] bg_vertical_size_minus_one;
-    logic [3:0] bg_horizontal_size_minus_one;
+    logic [3:0]  obj_vertical_size_minus_one;
+    logic [3:0]  obj_horizontal_size_minus_one;
+    logic [3:0]  bg_vertical_size_minus_one;
+    logic [3:0]  bg_horizontal_size_minus_one;
   } mosaic_t;
 
   typedef struct packed {
@@ -179,7 +179,7 @@ package gba_ppu_types_pkg;
   /// 0x04000054 BLDY.
   typedef struct packed {
     logic [26:0] reserved_31_5;
-    logic [4:0] evy;
+    logic [4:0]  evy;
   } blend_brightness_t;
 
   /// Mode 3/5 bitmap pixel and palette entry (RGB555).
@@ -199,9 +199,7 @@ package gba_ppu_types_pkg;
   } text_bg_map_entry_t;
 
   /// Rotation/scaling BG map entry.
-  typedef struct packed {
-    logic [7:0] tile_number;
-  } affine_bg_map_entry_t;
+  typedef struct packed {logic [7:0] tile_number;} affine_bg_map_entry_t;
 
   /// Complete byte-addressed LCD I/O register file (0x04000000-0x04000057).
   /// Fields are ordered from highest to lowest address so that bit N*8 maps
@@ -248,5 +246,24 @@ package gba_ppu_types_pkg;
   } ppu_regs_t;
 
   localparam int PPU_REGS_WIDTH = $bits(ppu_regs_t);
+
+  typedef union {
+    struct {
+      byte_t bg_tile[0:64*1024-1];
+      byte_t obj[0:32*1024-1];
+    } mode_0_1_2;
+
+    struct {
+      byte_t framebuffer_0[0:80*1024-1];
+      byte_t obj[0:16*1024-1];
+    } mode_3;
+
+    struct {
+      byte_t framebuffer_0[0:40*1024-1];
+      byte_t framebuffer_1[0:40*1024-1];
+      byte_t obj[0:16*1024-1];
+    } mode_4_5;
+
+  } VRAM_t;
 
 endpackage : gba_ppu_types_pkg
