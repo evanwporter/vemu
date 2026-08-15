@@ -488,6 +488,8 @@ module ARM7TMDI (
 
         regs.CPSR[7] <= 1'b1;  // Disable IRQ
 
+        regs.CPSR[5] <= 1'b0;  // Exceptions are handled in ARM mode
+
         regs.CPSR[4:0] <= update_cpsr_mode(control_signals.exception);
 
         flush_req <= 1'b1;

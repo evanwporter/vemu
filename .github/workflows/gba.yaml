@@ -111,6 +111,7 @@ jobs:
                     - bl_blx_prefix
                     - bl_suffix
                     - push_pop
+                    - swi
 
         steps:
             - uses: actions/checkout@v4

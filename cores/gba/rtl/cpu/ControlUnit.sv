@@ -1292,7 +1292,7 @@ module GBA_ControlUnit (
             control_signals.A_bus_source = A_BUS_SRC_RN;
 
             control_signals.B_bus_source = B_BUS_SRC_IMM;
-            control_signals.B_bus_imm = 24'd4;
+            control_signals.B_bus_imm = execution_mode == MODE_THUMB ? 24'd2 : 24'd4;
 
             control_signals.exception = EXCEPTION_SWI;
 
