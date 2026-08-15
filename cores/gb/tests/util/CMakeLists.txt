@@ -10,4 +10,4 @@ add_executable(display_ppm
     ${CMAKE_CURRENT_SOURCE_DIR}/ppm.cpp
 )
 
-target_link_libraries(display_ppm PRIVATE SDL2::SDL2)
+target_link_libraries(display_ppm PRIVATE SDL2::SDL2 libcommon)

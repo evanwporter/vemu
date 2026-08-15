@@ -1,6 +1,7 @@
 .cache/
 .direnv/
 build/
+golden-actual/
 *.log
 *.ini
 *.gb

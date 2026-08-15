@@ -20,6 +20,7 @@ target_link_libraries(test_gb
         test_mooneye
         # test_ppu
         libgb
+        libcommon
         GTest::gtest
 )
 
