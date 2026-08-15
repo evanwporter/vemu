@@ -122,22 +122,35 @@
   },
   "python.testing.cwd": "${workspaceFolder}/test/external",
   "clangd.arguments": [
-    "--experimental-modules-support",
-    "--compile-commands-dir=${workspaceFolder}/build/debug",
+    "--compile-commands-dir=${workspaceFolder}/build/debug/clangd",
     // "--compile-commands-dir=${workspaceFolder}/build/release",
-    "--clang-tidy",
     "--completion-style=detailed",
-    "--header-insertion=iwyu"
+    "--header-insertion=iwyu",
+    "--query-driver=/run/current-system/sw/bin/clang++,/run/current-system/sw/bin/g++,/nix/store/*/bin/clang++,/nix/sto       re/*/bin/g++,/nix/store/*devkitARM*/opt/devkitpro/devkitARM/bin/arm-none-eabi-*"
     // "--completion-style=detailed",
     // "--header-insertion=never"
   ],
   "cmake.ctest.testExplorerIntegrationEnabled": false,
-  "slang.path": "C:/Users/evanw/slang-server/build/win64-debug/bin/slang-server.exe",
+  "slang.path": "/home/evanp/slang-server/build/debug/bin/slang-server",
   "python-envs.defaultEnvManager": "ms-python.python:conda",
   "python-envs.defaultPackageManager": "ms-python.python:conda",
   "python-envs.pythonProjects": [],
   "[python]": {
     "editor.defaultFormatter": "charliermarsh.ruff",
+    "editor.formatOnSave": true
+  },
+  "editor.fontFamily": "'JetBrainsMono Nerd Font', 'JetBrains Mono', 'Courier New', monospace",
+  "terminal.integrated.fontFamily": "'JetBrainsMono Nerd Font'",
+  "editor.fontLigatures": "'calt', 'liga'",
+  "terminal.integrated.fontLigatures.enabled": true,
+  "vscode-neovim.neovimInit": false,
+  "vscode-neovim.useCmdLine": false,
+ "editor.fontSize": 16,
+  "terminal.integrated.fontSize": 16,
+  "debug.console.fontSize": 16,
+  "markdown.preview.fontSize": 16,
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   }
   // "systemverilog.formatCommand": "verible-verilog-format",

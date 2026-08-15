@@ -8,3 +8,4 @@ golden-actual/
 *.html
 *.vcd
 .envrc
+failed_test.json

@@ -6,22 +6,24 @@
     "configurations": [
         {
             "name": "GBA",
-            "type": "codelldb",
+            "type": "cppdbg",
             "request": "launch",
+            "preLaunchTask": "Build GBA (debug)",
             "program": "${workspaceFolder}/build/debug/cores/gba/sim/gba",
             "args": [
                 "${workspaceFolder}/tests/libtonc-examples/bin/mode3_vert.gba",
                 "--log-level",
                 "none"
             ],
-            "stdio": [
-                null,
-                "${workspaceFolder}/trace.txt",
-                "${workspaceFolder}/trace.txt"
-            ],
-            "stopOnEntry": false,
             "cwd": "${workspaceFolder}",
-            "terminal": "integrated"
+            "environment": [],
+            "stopAtEntry": false,
+            "MIMode": "gdb",
+            "miDebuggerPath": "/nix/store/vjqdb2dm7b51w7jmxkj1dmkvh9vwvf3d-gdb-17.2/bin/gdb",
+            "externalConsole": false,
+            // "logging": {
+            //     "engineLogging": true
+            // }
         },
         {
             "name": "(Windows) Cemu",

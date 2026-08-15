@@ -138,8 +138,8 @@ jobs:
             fail-fast: true
             matrix:
                 test:
-                    - ARM_GBA_Tests
-                    - Thumb_GBA_Tests
+                    - Jsmolka_GBA_Tests.ARM_GBA
+                    - Jsmolka_GBA_Tests.Thumb_GBA
 
         steps:
             - uses: actions/checkout@v4

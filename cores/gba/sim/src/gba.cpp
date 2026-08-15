@@ -68,7 +68,7 @@ bool GameboyAdvanceHarness::setup(const std::filesystem::path& rom_path) {
         return false;
     }
 
-    load_bios(fs::path(__FILE__).parent_path() / "gba_bios.bin");
+    load_bios(fs::path(GBA_BIOS_PATH));
 
     std::cout << "Cycle 0: Reset Phase 1" << std::endl;
 

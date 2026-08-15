@@ -12,9 +12,7 @@ if(NOT MSVC)
 endif()
 
 add_subdirectory(cpu)
-add_subdirectory(arm.gba)
-add_subdirectory(thumb.gba)
-add_subdirectory(image.gba)
+add_subdirectory(differential_gba)
 
 add_executable(test_gba ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
                         ${CMAKE_CURRENT_SOURCE_DIR}/verilator_time.cpp)
@@ -22,8 +20,8 @@ add_executable(test_gba ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 add_subdirectory(util)
 
 find_package(GTest CONFIG REQUIRED)
-target_link_libraries(test_gba PRIVATE test_cpu_adv test_arm_gba test_thumb_gba
-                                       test_image_gba GTest::gtest libcommon)
+target_link_libraries(test_gba PRIVATE test_cpu_adv test_differential_gba
+                                       GTest::gtest libcommon)
 
 target_compile_definitions(test_gba
                            PRIVATE TEST_DIR="${CMAKE_SOURCE_DIR}/tests/")
