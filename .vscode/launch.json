@@ -11,7 +11,9 @@
             "preLaunchTask": "Build GBA (debug)",
             "program": "${workspaceFolder}/build/debug/cores/gba/sim/gba",
             "args": [
-                "${workspaceFolder}/tests/libtonc-examples/bin/mode3_vert.gba",
+                // "${workspaceFolder}/tests/libtonc-examples/bin/mode3_vert.gba",
+                // "${workspaceFolder}/tests/gba-tests/arm/arm.gba", 
+                "${workspaceFolder}/tests/gba-tests/ppu/hello.gba",
                 "--log-level",
                 "none"
             ],

@@ -81,6 +81,12 @@ bool GameboyAdvanceHarness::setup(const std::filesystem::path& rom_path) {
 
     set_initial_state();
 
+    auto* root = top->rootp;
+    video_bind(root->GameboyAdvance__DOT__ppu__DOT__regs.data(),
+        &root->GameboyAdvance__DOT__Palette__DOT__mem[0],
+        &root->GameboyAdvance__DOT__ppu__DOT__VRAM__DOT__mem[0],
+        &root->GameboyAdvance__DOT__OAM__DOT__mem[0]);
+
     tick();
 
     // std::cout << "\nCycle 2: Start flush" << std::endl;
@@ -296,6 +302,7 @@ bool GameboyAdvanceHarness::tick() {
     ctx.timeInc(5);
 
     cycles++;
+    video_update(1);
 
     return true;
 }
@@ -352,7 +359,6 @@ bool GameboyAdvanceHarness::run() {
         return false;
     }
 
-    std::array<u32, width * height> framebuffer { };
     bool running = true;
 
     while (running) {
@@ -365,10 +371,7 @@ bool GameboyAdvanceHarness::run() {
         for (int i = 0; i < cycles_per_frame && running; ++i)
             tick();
 
-        auto* root = top->rootp;
-        video_render_frame(root->GameboyAdvance__DOT__ppu__DOT__regs.data(), &root->GameboyAdvance__DOT__Palette__DOT__mem[0], &root->GameboyAdvance__DOT__ppu__DOT__VRAM__DOT__mem[0], &root->GameboyAdvance__DOT__OAM__DOT__mem[0], framebuffer.data());
-
-        SDL_UpdateTexture(texture, nullptr, framebuffer.data(), width * sizeof(u32));
+        SDL_UpdateTexture(texture, nullptr, screen_pixels, width * sizeof(u32));
         SDL_RenderClear(renderer);
         SDL_RenderCopy(renderer, texture, nullptr, nullptr);
         SDL_RenderPresent(renderer);

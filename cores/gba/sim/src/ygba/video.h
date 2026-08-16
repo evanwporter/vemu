@@ -17,6 +17,20 @@
 #define CYCLES_VBLANK   (CYCLES_SCANLINE * 68)             // 83776
 #define CYCLES_FRAME    (CYCLES_VDRAW + CYCLES_VBLANK)     // 280896
 
+extern uint32_t video_cycles;
+extern bool video_frame_drawn;
+
+extern uint32_t screen_texture;
+extern uint32_t screen_pixels[SCREEN_HEIGHT][SCREEN_WIDTH];
+
+// Bind ygba's PPU to the memories and LCD register file owned by the RTL
+// model. The register file is laid out as little-endian 32-bit words.
+void video_bind(uint32_t* registers,
+    uint8_t* palette,
+    uint8_t* vram,
+    uint8_t* oam);
+void video_reset();
+
 #define DCNT_GB       (1 << 3)
 #define DCNT_PAGE     (1 << 4)
 #define DCNT_OAM_HBL  (1 << 5)
@@ -38,8 +52,6 @@
 #define DSTAT_HBL_IRQ (1 << 4)
 #define DSTAT_VCT_IRQ (1 << 5)
 
-void video_render_frame(const uint32_t* registers,
-    const uint8_t* palette,
-    const uint8_t* vram,
-    const uint8_t* oam,
-    uint32_t* framebuffer);
+bool video_in_bitmap_mode();
+void video_bg_affine_reset(int i);
+void video_update(uint32_t cycles);
