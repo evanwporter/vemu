@@ -3,17 +3,17 @@
 
 #include "video.h"
 
-#include <stdint.h>
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <stdint.h>
 
 #include "cpu.h" // BIT/BITS/SIGN_EXTEND helpers only; the RTL remains the CPU.
 #include "io.h"
 
 // This renderer is driven by the SystemVerilog machine rather than ygba's
 // software CPU and memory subsystem.
-io_registers ioreg {};
+io_registers ioreg { };
 static uint32_t* rtl_registers;
 static uint8_t* palette_ram;
 static uint8_t* video_ram;
@@ -64,10 +64,8 @@ static void sync_registers_from_rtl() {
 }
 
 static void sync_status_to_rtl() {
-    rtl_registers[REG_DISPSTAT / 4] =
-        (rtl_registers[REG_DISPSTAT / 4] & 0xffff0000u) | ioreg.dispstat.w;
-    rtl_registers[REG_VCOUNT / 4] =
-        (rtl_registers[REG_VCOUNT / 4] & 0x0000ffffu) | (uint32_t(ioreg.vcount.w) << 16);
+    rtl_registers[REG_DISPSTAT / 4] = (rtl_registers[REG_DISPSTAT / 4] & 0xffff0000u) | ioreg.dispstat.w;
+    rtl_registers[REG_VCOUNT / 4] = (rtl_registers[REG_VCOUNT / 4] & 0x0000ffffu) | (uint32_t(ioreg.vcount.w) << 16);
 }
 
 void video_bind(uint32_t* registers, uint8_t* palette, uint8_t* vram, uint8_t* oam) {
@@ -81,7 +79,7 @@ void video_bind(uint32_t* registers, uint8_t* palette, uint8_t* vram, uint8_t* o
 void video_reset() {
     video_cycles = 0;
     video_frame_drawn = false;
-    ioreg = {};
+    ioreg = { };
     std::memset(screen_pixels, 0, sizeof(screen_pixels));
     if (rtl_registers) {
         sync_registers_from_rtl();
@@ -169,11 +167,16 @@ static WindowRegion window_find_region(int x, int y) {
 
 static bool window_enable_blend(WindowRegion region) {
     switch (region) {
-        case WindowRegion::None: break;
-        case WindowRegion::Win0: return BIT(ioreg.winin.w, 5);
-        case WindowRegion::Win1: return BIT(ioreg.winin.w, 13);
-        case WindowRegion::WinObj: return BIT(ioreg.winout.w, 13);
-        case WindowRegion::WinOut: return BIT(ioreg.winout.w, 5);
+    case WindowRegion::None:
+        break;
+    case WindowRegion::Win0:
+        return BIT(ioreg.winin.w, 5);
+    case WindowRegion::Win1:
+        return BIT(ioreg.winin.w, 13);
+    case WindowRegion::WinObj:
+        return BIT(ioreg.winout.w, 13);
+    case WindowRegion::WinOut:
+        return BIT(ioreg.winout.w, 5);
     }
 
     return true;
@@ -181,11 +184,16 @@ static bool window_enable_blend(WindowRegion region) {
 
 static bool window_bg_visible(WindowRegion region, int bg) {
     switch (region) {
-        case WindowRegion::None: break;
-        case WindowRegion::Win0: return BIT(ioreg.winin.w, bg);
-        case WindowRegion::Win1: return BIT(ioreg.winin.w, 8 + bg);
-        case WindowRegion::WinObj: return BIT(ioreg.winout.w, 8 + bg);
-        case WindowRegion::WinOut: return BIT(ioreg.winout.w, bg);
+    case WindowRegion::None:
+        break;
+    case WindowRegion::Win0:
+        return BIT(ioreg.winin.w, bg);
+    case WindowRegion::Win1:
+        return BIT(ioreg.winin.w, 8 + bg);
+    case WindowRegion::WinObj:
+        return BIT(ioreg.winout.w, 8 + bg);
+    case WindowRegion::WinOut:
+        return BIT(ioreg.winout.w, bg);
     }
 
     return true;
@@ -234,9 +242,12 @@ static uint16_t rgb565_blend(uint16_t a, uint16_t b, double weight_a, double wei
     int green = green_a * weight_a + green_b * weight_b;
     int blue = blue_a * weight_a + blue_b * weight_b;
 
-    if (red > 31) red = 31;
-    if (green > 63) green = 63;
-    if (blue > 31) blue = 31;
+    if (red > 31)
+        red = 31;
+    if (green > 63)
+        green = 63;
+    if (blue > 31)
+        blue = 31;
 
     return BIT(green, 0) << 15 | BITS(blue, 0, 4) << 10 | BITS(green, 1, 5) << 5 | BITS(red, 0, 4);
 }
@@ -256,7 +267,7 @@ static void reset_scanline() {
 static void draw_backdrop(int y) {
     assert(y >= 0 && y < SCREEN_HEIGHT);
 
-    uint16_t pixel = *(uint16_t *) &palette_ram[0];
+    uint16_t pixel = *(uint16_t*)&palette_ram[0];
 
     for (int x = 0; x < SCREEN_WIDTH; x++) {
         scanline[x].top = pixel;
@@ -274,7 +285,8 @@ static void draw_backdrop(int y) {
 }
 
 static void draw_pixel_if_visible(int bg, int x, int y, uint16_t pixel) {
-    if (x < 0 || x >= SCREEN_WIDTH) return;
+    if (x < 0 || x >= SCREEN_WIDTH)
+        return;
     assert(y >= 0 && y < SCREEN_HEIGHT);
 
     if (active_compute_sprite_masks) {
@@ -288,11 +300,13 @@ static void draw_pixel_if_visible(int bg, int x, int y, uint16_t pixel) {
         scanline[x].flags &= ~ScanlineFlags::SpriteTransparency;
     }
 
-    if (active_sprite_mask) return;
+    if (active_sprite_mask)
+        return;
 
     WindowRegion window_region = window_find_region(x, y);
     bool bg_visible = window_bg_visible(window_region, bg);
-    if (!bg_visible) return;
+    if (!bg_visible)
+        return;
 
     bool occluding_sprites = (bg == 4 && scanline[x].top_bg == 4);
     if (!occluding_sprites) {
@@ -314,9 +328,12 @@ static void compose_scanline(int y) {
     double weight_b = fixed1p4_to_double(BITS(ioreg.bldalpha.w, 8, 12));
     double weight_y = fixed1p4_to_double(BITS(ioreg.bldy.w, 0, 4));
 
-    if (weight_a > 1.0) weight_a = 1.0;
-    if (weight_b > 1.0) weight_b = 1.0;
-    if (weight_y > 1.0) weight_y = 1.0;
+    if (weight_a > 1.0)
+        weight_a = 1.0;
+    if (weight_b > 1.0)
+        weight_b = 1.0;
+    if (weight_y > 1.0)
+        weight_y = 1.0;
 
     const uint16_t white = 0xffff;
     const uint16_t black = 0;
@@ -346,34 +363,36 @@ static void compose_scanline(int y) {
         uint16_t pixel = top;
         if (valid_blend) {
             switch (blend_mode) {
-                case 1:
-                    pixel = rgb565_blend(top, bottom, weight_a, weight_b);
-                    break;
-                case 2:
-                    pixel = rgb565_blend(top, white, 1.0 - weight_y, weight_y);
-                    break;
-                case 3:
-                    pixel = rgb565_blend(top, black, 1.0 - weight_y, weight_y);
-                    break;
+            case 1:
+                pixel = rgb565_blend(top, bottom, weight_a, weight_b);
+                break;
+            case 2:
+                pixel = rgb565_blend(top, white, 1.0 - weight_y, weight_y);
+                break;
+            case 3:
+                pixel = rgb565_blend(top, black, 1.0 - weight_y, weight_y);
+                break;
             }
         }
         screen_pixels[y][x] = rgb555_to_rgb888(pixel);
     }
 }
 
-static bool tile_access(uint32_t tile_address, int x, int y, bool hflip, bool vflip, bool colors_256, uint32_t palette_offset, int palette_no, uint16_t *pixel) {
+static bool tile_access(uint32_t tile_address, int x, int y, bool hflip, bool vflip, bool colors_256, uint32_t palette_offset, int palette_no, uint16_t* pixel) {
     assert(x >= 0 && x < 8 && y >= 0 && y < 8);
 
-    if (hflip) x = 7 - x;
-    if (vflip) y = 7 - y;
+    if (hflip)
+        x = 7 - x;
+    if (vflip)
+        y = 7 - y;
 
-    uint8_t *tile = &video_ram[tile_address];
+    uint8_t* tile = &video_ram[tile_address];
 
     if (colors_256) {
         uint32_t tile_offset = y * 8 + x;
         uint8_t pixel_index = tile[tile_offset];
         if (pixel_index != 0) {
-            *pixel = *(uint16_t *) &palette_ram[palette_offset + pixel_index * 2];
+            *pixel = *(uint16_t*)&palette_ram[palette_offset + pixel_index * 2];
             return true;
         }
     } else {
@@ -381,7 +400,7 @@ static bool tile_access(uint32_t tile_address, int x, int y, bool hflip, bool vf
         uint8_t pixel_indexes = tile[tile_offset];
         uint8_t pixel_index = (pixel_indexes >> (x % 2 == 1 ? 4 : 0)) & 0xf;
         if (pixel_index != 0) {
-            *pixel = *(uint16_t *) &palette_ram[palette_offset + palette_no * 32 + pixel_index * 2];
+            *pixel = *(uint16_t*)&palette_ram[palette_offset + palette_no * 32 + pixel_index * 2];
             return true;
         }
     }
@@ -389,7 +408,7 @@ static bool tile_access(uint32_t tile_address, int x, int y, bool hflip, bool vf
     return false;
 }
 
-static bool bg_regular_access(int x, int y, int w, int h, uint32_t tile_base, uint32_t map_base, uint32_t screen_size, bool colors_256, uint16_t *pixel) {
+static bool bg_regular_access(int x, int y, int w, int h, uint32_t tile_base, uint32_t map_base, uint32_t screen_size, bool colors_256, uint16_t* pixel) {
     assert(x >= 0 && x < w && y >= 0 && y < h);
 
     int map_x = (x / 8) % (w / 8);
@@ -397,19 +416,21 @@ static bool bg_regular_access(int x, int y, int w, int h, uint32_t tile_base, ui
     int quad_x = 32 * 32;
     int quad_y = 32 * 32 * (screen_size == 3 ? 2 : 1);
     uint32_t map_index = (map_y / 32) * quad_y + (map_x / 32) * quad_x + (map_y % 32) * 32 + (map_x % 32);
-    uint16_t info = *(uint16_t *) &video_ram[map_base + map_index * 2];
+    uint16_t info = *(uint16_t*)&video_ram[map_base + map_index * 2];
     int tile_no = BITS(info, 0, 9);
     bool hflip = BIT(info, 10);
     bool vflip = BIT(info, 11);
     int palette_no = BITS(info, 12, 15);
 
     uint32_t tile_address = tile_base + tile_no * (colors_256 ? 64 : 32);
-    if (tile_address >= 0x10000) return false;
+    if (tile_address >= 0x10000)
+        return false;
     return tile_access(tile_address, x % 8, y % 8, hflip, vflip, colors_256, 0, palette_no, pixel);
 }
 
-static bool bg_affine_access(int x, int y, int w, int h, uint32_t tile_base, uint32_t map_base, uint16_t *pixel) {
-    if (x < 0 || x >= w || y < 0 || y >= h) return false;
+static bool bg_affine_access(int x, int y, int w, int h, uint32_t tile_base, uint32_t map_base, uint16_t* pixel) {
+    if (x < 0 || x >= w || y < 0 || y >= h)
+        return false;
 
     int map_x = (x / 8) % (w / 8);
     int map_y = (y / 8) % (h / 8);
@@ -418,15 +439,19 @@ static bool bg_affine_access(int x, int y, int w, int h, uint32_t tile_base, uin
     int tile_no = info;
 
     uint32_t tile_address = tile_base + tile_no * 64;
-    if (tile_address >= 0x10000) return false;
+    if (tile_address >= 0x10000)
+        return false;
     return tile_access(tile_address, x % 8, y % 8, false, false, true, 0, 0, pixel);
 }
 
-static bool sprite_access(int tile_no, int x, int y, int w, int h, bool hflip, bool vflip, bool colors_256, int palette_no, int mode, uint16_t *pixel) {
-    if (x < 0 || x >= w || y < 0 || y >= h) return false;
+static bool sprite_access(int tile_no, int x, int y, int w, int h, bool hflip, bool vflip, bool colors_256, int palette_no, int mode, uint16_t* pixel) {
+    if (x < 0 || x >= w || y < 0 || y >= h)
+        return false;
 
-    if (hflip) x = w - 1 - x;
-    if (vflip) y = h - 1 - y;
+    if (hflip)
+        x = w - 1 - x;
+    if (vflip)
+        y = h - 1 - y;
 
     bool obj_1d = (ioreg.dispcnt.w & DCNT_OBJ_1D);
     int stride = (obj_1d ? (w / 8) : (colors_256 ? 16 : 32));
@@ -443,30 +468,33 @@ static bool sprite_access(int tile_no, int x, int y, int w, int h, bool hflip, b
     tile_no &= 0x3ff;
 
     bool bitmap_mode = (mode >= 3 && mode <= 5);
-    if (bitmap_mode && tile_no < 512) return false;
+    if (bitmap_mode && tile_no < 512)
+        return false;
 
     uint32_t tile_address = 0x10000 + tile_no * 32;
     return tile_access(tile_address, x % 8, y % 8, false, false, colors_256, 0x200, palette_no, pixel);
 }
 
-const int sprite_width_lookup[4][4] = {{8, 16, 32, 64}, {16, 32, 32, 64}, {8, 8, 16, 32}, {8, 8, 8, 8}};
-const int sprite_height_lookup[4][4] = {{8, 16, 32, 64}, {8, 8, 16, 32}, {16, 32, 32, 64}, {8, 8, 8, 8}};
+const int sprite_width_lookup[4][4] = { { 8, 16, 32, 64 }, { 16, 32, 32, 64 }, { 8, 8, 16, 32 }, { 8, 8, 8, 8 } };
+const int sprite_height_lookup[4][4] = { { 8, 16, 32, 64 }, { 8, 8, 16, 32 }, { 16, 32, 32, 64 }, { 8, 8, 8, 8 } };
 
 static void draw_sprites(int mode, int pri, int y) {
     for (int n = 127; n >= 0; n--) {
-        uint16_t attr0 = *(uint16_t *) &object_ram[n * 8];
-        uint16_t attr1 = *(uint16_t *) &object_ram[n * 8 + 2];
-        uint16_t attr2 = *(uint16_t *) &object_ram[n * 8 + 4];
+        uint16_t attr0 = *(uint16_t*)&object_ram[n * 8];
+        uint16_t attr1 = *(uint16_t*)&object_ram[n * 8 + 2];
+        uint16_t attr2 = *(uint16_t*)&object_ram[n * 8 + 4];
 
         int sprite_y = BITS(attr0, 0, 7);
         int obj_mode = BITS(attr0, 8, 9);
         int gfx_mode = BITS(attr0, 10, 11);
-        //bool mosaic = BIT(attr0, 12);
+        // bool mosaic = BIT(attr0, 12);
         bool colors_256 = BIT(attr0, 13);
         int shape = BITS(attr0, 14, 15);
 
-        if (active_compute_sprite_masks && gfx_mode != 2) continue;
-        if (gfx_mode == 3) gfx_mode = 0;
+        if (active_compute_sprite_masks && gfx_mode != 2)
+            continue;
+        if (gfx_mode == 3)
+            gfx_mode = 0;
 
         int sprite_x = BITS(attr1, 0, 8);
         int affine_index = BITS(attr1, 9, 13);
@@ -478,7 +506,8 @@ static void draw_sprites(int mode, int pri, int y) {
         int priority = BITS(attr2, 10, 11);
         int palette_no = BITS(attr2, 12, 15);
 
-        if (obj_mode == 2 || priority != pri) continue;
+        if (obj_mode == 2 || priority != pri)
+            continue;
 
         bool is_affine = (obj_mode == 1 || obj_mode == 3);
         int bbox_scale = (obj_mode == 3 ? 2 : 1);
@@ -488,10 +517,13 @@ static void draw_sprites(int mode, int pri, int y) {
         int bbox_width = sprite_width * bbox_scale;
         int bbox_height = sprite_height * bbox_scale;
 
-        if (sprite_x + bbox_width >= 512) sprite_x -= 512;
-        if (sprite_y + bbox_height >= 256) sprite_y -= 256;
+        if (sprite_x + bbox_width >= 512)
+            sprite_x -= 512;
+        if (sprite_y + bbox_height >= 256)
+            sprite_y -= 256;
 
-        if (y < sprite_y || y >= sprite_y + bbox_height) continue;
+        if (y < sprite_y || y >= sprite_y + bbox_height)
+            continue;
 
         int sprite_cx = sprite_width / 2;
         int sprite_cy = sprite_height / 2;
@@ -500,10 +532,10 @@ static void draw_sprites(int mode, int pri, int y) {
 
         double pa, pb, pc, pd;
         if (is_affine) {
-            pa = fixed8p8_to_double(*(uint16_t *) &object_ram[affine_index * 32 + 6]);
-            pb = fixed8p8_to_double(*(uint16_t *) &object_ram[affine_index * 32 + 14]);
-            pc = fixed8p8_to_double(*(uint16_t *) &object_ram[affine_index * 32 + 22]);
-            pd = fixed8p8_to_double(*(uint16_t *) &object_ram[affine_index * 32 + 30]);
+            pa = fixed8p8_to_double(*(uint16_t*)&object_ram[affine_index * 32 + 6]);
+            pb = fixed8p8_to_double(*(uint16_t*)&object_ram[affine_index * 32 + 14]);
+            pc = fixed8p8_to_double(*(uint16_t*)&object_ram[affine_index * 32 + 22]);
+            pd = fixed8p8_to_double(*(uint16_t*)&object_ram[affine_index * 32 + 30]);
             hflip = false;
             vflip = false;
         } else {
@@ -520,7 +552,8 @@ static void draw_sprites(int mode, int pri, int y) {
             int texture_y = sprite_cy + std::floor(pc * (i - bbox_cx) + pd * (j - bbox_cy));
             uint16_t pixel;
             bool ok = sprite_access(tile_no, texture_x, texture_y, sprite_width, sprite_height, hflip, vflip, colors_256, palette_no, mode, &pixel);
-            if (ok) draw_pixel_if_visible(4, sprite_x + i, y, pixel);
+            if (ok)
+                draw_pixel_if_visible(4, sprite_x + i, y, pixel);
         }
 
         active_sprite_transparency = false;
@@ -538,12 +571,14 @@ static void compute_sprite_masks(int mode, int y) {
     active_compute_sprite_masks = false;
 }
 
-const int bg_width_lookup[2][4] = {{256, 512, 256, 512}, {128, 256, 512, 1024}};
-const int bg_height_lookup[2][4] = {{256, 256, 512, 512}, {128, 256, 512, 1024}};
+const int bg_width_lookup[2][4] = { { 256, 512, 256, 512 }, { 128, 256, 512, 1024 } };
+const int bg_height_lookup[2][4] = { { 256, 256, 512, 512 }, { 128, 256, 512, 1024 } };
 
 static void draw_tiled_bg(int mode, int bg, int y) {
-    if (mode == 1 && bg == 3) return;
-    if (mode == 2 && (bg == 0 || bg == 1)) return;
+    if (mode == 1 && bg == 3)
+        return;
+    if (mode == 2 && (bg == 0 || bg == 1))
+        return;
 
     uint32_t bgcnt = ioreg.bgcnt[bg].w;
     int hofs = ioreg.bg_text[bg].x.w;
@@ -587,7 +622,8 @@ static void draw_tiled_bg(int mode, int bg, int y) {
         } else {
             ok = bg_regular_access(i, j, bg_width, bg_height, tile_base, map_base, screen_size, colors_256, &pixel);
         }
-        if (ok) draw_pixel_if_visible(bg, x, y, pixel);
+        if (ok)
+            draw_pixel_if_visible(bg, x, y, pixel);
         affine_x += pa;
         affine_y += pc;
     }
@@ -612,21 +648,22 @@ static void draw_tiled(int mode, int y) {
     }
 }
 
-static bool bitmap_access(int x, int y, int mode, uint16_t *pixel) {
+static bool bitmap_access(int x, int y, int mode, uint16_t* pixel) {
     int w = (mode == 5 ? 160 : SCREEN_WIDTH);
     int h = (mode == 5 ? 128 : SCREEN_HEIGHT);
 
-    if (x < 0 || x >= w || y < 0 || y >= h) return false;
+    if (x < 0 || x >= w || y < 0 || y >= h)
+        return false;
 
     if (mode == 4) {
         bool page_flip = (ioreg.dispcnt.w & DCNT_PAGE);
         uint8_t pixel_index = video_ram[(page_flip ? 0xa000 : 0) + y * w + x];
         if (pixel_index != 0) {
-            *pixel = *(uint16_t *) &palette_ram[pixel_index * 2];
+            *pixel = *(uint16_t*)&palette_ram[pixel_index * 2];
             return true;
         }
     } else {
-        *pixel = *(uint16_t *) &video_ram[(y * w + x) * 2];
+        *pixel = *(uint16_t*)&video_ram[(y * w + x) * 2];
         return true;
     }
 
@@ -651,7 +688,8 @@ static void draw_bitmap(int mode, int y) {
                 int j = std::floor(affine_y);
                 uint16_t pixel;
                 bool ok = bitmap_access(i, j, mode, &pixel);
-                if (ok) draw_pixel_if_visible(bg, x, y, pixel);
+                if (ok)
+                    draw_pixel_if_visible(bg, x, y, pixel);
                 affine_x += pa;
                 affine_y += pc;
             }
@@ -689,23 +727,23 @@ static void video_draw_scanline() {
     draw_backdrop(y);
 
     switch (mode) {
-        case 0:
-        case 1:
-        case 2:
-            //case 6:
-            //case 7:
-            draw_tiled(mode, y);
-            break;
+    case 0:
+    case 1:
+    case 2:
+        // case 6:
+        // case 7:
+        draw_tiled(mode, y);
+        break;
 
-        case 3:
-        case 4:
-        case 5:
-            draw_bitmap(mode, y);
-            break;
+    case 3:
+    case 4:
+    case 5:
+        draw_bitmap(mode, y);
+        break;
 
-        default:
-            assert(false);
-            break;
+    default:
+        assert(false);
+        break;
     }
 
     compose_scanline(y);
@@ -724,7 +762,8 @@ static void video_bg_affine_update() {
 }
 
 void video_update(uint32_t cycles) {
-    if (!rtl_registers || !palette_ram || !video_ram || !object_ram) return;
+    if (!rtl_registers || !palette_ram || !video_ram || !object_ram)
+        return;
     sync_registers_from_rtl();
     uint32_t last_frame_cycles = video_cycles;
     video_cycles = (video_cycles + cycles) % CYCLES_FRAME;
@@ -738,7 +777,7 @@ void video_update(uint32_t cycles) {
             video_draw_scanline();
             video_bg_affine_update();
         }
-        ioreg.dispstat.w |= DSTAT_IN_HBL;  // Enter HBlank
+        ioreg.dispstat.w |= DSTAT_IN_HBL; // Enter HBlank
         if (ioreg.dispstat.w & DSTAT_HBL_IRQ) {
             // IRQ delivery remains the responsibility of the RTL interrupt
             // controller. Timing/status are still modeled here.
@@ -748,28 +787,28 @@ void video_update(uint32_t cycles) {
     }
 
     if (line_cycles < last_line_cycles) {
-        ioreg.dispstat.w &= ~DSTAT_IN_HBL;  // Leave HBlank
+        ioreg.dispstat.w &= ~DSTAT_IN_HBL; // Leave HBlank
         ioreg.vcount.w = (ioreg.vcount.w + 1) % NUM_SCANLINES;
         if (ioreg.vcount.w == 0) {
             video_bg_affine_reset(0);
             video_bg_affine_reset(1);
         } else if (ioreg.vcount.w == SCREEN_HEIGHT) {
-            ioreg.dispstat.w |= DSTAT_IN_VBL;  // Enter VBlank
+            ioreg.dispstat.w |= DSTAT_IN_VBL; // Enter VBlank
         } else if (ioreg.vcount.w == SCREEN_HEIGHT + 1) {
             // FIXME Implement proper IRQ delay
             if (ioreg.dispstat.w & DSTAT_VBL_IRQ) {
                 // See HBlank IRQ note above.
             }
         } else if (ioreg.vcount.w == NUM_SCANLINES - 1) {
-            ioreg.dispstat.w &= ~DSTAT_IN_VBL;  // Leave VBlank
+            ioreg.dispstat.w &= ~DSTAT_IN_VBL; // Leave VBlank
         }
         if (ioreg.vcount.w == ioreg.dispstat.b.b1) {
-            ioreg.dispstat.w |= DSTAT_IN_VCT;  // Enter VCount
+            ioreg.dispstat.w |= DSTAT_IN_VCT; // Enter VCount
             if (ioreg.dispstat.w & DSTAT_VCT_IRQ) {
                 // See HBlank IRQ note above.
             }
         } else {
-            ioreg.dispstat.w &= ~DSTAT_IN_VCT;  // Leave VCount
+            ioreg.dispstat.w &= ~DSTAT_IN_VCT; // Leave VCount
         }
     }
 
