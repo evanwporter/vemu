@@ -108,6 +108,7 @@ interface GBA_Multiplier_if (
 );
 
   logic enable;
+  logic start;
   word_t result;
 
   multiply_opcode_t opcode;
@@ -117,6 +118,6 @@ interface GBA_Multiplier_if (
     logic Z;
   } flags;
 
-  modport Multiplier_side(input A_bus, B_bus, enable, opcode, output result, flags);
+  modport Multiplier_side(input A_bus, B_bus, enable, start, opcode, output result, flags);
 
 endinterface : GBA_Multiplier_if

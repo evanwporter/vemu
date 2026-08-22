@@ -120,6 +120,7 @@ module ARM7TMDI (
   end
 
   assign multiplier_bus.enable = control_signals.multiplier_enable;
+  assign multiplier_bus.start = control_signals.multiplier_start;
   assign multiplier_bus.opcode = decoder_bus.instr_type == ARM_INSTR_MULTIPLY
     ? decoder_bus.word.arm.mul.opcode
     : gba_cpu_decoder_types_pkg::multiply_opcode_t'(4'd0);
@@ -559,7 +560,13 @@ module ARM7TMDI (
     end else begin
       `LOG_TRACE(("[CPU] addr=%0d", bus.addr))
 
-      if (control_signals.set_thumb_mode) begin
+      if (control_signals.exception != EXCEPTION_NONE) begin
+        // Unlike branches, exception entry does not produce its vector on the
+        // ALU address path. Seed the fetch address explicitly so the two flush
+        // cycles read the exception handler rather than instructions following
+        // the trapping instruction.
+        bus.addr <= VECTOR_TABLE[control_signals.exception];
+      end else if (control_signals.set_thumb_mode) begin
         bus.addr <= B_bus & ~32'd1;
         `LOG_TRACE((
             "Setting address bus to new Thumb mode PC value due to set_thumb_mode control signal, B_bus=0x%08x, addr=0x%08x",

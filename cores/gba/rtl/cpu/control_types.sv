@@ -191,6 +191,7 @@ package gba_control_types_pkg;
     // ======================================================
 
     logic multiplier_enable;
+    logic multiplier_start;
 
     logic mult_set_flags;
 

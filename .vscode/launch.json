@@ -12,10 +12,13 @@
             "program": "${workspaceFolder}/build/debug/cores/gba/sim/gba",
             "args": [
                 // "${workspaceFolder}/tests/libtonc-examples/bin/mode3_vert.gba",
-                // "${workspaceFolder}/tests/gba-tests/arm/arm.gba", 
-                "${workspaceFolder}/tests/gba-tests/ppu/hello.gba",
+                "${workspaceFolder}/tests/libtonc-examples/bin/hello.gba",
+                // "${workspaceFolder}/tests/gba-tests/arm/arm.gba",
+                // "${workspaceFolder}/tests/gba-tests/thumb/thumb.gba",
+                // "${workspaceFolder}/tests/gba-tests/ppu/hello.gba",
                 "--log-level",
-                "none"
+                "none"			
+
             ],
             "cwd": "${workspaceFolder}",
             "environment": [],

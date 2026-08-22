@@ -45,29 +45,33 @@ module GBA_Multiplier (
     if (reset) begin
       cycle <= 0;
     end else begin
-      cycle <= 0;
-      accum_high <= 0;
-      accum_low <= 0;
+      if (bus.start) begin
+        cycle <= 1;
+        accum_high <= 0;
+        accum_low <= 0;
 
-      if (bus.enable) begin
+        unique case (bus.opcode)
+          ARM_MUL, ARM_MLA: begin
+            {upper_result, lower_result} <= bus.A_bus * bus.B_bus;
+          end
+          ARM_UMULL, ARM_UMLAL: begin
+            {upper_result, lower_result} <= bus.A_bus * bus.B_bus;
+          end
+          ARM_SMULL, ARM_SMLAL: begin
+            {s_upper_result, s_lower_result} <= $signed(bus.A_bus) * $signed(bus.B_bus);
+          end
+          default: ;
+        endcase
+      end else if (bus.enable) begin
         cycle <= cycle + 1;
 
         `LOG_TRACE(("[Multiplier] Cycle %0d: M=%0d, S=%0d, Result=%0d", cycle, M, S, bus.result))
 
         unique case (bus.opcode)
-          ARM_MUL, ARM_MLA: begin
-            if (cycle == 0) begin
-              `LOG_TRACE(("[Multiplier] Starting multiplication: M=%0d, S=%0d", bus.B_bus, bus.A_bus))
-              {upper_result, lower_result} <= bus.A_bus * bus.B_bus;
-            end
-          end
+          ARM_MUL, ARM_MLA: ;
 
           ARM_UMULL, ARM_UMLAL: begin
-            if (cycle == 0) begin
-              `LOG_TRACE(("[Multiplier] Starting unsigned multiplication: M=%0d, S=%0d", bus.B_bus,
-                       bus.A_bus))
-              {upper_result, lower_result} <= bus.A_bus * bus.B_bus;
-            end else if (cycle == 1) begin
+            if (cycle == 1) begin
               accum_high <= bus.A_bus;
               accum_low <= bus.B_bus;
 
@@ -78,12 +82,7 @@ module GBA_Multiplier (
           end
 
           ARM_SMULL, ARM_SMLAL: begin
-            if (cycle == 0) begin
-              `LOG_TRACE(("[Multiplier] Starting signed multiplication: A=%0d, B=%0d",
-                       $signed(bus.A_bus), $signed(bus.B_bus)))
-
-              {s_upper_result, s_lower_result} <= $signed(bus.A_bus) * $signed(bus.B_bus);
-            end else if (cycle == 1) begin
+            if (cycle == 1) begin
               accum_high <= bus.A_bus;
               accum_low  <= bus.B_bus;
 

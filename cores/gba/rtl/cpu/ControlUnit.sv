@@ -293,6 +293,7 @@ module GBA_ControlUnit (
                 `LOG_TRACE((
                     "[ControlUnit] Cycle 0 of multiply instruction, preparing for multiplication"))
                 control_signals.multiplier_enable = 1'b1;
+                control_signals.multiplier_start = 1'b1;
 
                 control_signals.A_bus_source = A_BUS_SRC_RS;
                 control_signals.B_bus_source = B_BUS_SRC_REG_RM;
@@ -332,6 +333,7 @@ module GBA_ControlUnit (
                 `LOG_TRACE((
                     "[ControlUnit] Cycle 0 of multiply instruction, preparing for multiplication"))
                 control_signals.multiplier_enable = 1'b1;
+                control_signals.multiplier_start = 1'b1;
 
                 control_signals.A_bus_source = A_BUS_SRC_RS;
                 control_signals.B_bus_source = B_BUS_SRC_REG_RM;

@@ -4,8 +4,11 @@
         {
             "label": "Build GBA (debug)",
             "type": "shell",
-            "command": "cmake",
+            "command": "nix",
             "args": [
+                "develop",
+                "--command",
+                "cmake",
                 "--build",
                 "${workspaceFolder}/build/debug",
                 "--target",
