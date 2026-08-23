@@ -13,6 +13,7 @@ module GBA_ControlUnit (
     input logic reset,
     GBA_Decoder_if.ControlUnit_side decoder_bus,
     input execution_mode_t execution_mode,
+    input logic irq_pending,  // irq_req && !CPSR[7]
     output control_t control_signals,
     input logic flush_req
 );
@@ -130,6 +131,14 @@ module GBA_ControlUnit (
 
       `LOG_TRACE(("[ControlUnit] Flush cycle 2, flushing instruction"))
 
+    end else if (irq_pending && cycle == 8'd0) begin
+      // IRQs are sampled only between instructions. Exception entry itself
+      // requests the pipeline flush and switches the CPU into ARM/IRQ mode.
+      control_signals.exception = EXCEPTION_IRQ;
+      control_signals.pipeline_advance = 1'b1;
+
+      `LOG_TRACE(("[ControlUnit] Accepting IRQ at instruction boundary"))
+
     end else if (decoder_bus.condition_pass == 1'b0) begin
       // If the condition check fails, we still want to advance the pipeline and fetch the next instruction
       control_signals |= fetch_next_instr();
@@ -137,8 +146,9 @@ module GBA_ControlUnit (
       control_signals.addr_bus_src = ADDR_SRC_INCR;
       control_signals.pipeline_advance = 1'b1;
 
-      `LOG_TRACE((
-          "[ControlUnit] Condition check failed, advancing pipeline to fetch next instruction"))
+      `LOG_TRACE(
+          ("[ControlUnit] Condition check failed, advancing pipeline to fetch next instruction"))
+
 
     end else begin
 
@@ -166,8 +176,8 @@ module GBA_ControlUnit (
             control_signals.ALU_writeback = gba_cpu_util_pkg::get_alu_writeback(
                 alu_op_t'(decoder_bus.word.arm.data_proc_imm.opcode));
             control_signals.ALU_set_flags = decoder_bus.word.arm.data_proc_imm.set_flags;
-            `LOG_TRACE(("[ControlUnit] ALU writeback source=%0d, set_flags=%b",
-                     control_signals.ALU_writeback, control_signals.ALU_set_flags))
+            `LOG_TRACE(
+                ("[ControlUnit] ALU writeback source=%0d, set_flags=%b", control_signals.ALU_writeback, control_signals.ALU_set_flags))
 
             control_signals.pipeline_advance = 1'b1;
 
@@ -208,8 +218,8 @@ module GBA_ControlUnit (
 
             control_signals.shift_latch_amt = 1'b1;
 
-            `LOG_TRACE(("[ControlUnit] Instr done is %b, cycle is %0d",
-                     control_signals.pipeline_advance, cycle))
+            `LOG_TRACE(
+                ("[ControlUnit] Instr done is %b, cycle is %0d", control_signals.pipeline_advance, cycle))
           end
 
           if (cycle == 8'd1) begin
@@ -228,8 +238,8 @@ module GBA_ControlUnit (
                 alu_op_t'(decoder_bus.word.arm.data_proc_reg_reg.opcode));
             control_signals.ALU_set_flags = decoder_bus.word.arm.data_proc_reg_reg.set_flags;
 
-            `LOG_TRACE(("[ControlUnit] 2 Instr done is %b, cycle is %0d",
-                     control_signals.pipeline_advance, cycle))
+            `LOG_TRACE(
+                ("[ControlUnit] 2 Instr done is %b, cycle is %0d", control_signals.pipeline_advance, cycle))
 
             if (decoder_bus.decoded_regs.Rd == 4'd15) begin
               control_signals.restore_cpsr_from_spsr = decoder_bus.word.arm.data_proc_reg_reg.set_flags;
@@ -290,8 +300,8 @@ module GBA_ControlUnit (
           unique case (decoder_bus.word.arm.mul.opcode)
             ARM_MUL, ARM_MLA: begin
               if (cycle == 8'd0) begin
-                `LOG_TRACE((
-                    "[ControlUnit] Cycle 0 of multiply instruction, preparing for multiplication"))
+                `LOG_TRACE(
+                    ("[ControlUnit] Cycle 0 of multiply instruction, preparing for multiplication"))
                 control_signals.multiplier_enable = 1'b1;
                 control_signals.multiplier_start = 1'b1;
 
@@ -311,8 +321,8 @@ module GBA_ControlUnit (
                   control_signals.A_bus_source = A_BUS_SRC_IMM;
                   control_signals.A_bus_imm = 7'(0);
                 end else if (decoder_bus.word.arm.mul.opcode == ARM_MLA) begin
-                  `LOG_TRACE(("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source",
-                           decoder_bus.decoded_regs.Rn))
+                  `LOG_TRACE(
+                      ("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source", decoder_bus.decoded_regs.Rn))
                   control_signals.A_bus_source = A_BUS_SRC_RN;
                 end
                 control_signals.ALU_op = ALU_OP_MOV;
@@ -330,8 +340,8 @@ module GBA_ControlUnit (
 
             ARM_UMULL, ARM_UMLAL, ARM_SMULL, ARM_SMLAL: begin
               if (cycle == 8'd0) begin
-                `LOG_TRACE((
-                    "[ControlUnit] Cycle 0 of multiply instruction, preparing for multiplication"))
+                `LOG_TRACE(
+                    ("[ControlUnit] Cycle 0 of multiply instruction, preparing for multiplication"))
                 control_signals.multiplier_enable = 1'b1;
                 control_signals.multiplier_start = 1'b1;
 
@@ -342,16 +352,16 @@ module GBA_ControlUnit (
               end
 
               if (cycle == 8'd1) begin
-                `LOG_TRACE((
-                    "[ControlUnit] Cycle 1 of multiply instruction, preparing for multiplication"))
+                `LOG_TRACE(
+                    ("[ControlUnit] Cycle 1 of multiply instruction, preparing for multiplication"))
                 control_signals.multiplier_enable = 1'b1;
 
                 if (decoder_bus.word.arm.mul.opcode == ARM_UMULL || decoder_bus.word.arm.mul.opcode == ARM_SMULL) begin
                   control_signals.A_bus_source = A_BUS_SRC_IMM;
                   control_signals.A_bus_imm = 7'(0);
                 end else if (decoder_bus.word.arm.mul.opcode == ARM_UMLAL || decoder_bus.word.arm.mul.opcode == ARM_SMLAL) begin
-                  `LOG_TRACE(("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source",
-                           decoder_bus.decoded_regs.Rn))
+                  `LOG_TRACE(
+                      ("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source", decoder_bus.decoded_regs.Rn))
                   control_signals.A_bus_source = A_BUS_SRC_RD;
                 end
 
@@ -359,8 +369,8 @@ module GBA_ControlUnit (
                   control_signals.B_bus_source = B_BUS_SRC_IMM;
                   control_signals.B_bus_imm = 24'(0);
                 end else if (decoder_bus.word.arm.mul.opcode == ARM_UMLAL || decoder_bus.word.arm.mul.opcode == ARM_SMLAL) begin
-                  `LOG_TRACE(("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source",
-                           decoder_bus.decoded_regs.Rn))
+                  `LOG_TRACE(
+                      ("[ControlUnit] Multiply instruction, using Rn (R%0d) as B bus source", decoder_bus.decoded_regs.Rn))
                   control_signals.B_bus_source = B_BUS_SRC_REG_RN;
                 end
               end
@@ -459,8 +469,8 @@ module GBA_ControlUnit (
 
             if (cycle == 8'd1) begin
 
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle 1 of load instruction, address calculation done, preparing for memory read and writeback"))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle 1 of load instruction, address calculation done, preparing for memory read and writeback"))
 
               control_signals.ALU_op = decoder_bus.word.arm.ls.U ? ALU_OP_ADD : ALU_OP_SUB;
 
@@ -473,8 +483,8 @@ module GBA_ControlUnit (
                 control_signals.ALU_use_op_b_latch = 1'b1;
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
-                `LOG_TRACE(("[ControlUnit] Load instruction requires writeback to base register R%0d",
-                         decoder_bus.decoded_regs.Rn))
+                `LOG_TRACE(
+                    ("[ControlUnit] Load instruction requires writeback to base register R%0d", decoder_bus.decoded_regs.Rn))
               end
 
               control_signals.memory_byte_transfer = decoder_bus.word.arm.ls.B;
@@ -487,8 +497,8 @@ module GBA_ControlUnit (
             end
 
             if (cycle == 8'd2) begin
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle 2 of load instruction, latching read data and preparing for writeback"))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle 2 of load instruction, latching read data and preparing for writeback"))
 
               control_signals.pipeline_advance = 1'b1;
 
@@ -534,8 +544,8 @@ module GBA_ControlUnit (
                 control_signals.ALU_use_op_b_latch = 1'b1;
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
-                `LOG_TRACE(("[ControlUnit] Store instruction requires writeback to base register R%0d",
-                         decoder_bus.decoded_regs.Rn))
+                `LOG_TRACE(
+                    ("[ControlUnit] Store instruction requires writeback to base register R%0d", decoder_bus.decoded_regs.Rn))
               end
 
               control_signals.memory_advance_early_fetched_IR = 1'b1;
@@ -593,8 +603,8 @@ module GBA_ControlUnit (
           if (decoder_bus.instr_type == ARM_INSTR_LDR_HALF) begin
             if (cycle == 8'd1) begin
 
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle 1 of load instruction, address calculation done, preparing for memory read and writeback"))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle 1 of load instruction, address calculation done, preparing for memory read and writeback"))
 
               control_signals.ALU_op = decoder_bus.word.arm.ls_half.U ? ALU_OP_ADD : ALU_OP_SUB;
 
@@ -607,8 +617,8 @@ module GBA_ControlUnit (
                 control_signals.ALU_use_op_b_latch = 1'b1;
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
-                `LOG_TRACE(("[ControlUnit] Load instruction requires writeback to base register R%0d",
-                         decoder_bus.decoded_regs.Rn))
+                `LOG_TRACE(
+                    ("[ControlUnit] Load instruction requires writeback to base register R%0d", decoder_bus.decoded_regs.Rn))
               end
 
               if (decoder_bus.word.arm.ls_half.opcode == ARM_LOAD_STORE_HALFWORD) begin
@@ -628,8 +638,8 @@ module GBA_ControlUnit (
             end
 
             if (cycle == 8'd2) begin
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle 2 of load instruction, latching read data and preparing for writeback"))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle 2 of load instruction, latching read data and preparing for writeback"))
 
               control_signals.pipeline_advance = 1'b1;
 
@@ -662,8 +672,8 @@ module GBA_ControlUnit (
             end
           end else if (decoder_bus.instr_type == ARM_INSTR_STR_HALF) begin
             if (cycle == 8'd1) begin
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle 1 of store instruction, address calculation done, preparing for memory write"))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle 1 of store instruction, address calculation done, preparing for memory write"))
 
               control_signals.pipeline_advance = 1'b1;
 
@@ -684,8 +694,8 @@ module GBA_ControlUnit (
                 control_signals.ALU_use_op_b_latch = 1'b1;
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
-                `LOG_TRACE(("[ControlUnit] Store instruction requires writeback to base register R%0d",
-                         decoder_bus.decoded_regs.Rn))
+                `LOG_TRACE(
+                    ("[ControlUnit] Store instruction requires writeback to base register R%0d", decoder_bus.decoded_regs.Rn))
               end
 
               control_signals.memory_advance_early_fetched_IR = 1'b1;
@@ -794,8 +804,8 @@ module GBA_ControlUnit (
                 // latch operand b for the writeback in the next cycle
                 control_signals.ALU_latch_op_b = 1'b1;
 
-                `LOG_TRACE((
-                    "[ControlUnit] Block load/store with pre-indexing and writeback, latching offset for writeback"))
+                `LOG_TRACE(
+                    ("[ControlUnit] Block load/store with pre-indexing and writeback, latching offset for writeback"))
               end
 
               if (decoder_bus.word.arm.block.U == 1'b1) begin  // Increment Before (IB)
@@ -804,16 +814,16 @@ module GBA_ControlUnit (
 
                 control_signals.ALU_op = ALU_OP_ADD;
 
-                `LOG_TRACE((
-                    "[ControlUnit] Block load/store with pre-indexing and writeback, adding offset to base register R%0d before memory access",
-                    decoder_bus.decoded_regs.Rn))
+                `LOG_TRACE(
+                    ("[ControlUnit] Block load/store with pre-indexing and writeback, adding offset to base register R%0d before memory access", decoder_bus.decoded_regs.Rn))
               end else begin  // Decrement Before (DB)
                 if (regs_count == 0) control_signals.A_bus_imm = 7'h40;
                 else control_signals.A_bus_imm = 6'(regs_count) * 4;
 
                 control_signals.ALU_op = ALU_OP_SUB_REVERSED;
 
-                `LOG_TRACE((
+                `LOG_TRACE(
+                    (
                     "[ControlUnit] Block load/store with pre-indexing and writeback, subtracting offset from base register R%0d before memory access",
                     decoder_bus.decoded_regs.Rn))
               end
@@ -874,12 +884,12 @@ module GBA_ControlUnit (
                 control_signals.ALU_use_op_b_latch = 1'b1;
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
-                `LOG_TRACE(("[ControlUnit] Load instruction requires writeback to base register R%0d",
-                         decoder_bus.decoded_regs.Rn))
+                `LOG_TRACE(
+                    ("[ControlUnit] Load instruction requires writeback to base register R%0d", decoder_bus.decoded_regs.Rn))
               end
 
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle 1 of LDM instruction, address calculation done, preparing for memory read"))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle 1 of LDM instruction, address calculation done, preparing for memory read"))
             end else
 
             // Latch the last fetched word into the register file and 
@@ -956,13 +966,12 @@ module GBA_ControlUnit (
 
               if (decoder_bus.word.arm.block.S && decoder_bus.word.arm.block.reg_list[15]) begin
                 control_signals.restore_cpsr_from_spsr = 1'b1;
-                `LOG_TRACE((
-                    "[ControlUnit] Load instruction with S bit set and PC in reg list, restoring CPSR from SPSR"))
+                `LOG_TRACE(
+                    ("[ControlUnit] Load instruction with S bit set and PC in reg list, restoring CPSR from SPSR"))
               end
 
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle %0d of LDM instruction, latching final word and preparing for next instruction",
-                  cycle))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle %0d of LDM instruction, latching final word and preparing for next instruction", cycle))
             end
 
             if (cycle == 8'd2 && regs_count == 0) begin
@@ -978,9 +987,8 @@ module GBA_ControlUnit (
 
               control_signals.pipeline_advance = 1'b1;
 
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle %0d of LDM instruction, reg list is empty latching final word and preparing for next instruction",
-                  cycle))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle %0d of LDM instruction, reg list is empty latching final word and preparing for next instruction", cycle))
             end
           end else if (decoder_bus.instr_type == ARM_INSTR_STM) begin
             if (cycle == 8'd1 && regs_count == 0) begin
@@ -1001,8 +1009,8 @@ module GBA_ControlUnit (
 
               control_signals.addr_bus_src = ADDR_SRC_PC_RESTORE;
 
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle 1 of STM instruction, address calculation done, preparing for memory write"))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle 1 of STM instruction, address calculation done, preparing for memory write"))
             end else
 
             // Second cycle
@@ -1014,8 +1022,8 @@ module GBA_ControlUnit (
 
               control_signals.pipeline_advance = 1'b1;
 
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle 1 of STM instruction, address calculation done, preparing for memory write"))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle 1 of STM instruction, address calculation done, preparing for memory write"))
             end else
 
             // Optionally writeback address to Rn and 
@@ -1046,12 +1054,12 @@ module GBA_ControlUnit (
                 control_signals.ALU_use_op_b_latch = 1'b1;
                 control_signals.ALU_writeback = ALU_WB_REG_RN;
 
-                `LOG_TRACE(("[ControlUnit] Store instruction requires writeback to base register R%0d",
-                         decoder_bus.decoded_regs.Rn))
+                `LOG_TRACE(
+                    ("[ControlUnit] Store instruction requires writeback to base register R%0d", decoder_bus.decoded_regs.Rn))
               end
 
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle 1 of STM instruction, address calculation done, preparing for memory write"))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle 1 of STM instruction, address calculation done, preparing for memory write"))
             end else
 
             // Write the current register into memory and 
@@ -1068,8 +1076,8 @@ module GBA_ControlUnit (
               // Write the next word in the block
               control_signals.memory_write_en = 1'b1;
 
-              `LOG_TRACE(("[ControlUnit] Cycle %0d of STM instruction, writing register R%0d to data",
-                       cycle, control_signals.Rp_imm))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle %0d of STM instruction, writing register R%0d to data", cycle, control_signals.Rp_imm))
 
             end else
 
@@ -1086,8 +1094,8 @@ module GBA_ControlUnit (
               // Write the next word in the block
               control_signals.memory_write_en = 1'b1;
 
-              `LOG_TRACE(("[ControlUnit] Cycle %0d of STM instruction, writing register R%0d to data",
-                       cycle, control_signals.Rp_imm))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle %0d of STM instruction, writing register R%0d to data", cycle, control_signals.Rp_imm))
 
             end else
 
@@ -1112,9 +1120,8 @@ module GBA_ControlUnit (
 
               control_signals.pipeline_advance = 1'b1;
 
-              `LOG_TRACE((
-                  "[ControlUnit] Cycle %0d of STM instruction writing register R%0d to data, and preparing for next instruction",
-                  cycle, control_signals.Rp_imm))
+              `LOG_TRACE(
+                  ("[ControlUnit] Cycle %0d of STM instruction writing register R%0d to data, and preparing for next instruction", cycle, control_signals.Rp_imm))
             end
 
           end
@@ -1161,8 +1168,8 @@ module GBA_ControlUnit (
             control_signals.B_bus_source = B_BUS_SRC_IMM;
             control_signals.B_bus_imm = 24'd4;
 
-            `LOG_TRACE(("[ControlUnit] Branch with Link instruction, writing return address to R%0d",
-                     decoder_bus.decoded_regs.Rd))
+            `LOG_TRACE(
+                ("[ControlUnit] Branch with Link instruction, writing return address to R%0d", decoder_bus.decoded_regs.Rd))
           end
 
           if (cycle == 8'd1) begin
@@ -1198,8 +1205,8 @@ module GBA_ControlUnit (
 
             control_signals.pipeline_advance = 1'b1;
 
-            `LOG_TRACE((
-                "[ControlUnit] Branch Exchange instruction, switching to Thumb mode and updating PC"))
+            `LOG_TRACE(
+                ("[ControlUnit] Branch Exchange instruction, switching to Thumb mode and updating PC"))
           end
         end
 
@@ -1298,9 +1305,8 @@ module GBA_ControlUnit (
 
             control_signals.exception = EXCEPTION_SWI;
 
-            `LOG_TRACE((
-                "[ControlUnit] Software Interrupt instruction, writing return address to R%0d and preparing for exception handling",
-                decoder_bus.decoded_regs.Rd))
+            `LOG_TRACE(
+                ("[ControlUnit] Software Interrupt instruction, writing return address to R%0d and preparing for exception handling", decoder_bus.decoded_regs.Rd))
 
             control_signals.pipeline_advance = 1'b1;
           end
@@ -1319,13 +1325,14 @@ module GBA_ControlUnit (
 
               ARM_PSR_SPSR: begin
                 control_signals.B_bus_source = B_BUS_SRC_SPSR;
-                `LOG_TRACE((
+                `LOG_TRACE(
+                    (
                     "[ControlUnit] MRS instruction accessing SPSR, only valid in privileged modes"))
               end
             endcase
 
-            `LOG_TRACE(("[ControlUnit] Detected MRS instruction accessing %s",
-                     decoder_bus.word.arm.mrs.psr == ARM_PSR_CPSR ? "CPSR" : "SPSR"))
+            `LOG_TRACE(
+                ("[ControlUnit] Detected MRS instruction accessing %s", decoder_bus.word.arm.mrs.psr == ARM_PSR_CPSR ? "CPSR" : "SPSR"))
 
             control_signals |= fetch_next_instr();
             control_signals.pipeline_advance = 1'b1;
@@ -1335,16 +1342,16 @@ module GBA_ControlUnit (
             control_signals.ALU_op = ALU_OP_MOV;
             control_signals.ALU_writeback = ALU_WB_REG_RD;
 
-            `LOG_TRACE(("[ControlUnit] MRS instruction, moving CPSR to R%0d",
-                     decoder_bus.decoded_regs.Rd))
+            `LOG_TRACE(
+                ("[ControlUnit] MRS instruction, moving CPSR to R%0d", decoder_bus.decoded_regs.Rd))
           end
         end
 
         ARM_INSTR_MSR: begin
           `LOG_TRACE(("[ControlUnit] Detected PSR transfer instruction"))
           if (cycle == 8'd0) begin
-            `LOG_TRACE(("[ControlUnit] MSR instruction, moving R%0d to CPSR",
-                     decoder_bus.decoded_regs.Rm))
+            `LOG_TRACE(
+                ("[ControlUnit] MSR instruction, moving R%0d to CPSR", decoder_bus.decoded_regs.Rm))
             control_signals.ALU_op = ALU_OP_MOV;
 
             control_signals |= fetch_next_instr();

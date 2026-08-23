@@ -14,6 +14,7 @@ module GameboyAdvance (
   GBA_Bus_if wram_board_bus ();
   GBA_Bus_if wram_chip_bus ();
   GBA_Bus_if io_bus ();
+  GBA_Bus_if interrupt_bus ();
   GBA_Bus_if ppu_io_bus ();
 
   // Display memory
@@ -27,9 +28,39 @@ module GameboyAdvance (
   GBA_Bus_if gamepak_ws2_bus ();
   GBA_Bus_if gamepak_sram_bus ();
 
+  GBA_Interrupt_if interrupt_req_bus ();
+
+  // TODO: Replace these tie-offs as the corresponding peripherals acquire
+  // interrupt outputs.
+  assign interrupt_req_bus.vblank_req = 1'b0;
+  assign interrupt_req_bus.hblank_req = 1'b0;
+  assign interrupt_req_bus.vcounter_req = 1'b0;
+  assign interrupt_req_bus.timer0_req = 1'b0;
+  assign interrupt_req_bus.timer1_req = 1'b0;
+  assign interrupt_req_bus.timer2_req = 1'b0;
+  assign interrupt_req_bus.timer3_req = 1'b0;
+  assign interrupt_req_bus.serial_req = 1'b0;
+  assign interrupt_req_bus.dma0_req = 1'b0;
+  assign interrupt_req_bus.dma1_req = 1'b0;
+  assign interrupt_req_bus.dma2_req = 1'b0;
+  assign interrupt_req_bus.dma3_req = 1'b0;
+  assign interrupt_req_bus.keypad_req = 1'b0;
+  assign interrupt_req_bus.gamepak_req = 1'b0;
+
+  logic irq;
+
+  GBA_InterruptHandler interrupt_controller (
+      .clk(clk),
+      .reset(reset),
+      .interrupt_bus(interrupt_req_bus),
+      .irq(irq),
+      .bus(interrupt_bus)
+  );
+
   ARM7TMDI cpu_inst (
       .clk  (clk),
       .reset(reset),
+      .irq  (irq),
       .bus  (cpu_bus)
   );
 
@@ -40,6 +71,7 @@ module GameboyAdvance (
       .wram_board_bus(wram_board_bus),
       .wram_chip_bus(wram_chip_bus),
       .io_bus(io_bus),
+      .interrupt_bus(interrupt_bus),
       .ppu_io_bus(ppu_io_bus),
       .palette_bus(palette_bus),
       .vram_bus(vram_bus),

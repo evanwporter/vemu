@@ -15,4 +15,5 @@ gba_add_rtl(
         ${CMAKE_CURRENT_SOURCE_DIR}/Decoder.sv
         ${CMAKE_CURRENT_SOURCE_DIR}/ControlUnit.sv
         ${CMAKE_CURRENT_SOURCE_DIR}/Multiplier.sv
+        ${CMAKE_CURRENT_SOURCE_DIR}/InterruptHandler.sv
 )

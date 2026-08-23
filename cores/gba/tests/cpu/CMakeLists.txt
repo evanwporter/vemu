@@ -85,6 +85,7 @@ verilate(test_cpu_adv
         ${GBA_SRC_DIR}/cpu/Decoder.sv
         ${GBA_SRC_DIR}/cpu/ControlUnit.sv
         ${GBA_SRC_DIR}/cpu/Multiplier.sv
+        ${GBA_SRC_DIR}/cpu/InterruptHandler.sv
         ${GBA_SRC_DIR}/cpu/interface.sv
         ${GBA_SRC_DIR}/cpu/types.sv
 

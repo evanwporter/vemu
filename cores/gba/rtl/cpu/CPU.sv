@@ -11,7 +11,7 @@ import gba_mmu_types_pkg::*;
 module ARM7TMDI (
     input logic clk,
     input logic reset,
-
+    input logic irq,
     GBA_Bus_if.Master_side bus
 );
 
@@ -36,6 +36,8 @@ module ARM7TMDI (
 
   execution_mode_t execution_mode;
   assign execution_mode = execution_mode_t'(regs.CPSR[5]);
+
+  wire irq_pending = irq && !regs.CPSR[7];
 
   (* maybe_unused *)
   wire [15:0] IR_THUMB = IR[15:0];
@@ -164,6 +166,7 @@ module ARM7TMDI (
       .reset(reset),
       .decoder_bus(decoder_bus),
       .execution_mode(execution_mode),
+      .irq_pending(irq_pending),
       .control_signals(control_signals),
       .flush_req(flush_req)
   );
@@ -182,11 +185,12 @@ module ARM7TMDI (
   always_comb begin
     unique case (control_signals.A_bus_source)
       A_BUS_SRC_RN: begin
-        `LOG_TRACE(("Driving A bus with value from Rn (R%d): %0d", decoder_bus.decoded_regs.Rn,
-                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn)))
+        `LOG_TRACE(
+            ("Driving A bus with value from Rn (R%d): %0d", decoder_bus.decoded_regs.Rn, read_reg(
+            regs, cpu_mode, decoder_bus.decoded_regs.Rn)))
         if (control_signals.A_bus_align) begin
           `LOG_TRACE(("Aligning A bus address by masking off lower 2 bits: %0d", read_reg(
-                   regs, cpu_mode, decoder_bus.decoded_regs.Rn) & ~32'd3))
+                         regs, cpu_mode, decoder_bus.decoded_regs.Rn) & ~32'd3))
           A_bus = (read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn)) & ~32'd3;
         end else begin
           A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn);
@@ -199,21 +203,22 @@ module ARM7TMDI (
       end
 
       A_BUS_SRC_RD: begin
-        `LOG_TRACE(("Driving A bus with value from Rd (R%d): %0d", decoder_bus.decoded_regs.Rd,
-                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rd)))
+        `LOG_TRACE(
+            ("Driving A bus with value from Rd (R%d): %0d", decoder_bus.decoded_regs.Rd, read_reg(
+            regs, cpu_mode, decoder_bus.decoded_regs.Rd)))
         A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rd);
       end
 
       A_BUS_SRC_RS: begin
         /// TODO pc_rs_add_4 heres
-        `LOG_TRACE(("Driving A bus with value from Rs (R%d): %0d", decoder_bus.decoded_regs.Rs,
-                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rs)))
+        `LOG_TRACE(
+            ("Driving A bus with value from Rs (R%d): %0d", decoder_bus.decoded_regs.Rs, read_reg(
+            regs, cpu_mode, decoder_bus.decoded_regs.Rs)))
         A_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rs);
       end
 
     endcase
   end
-
 
   function automatic word_t ror32(word_t x, int unsigned sh);
     ror32 = (x >> sh) | (x << (32 - sh));
@@ -246,8 +251,9 @@ module ARM7TMDI (
       end
 
       B_BUS_SRC_REG_RM: begin
-        `LOG_TRACE(("Driving B bus with value from Rm (R%0d): %0d", decoder_bus.decoded_regs.Rm,
-                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm)))
+        `LOG_TRACE(
+            ("Driving B bus with value from Rm (R%0d): %0d", decoder_bus.decoded_regs.Rm, read_reg(
+            regs, cpu_mode, decoder_bus.decoded_regs.Rm)))
         B_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rm);
       end
 
@@ -260,14 +266,16 @@ module ARM7TMDI (
       end
 
       B_BUS_SRC_REG_RN: begin
-        `LOG_TRACE(("Driving B bus with value from Rn (R%0d): %0d", decoder_bus.decoded_regs.Rn,
-                 read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn)))
+        `LOG_TRACE(
+            ("Driving B bus with value from Rn (R%0d): %0d", decoder_bus.decoded_regs.Rn, read_reg(
+            regs, cpu_mode, decoder_bus.decoded_regs.Rn)))
         B_bus = read_reg(regs, cpu_mode, decoder_bus.decoded_regs.Rn);
       end
 
       B_BUS_SRC_REG_RP: begin
-        `LOG_TRACE(("Driving B bus with value from Rp (R%0d): %0d", control_signals.Rp_imm, read_reg(
-                 regs, cpu_mode, control_signals.Rp_imm)))
+        `LOG_TRACE(
+            ("Driving B bus with value from Rp (R%0d): %0d", control_signals.Rp_imm, read_reg(
+            regs, cpu_mode, control_signals.Rp_imm)))
         B_bus = read_reg(regs, control_signals.force_user_mode ? CPU_MODE_USR : cpu_mode,
                          control_signals.Rp_imm);
       end
@@ -327,12 +335,12 @@ module ARM7TMDI (
             if (control_signals.memory_signed_transfer) begin
               read_data <= {{24{bus.rdata[7]}}, bus.rdata[7:0]};
 
-              `LOG_TRACE(("Performing signed byte read, bus.rdata=0x%08x, B_bus[7:0]=0x%02x",
-                       bus.rdata, bus.rdata[7:0]))
+              `LOG_TRACE(
+                  ("Performing signed byte read, bus.rdata=0x%08x, B_bus[7:0]=0x%02x", bus.rdata, bus.rdata[7:0]))
             end
 
-            `LOG_TRACE(("Performing byte read, bus.rdata=0x%08x, B_bus[7:0]=0x%02x", bus.rdata,
-                     bus.rdata[7:0]))
+            `LOG_TRACE(
+                ("Performing byte read, bus.rdata=0x%08x, B_bus[7:0]=0x%02x", bus.rdata, bus.rdata[7:0]))
           end else if (control_signals.memory_halfword_transfer) begin
 
             word_t result;
@@ -343,34 +351,31 @@ module ARM7TMDI (
             // https://mgba-emu.github.io/gbatek/#mis-aligned-ldrhldrsh-does-or-does-not-do-strange-things
             if (bus.addr[0] == 1'b1) begin
               result = ror32(bus.rdata, 8);
-              `LOG_TRACE((
-                  "Performing unaligned halfword read with rotate, bus.addr[0]=%b, bus.rdata=0x%08x, rotated result=0x%08x",
-                  bus.addr[0], bus.rdata, result))
+              `LOG_TRACE(
+                  ("Performing unaligned halfword read with rotate, bus.addr[0]=%b, bus.rdata=0x%08x, rotated result=0x%08x", bus.addr[0], bus.rdata, result))
 
               if (control_signals.memory_signed_transfer) begin
                 result = {{24{result[7]}}, result[7:0]};
 
-                `LOG_TRACE((
-                    "Performing signed byte read (due to unaligned halfword), bus.rdata=0x%08x, B_bus[7:0]=0x%02x, result=0x%08x",
-                    bus.rdata, bus.rdata[7:0], result))
+                `LOG_TRACE(
+                    ("Performing signed byte read (due to unaligned halfword), bus.rdata=0x%08x, B_bus[7:0]=0x%02x, result=0x%08x", bus.rdata, bus.rdata[7:0], result))
               end
             end else if (control_signals.memory_signed_transfer) begin
               result = {{16{result[15]}}, result[15:0]};
 
-              `LOG_TRACE((
-                  "Performing signed halfword read, sign=%b, bus.rdata=0x%08x, B_bus[15:0]=0x%04x, result=0x%08x",
-                  bus.rdata[15], bus.rdata, bus.rdata[15:0], result))
+              `LOG_TRACE(
+                  ("Performing signed halfword read, sign=%b, bus.rdata=0x%08x, B_bus[15:0]=0x%04x, result=0x%08x", bus.rdata[15], bus.rdata, bus.rdata[15:0], result))
             end else result = {16'd0, result[15:0]};
 
-            `LOG_TRACE(("Performing halfword read, bus.rdata=0x%08x, B_bus[15:0]=0x%04x", bus.rdata,
-                     bus.rdata[15:0]))
+            `LOG_TRACE(
+                ("Performing halfword read, bus.rdata=0x%08x, B_bus[15:0]=0x%04x", bus.rdata, bus.rdata[15:0]))
 
             read_data <= result;
           end else if (control_signals.memory_signed_transfer) begin
             read_data <= {{16{bus.rdata[15]}}, bus.rdata[15:0]};
 
-            `LOG_TRACE(("Performing signed halfword read, bus.rdata=0x%08x, B_bus[15:0]=0x%04x",
-                     bus.rdata, bus.rdata[15:0]))
+            `LOG_TRACE(
+                ("Performing signed halfword read, bus.rdata=0x%08x, B_bus[15:0]=0x%04x", bus.rdata, bus.rdata[15:0]))
           end else begin
             `LOG_TRACE(("Performing word read, bus.rdata=0x%08x", bus.rdata))
             read_data <= bus.rdata;
@@ -381,7 +386,7 @@ module ARM7TMDI (
               a = bus.addr[1:0];
               if (a != 2'b00) begin
                 `LOG_TRACE(("Misaligned word with a=%b, rotate=%d, prior=%d", a, ror32(
-                         bus.rdata, 32'({a, 3'b000})), bus.rdata))
+                               bus.rdata, 32'({a, 3'b000})), bus.rdata))
                 read_data <= ror32(bus.rdata, 32'({a, 3'b000}));  // (a*8)
               end
             end
@@ -411,9 +416,8 @@ module ARM7TMDI (
           (control_signals.ALU_writeback == ALU_WB_REG_RN && decoder_bus.decoded_regs.Rn == 4'd15) ||
           (control_signals.ALU_writeback == ALU_WB_REG_RP && control_signals.Rp_imm == 4'd15)) begin
 
-        `LOG_TRACE(("ALU writeback to PC (R15) detected. ALU_writeback=%0d, Rd=%0d, Rn=%0d",
-                 control_signals.ALU_writeback, decoder_bus.decoded_regs.Rd,
-                 decoder_bus.decoded_regs.Rn))
+        `LOG_TRACE(
+            ("ALU writeback to PC (R15) detected. ALU_writeback=%0d, Rd=%0d, Rn=%0d", control_signals.ALU_writeback, decoder_bus.decoded_regs.Rd, decoder_bus.decoded_regs.Rn))
 
         if (control_signals.pipeline_advance) begin
           flush_req <= 1'b1;
@@ -438,7 +442,8 @@ module ARM7TMDI (
         endcase
       end
 
-      `LOG_TRACE(("[CPU] Checking ALU flags writeback. ALU_set_flags=%b, restore_cpsr_from_spsr=%b",
+      `LOG_TRACE(
+          ("[CPU] Checking ALU flags writeback. ALU_set_flags=%b, restore_cpsr_from_spsr=%b",
                control_signals.ALU_set_flags, control_signals.restore_cpsr_from_spsr))
 
       if (control_signals.set_thumb_mode) begin
@@ -455,8 +460,8 @@ module ARM7TMDI (
         `LOG_TRACE(("Restoring CPSR from SPSR_%0d: 0x%08x", cpu_mode, read_spsr(regs, cpu_mode)))
       end else if (control_signals.ALU_set_flags) begin
 
-        `LOG_TRACE(("Setting flags: N=%b, Z=%b, C=%b, V=%b", alu_bus.flags_out.n, alu_bus.flags_out.z,
-                 alu_bus.flags_out.c, alu_bus.flags_out.v))
+        `LOG_TRACE(
+            ("Setting flags: N=%b, Z=%b, C=%b, V=%b", alu_bus.flags_out.n, alu_bus.flags_out.z, alu_bus.flags_out.c, alu_bus.flags_out.v))
 
         regs.CPSR[31] <= alu_bus.flags_out.n;
         regs.CPSR[30] <= alu_bus.flags_out.z;
@@ -464,26 +469,34 @@ module ARM7TMDI (
         if (decoder_bus.instr_type != ARM_INSTR_MULTIPLY) begin
           regs.CPSR[29] <= alu_bus.flags_out.c;
           regs.CPSR[28] <= alu_bus.flags_out.v;
-          `LOG_TRACE(("ALU op was %0d, setting C flag to %b and V flag to %b", control_signals.ALU_op,
-                   alu_bus.flags_out.c, alu_bus.flags_out.v))
+          `LOG_TRACE(
+              ("ALU op was %0d, setting C flag to %b and V flag to %b", control_signals.ALU_op, alu_bus.flags_out.c, alu_bus.flags_out.v))
         end else begin
           // For multiply instructions, the C flag is set to destroyed (ARMV4 only -- on ARMV5 and later its ignored)
           regs.CPSR[29] <= 1'd0;
         end
 
-        `LOG_TRACE(("ALU op was %0d, setting C flag to %b", control_signals.ALU_op,
-                 alu_bus.flags_out.c))
+        `LOG_TRACE(
+            ("ALU op was %0d, setting C flag to %b", control_signals.ALU_op, alu_bus.flags_out.c))
       end else if (control_signals.mult_set_flags) begin
         regs.CPSR[31] <= multiplier_bus.flags.N;
         regs.CPSR[30] <= multiplier_bus.flags.Z;
         regs.CPSR[29] <= 1'd0;  // C flag is set to destroyed for multiply instructions (ARMv4)
 
-        `LOG_TRACE(("Multiplier set flags, setting N=%b, Z=%b", multiplier_bus.flags.N,
-                 multiplier_bus.flags.Z))
+        `LOG_TRACE(
+            ("Multiplier set flags, setting N=%b, Z=%b", multiplier_bus.flags.N, multiplier_bus.flags.Z))
       end
 
       if (control_signals.exception != EXCEPTION_NONE) begin
         `WRITE_SPSR(regs, cpu_mode, regs.CPSR)
+
+        // IRQ is asynchronous, so there is no decoded instruction whose Rd
+        // can be redirected to the banked link register.  At an instruction
+        // boundary the architecturally visible PC is the required IRQ link
+        // value (the usual `SUBS pc, lr, #4` resumes the next instruction).
+        if (control_signals.exception == EXCEPTION_IRQ) begin
+          regs.irq.r14 <= regs.user.r15;
+        end
 
         regs.user.r15 <= VECTOR_TABLE[control_signals.exception];
 
@@ -495,8 +508,8 @@ module ARM7TMDI (
 
         flush_req <= 1'b1;
 
-        `LOG_TRACE(("Performing CPU exception handling from %0d to %0d", cpu_mode,
-                 control_signals.exception))
+        `LOG_TRACE(
+            ("Performing CPU exception handling from %0d to %0d", cpu_mode, control_signals.exception))
       end
 
       unique case (control_signals.ALU_writeback)
@@ -504,14 +517,16 @@ module ARM7TMDI (
         ALU_WB_REG_RD: begin
           `WRITE_REG(regs, cpu_mode, decoder_bus.decoded_regs.Rd, alu_bus.result, execution_mode,
                      !control_signals.force_no_align_pc)
-          `LOG_TRACE(("Writing back ALU result %0d to Rd (R%d)", alu_bus.result,
+          `LOG_TRACE(
+              ("Writing back ALU result %0d to Rd (R%d)", alu_bus.result,
                    decoder_bus.decoded_regs.Rd))
         end
         ALU_WB_REG_RS:
         `WRITE_REG(regs, cpu_mode, decoder_bus.decoded_regs.Rs, alu_bus.result, execution_mode,
                    !control_signals.force_no_align_pc)
         ALU_WB_REG_RN: begin
-          `LOG_TRACE(("Writing back ALU result %0d to Rn (R%d)", alu_bus.result,
+          `LOG_TRACE(
+              ("Writing back ALU result %0d to Rn (R%d)", alu_bus.result,
                    decoder_bus.decoded_regs.Rn))
           `WRITE_REG(regs, control_signals.force_user_mode ? CPU_MODE_USR : cpu_mode,
                      decoder_bus.decoded_regs.Rn, alu_bus.result, execution_mode,
@@ -568,9 +583,8 @@ module ARM7TMDI (
         bus.addr <= VECTOR_TABLE[control_signals.exception];
       end else if (control_signals.set_thumb_mode) begin
         bus.addr <= B_bus & ~32'd1;
-        `LOG_TRACE((
-            "Setting address bus to new Thumb mode PC value due to set_thumb_mode control signal, B_bus=0x%08x, addr=0x%08x",
-            B_bus, bus.addr))
+        `LOG_TRACE(
+            ("Setting address bus to new Thumb mode PC value due to set_thumb_mode control signal, B_bus=0x%08x, addr=0x%08x", B_bus, bus.addr))
       end else begin
         unique case (control_signals.addr_bus_src)
           ADDR_SRC_NONE: begin
@@ -591,7 +605,8 @@ module ARM7TMDI (
           end
 
           ADDR_SRC_PC_RESTORE: begin
-            `LOG_TRACE(("Restoring address bus from PC value: 0x%08x", read_reg(regs, cpu_mode, 15)))
+            `LOG_TRACE(("Restoring address bus from PC value: 0x%08x", read_reg(regs, cpu_mode, 15
+                       )))
             unique case (execution_mode)
               MODE_ARM:   bus.addr <= read_reg(regs, cpu_mode, 15) - 32'd4 & ~32'd3;
               MODE_THUMB: bus.addr <= read_reg(regs, cpu_mode, 15) - 32'd4 & ~32'd1;
@@ -606,12 +621,12 @@ module ARM7TMDI (
               MODE_THUMB: begin
                 if (control_signals.addr_incr_force_p4) begin
                   bus.addr <= bus.addr + 32'd4;
-                  `LOG_TRACE(("Incrementing address bus by 4 due to addr_incr_force_p4: new addr=%0d",
-                           bus.addr))
+                  `LOG_TRACE(
+                      ("Incrementing address bus by 4 due to addr_incr_force_p4: new addr=%0d", bus.addr))
                 end else begin
                   bus.addr <= bus.addr + 32'd2;
-                  `LOG_TRACE(("Incrementing address bus for Thumb mode: new addr=%0d",
-                           bus.addr + 32'd2))
+                  `LOG_TRACE(
+                      ("Incrementing address bus for Thumb mode: new addr=%0d", bus.addr + 32'd2))
                 end
               end
             endcase

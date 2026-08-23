@@ -403,4 +403,24 @@ package gba_cpu_types_pkg;
     ALU_OP_NOT = 4'hF
   } alu_op_t;
 
+  // Interrupt source bits shared by IE and IF.
+  // Packed fields are listed MSB -> LSB, so vblank is bit 0.
+  typedef struct packed {
+    logic [1:0] unused;    // Bits 15:14
+    logic       game_pak;  // Bit 13
+    logic       keypad;    // Bit 12
+    logic       dma3;      // Bit 11
+    logic       dma2;      // Bit 10
+    logic       dma1;      // Bit 9
+    logic       dma0;      // Bit 8
+    logic       serial;    // Bit 7
+    logic       timer3;    // Bit 6
+    logic       timer2;    // Bit 5
+    logic       timer1;    // Bit 4
+    logic       timer0;    // Bit 3
+    logic       vcounter;  // Bit 2
+    logic       hblank;    // Bit 1
+    logic       vblank;    // Bit 0
+  } irq_flags_t;
+
 endpackage : gba_cpu_types_pkg

@@ -31,6 +31,17 @@
             // }
         },
         {
+            "name": "GBA (Attach)",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "${workspaceFolder}/build/debug/cores/gba/sim/gba",
+            "processId": "${command:pickProcess}",
+            "MIMode": "gdb",
+            "miDebuggerPath": "/nix/store/vjqdb2dm7b51w7jmxkj1dmkvh9vwvf3d-gdb-17.2/bin/gdb",
+            "cwd": "${workspaceFolder}",
+            "externalConsole": false
+        },
+        {
             "name": "(Windows) Cemu",
             "type": "cppvsdbg",
             "request": "launch",

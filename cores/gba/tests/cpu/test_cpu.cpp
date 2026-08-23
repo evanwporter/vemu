@@ -543,6 +543,7 @@ static void run_single_test(const json& testCase, const fs::path& source, const 
     ctx.time(0);
 
     Varm_cpu_top top(&ctx);
+    top.interrupt_requests = 0;
 
     Verilated::traceEverOn(true);
     VerilatedVcdC& tfp = *logger.get_trace();
