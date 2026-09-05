@@ -87,7 +87,7 @@
     `LOG_TRACE(("----------------------------------------"))                   \
   end
 
-  `define DISPLAY_DECODED_DATAPROC_REG_REG(word, regs, instr_type, condition_pass) \
+`define DISPLAY_DECODED_DATAPROC_REG_REG(word, regs, instr_type, condition_pass) \
   begin \
     `LOG_TRACE(("---- DECODED WORD (DATAPROC_REG_REG) ----"))                  \
     // `LOG_TRACE(("IR          = 0x%08x", (word).IR))                           \
@@ -354,7 +354,7 @@
     endcase \
   end
 
-  `define WRITE_SPSR(REGS, MODE, VALUE) \
+`define WRITE_SPSR(REGS, MODE, VALUE) \
     begin \
       unique case (MODE) \
         CPU_MODE_USR, CPU_MODE_SYS: ;  /* No SPSR for USR/SYS */ \
@@ -366,7 +366,7 @@
       endcase \
     end
 
-  `define PC_WRITE_EXCEPTION(REGS, MODE) \
+`define PC_WRITE_EXCEPTION(REGS, MODE) \
     begin \
       unique case (MODE) \
         CPU_MODE_USR, CPU_MODE_SYS: (REGS).user.r15 <= 32'h00000004; \
@@ -378,4 +378,4 @@
       endcase \
     end
 
-`endif // CPU_UTIL_SVH
+`endif  // CPU_UTIL_SVH

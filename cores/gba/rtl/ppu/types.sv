@@ -83,13 +83,37 @@ package gba_ppu_types_pkg;
 
   /// 0x04000008-0x0400000E BG0CNT-BG3CNT.
   typedef struct packed {
+    // | Value | Map Dimensions (Tiles) | Pixel Resolution | Screenblocks Used | Layout Scheme |
+    // | :---: | :---: | :---: | :--- | :--- |
+    // | 00b (0) | 32 x 32 | 256 x 256 | 1 (S) | Single 32 x 32 block |
+    // | 01b (1) | 64 x 32 | 512 x 256 | 2 (S, S+1) | Horizontal split (Left, Right) |
+    // | 10b (2) | 32 x 64 | 256 x 512 | 2 (S, S+1) | Vertical split (Top, Bottom) |
+    // | 11b (3) | 64 x 64 | 512 x 512 | 4 (S ... S+3) | 2 x 2 Grid (TL, TR, BL, BR) |
     bg_screen_size_t screen_size;
+
     logic area_overflow;
+
+    /// Select which 2KB screen block to use for this background's tilemap.
     logic [4:0] screen_base_block;
+
+    /// 0 = 16-color (4bpp) tiles, 1 = 256-color (8bpp) tiles
     bg_color_mode_t color_mode;
+
     logic mosaic_enable;
+
     logic [1:0] reserved_5_4;
+
+    /// Select which 0x4000 byte character block to use for this background's tiles.
+    // | Char Base | Starting Address |
+    // | --- | --- |
+    // | `0` | `0x0000` |
+    // | `1` | `0x4000` |
+    // | `2` | `0x8000` |
+    // | `3` | `0xC000` |
     logic [1:0] character_base_block;
+
+    /// Render priority relative to other backgrounds
+    /// 0 = highest priority, 3 = lowest priority
     logic [1:0] bg_priority;
   } bg_control_t;
 
@@ -107,6 +131,41 @@ package gba_ppu_types_pkg;
 
   /// BG2PA-D and BG3PA-D signed 7.8 fixed-point affine parameters.
   typedef struct packed {logic signed [15:0] value;} bg_affine_parameter_t;
+
+  /// Registers belonging to a text background (BG0 or BG1).
+  typedef struct packed {
+    bg_control_t control;
+    bg_offset_t  hofs;
+    bg_offset_t  vofs;
+  } text_bg_regs_t;
+
+  /// Registers belonging to an affine background (BG2 or BG3).
+  typedef struct packed {
+    bg_control_t control;
+    bg_offset_t hofs;
+    bg_offset_t vofs;
+    bg_affine_parameter_t pa;
+    bg_affine_parameter_t pb;
+    bg_affine_parameter_t pc;
+    bg_affine_parameter_t pd;
+    bg_reference_point_t x;
+    bg_reference_point_t y;
+  } affine_bg_regs_t;
+
+  /// All registers belonging to the four GBA backgrounds.
+  typedef struct packed {
+    affine_bg_regs_t bg3;
+    affine_bg_regs_t bg2;
+    text_bg_regs_t   bg1;
+    text_bg_regs_t   bg0;
+  } background_regs_t;
+
+  typedef struct packed {
+    dispcnt_t dispcnt;
+    logic [15:0] reserved_02_03;
+    dispstat_t dispstat;
+    vcount_t vcount;
+  } display_regs_t;
 
   /// WIN0H/WIN1H.
   typedef struct packed {
@@ -184,11 +243,25 @@ package gba_ppu_types_pkg;
 
   /// Mode 3/5 bitmap pixel and palette entry (RGB555).
   typedef struct packed {
-    logic reserved_15;
+    logic transparent;
     logic [4:0] blue;
     logic [4:0] green;
     logic [4:0] red;
-  } rgb555_t;
+  } pixel_t;
+
+  typedef enum logic [1:0] {
+    OBJ_MODE_NORMAL    = 2'b00,
+    OBJ_MODE_SEMITRANS = 2'b01,
+    OBJ_MODE_WINDOW    = 2'b10
+  } obj_mode_t;
+
+  typedef struct packed {
+    logic valid;
+    logic [14:0] color;
+    logic [1:0] priority_level;
+    logic [6:0] oam_index;
+    obj_mode_t mode;
+  } obj_pixel_t;
 
   /// Text-mode BG map entry.
   typedef struct packed {
@@ -201,9 +274,8 @@ package gba_ppu_types_pkg;
   /// Rotation/scaling BG map entry.
   typedef struct packed {logic [7:0] tile_number;} affine_bg_map_entry_t;
 
-  /// Complete byte-addressed LCD I/O register file (0x04000000-0x04000057).
-  /// Fields are ordered from highest to lowest address so that bit N*8 maps
-  /// directly to register byte offset N.
+  /// Decoded LCD I/O register file (0x04000000-0x04000057). The PPU keeps
+  /// its bus-facing byte storage separately in hardware address order.
   typedef struct packed {
     blend_brightness_t bldy;
     blend_alpha_t bldalpha;
@@ -215,55 +287,10 @@ package gba_ppu_types_pkg;
     window_vertical_t win0v;
     window_horizontal_t win1h;
     window_horizontal_t win0h;
-    bg_reference_point_t bg3y;
-    bg_reference_point_t bg3x;
-    bg_affine_parameter_t bg3pd;
-    bg_affine_parameter_t bg3pc;
-    bg_affine_parameter_t bg3pb;
-    bg_affine_parameter_t bg3pa;
-    bg_reference_point_t bg2y;
-    bg_reference_point_t bg2x;
-    bg_affine_parameter_t bg2pd;
-    bg_affine_parameter_t bg2pc;
-    bg_affine_parameter_t bg2pb;
-    bg_affine_parameter_t bg2pa;
-    bg_offset_t bg3vofs;
-    bg_offset_t bg3hofs;
-    bg_offset_t bg2vofs;
-    bg_offset_t bg2hofs;
-    bg_offset_t bg1vofs;
-    bg_offset_t bg1hofs;
-    bg_offset_t bg0vofs;
-    bg_offset_t bg0hofs;
-    bg_control_t bg3cnt;
-    bg_control_t bg2cnt;
-    bg_control_t bg1cnt;
-    bg_control_t bg0cnt;
-    vcount_t vcount;
-    dispstat_t dispstat;
-    logic [15:0] reserved_02_03;
-    dispcnt_t dispcnt;
+    background_regs_t background;
+    display_regs_t display;
   } ppu_regs_t;
 
   localparam int PPU_REGS_WIDTH = $bits(ppu_regs_t);
-
-  typedef union {
-    struct {
-      byte_t bg_tile[0:64*1024-1];
-      byte_t obj[0:32*1024-1];
-    } mode_0_1_2;
-
-    struct {
-      byte_t framebuffer_0[0:80*1024-1];
-      byte_t obj[0:16*1024-1];
-    } mode_3;
-
-    struct {
-      byte_t framebuffer_0[0:40*1024-1];
-      byte_t framebuffer_1[0:40*1024-1];
-      byte_t obj[0:16*1024-1];
-    } mode_4_5;
-
-  } VRAM_t;
 
 endpackage : gba_ppu_types_pkg

@@ -163,8 +163,8 @@ module GBA_InterruptHandler (
 
   always_ff @(posedge clk or posedge reset) begin
     if (reset) begin
-      IE  <= 32'b0;
-      IF  <= 32'b0;
+      IE  <= 14'b0;
+      IF  <= 14'b0;
       IME <= 1'b0;
     end else begin
       IE <= (IE & ~enable_write_mask) | (enable_write_value & enable_write_mask);

@@ -38,5 +38,7 @@ interface GBA_Interrupt_if;
       input gamepak_req
   );
 
+  modport PPU_side(output vblank_req, output hblank_req, output vcounter_req);
+
 
 endinterface : GBA_Interrupt_if

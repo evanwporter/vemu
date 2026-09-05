@@ -32,8 +32,6 @@ module GameboyAdvance (
 
   // TODO: Replace these tie-offs as the corresponding peripherals acquire
   // interrupt outputs.
-  assign interrupt_req_bus.vblank_req = 1'b0;
-  assign interrupt_req_bus.hblank_req = 1'b0;
   assign interrupt_req_bus.vcounter_req = 1'b0;
   assign interrupt_req_bus.timer0_req = 1'b0;
   assign interrupt_req_bus.timer1_req = 1'b0;
@@ -58,10 +56,11 @@ module GameboyAdvance (
   );
 
   ARM7TMDI cpu_inst (
-      .clk  (clk),
+      .clk(clk),
       .reset(reset),
-      .irq  (irq),
-      .bus  (cpu_bus)
+      .irq(irq),
+      .bus(cpu_bus),
+      .interrupt_req_bus(interrupt_req_bus)
   );
 
   GBA_MMU mmu (
@@ -86,7 +85,9 @@ module GameboyAdvance (
       .clk(clk),
       .reset(reset),
       .vram_bus(vram_bus),
-      .ppu_io_bus(ppu_io_bus)
+      .ppu_io_bus(ppu_io_bus),
+      .interrupt_bus(interrupt_req_bus),
+      .palette(Palette.mem)
   );
 
   GBA_Memory #(

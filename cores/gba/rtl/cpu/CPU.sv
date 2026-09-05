@@ -12,7 +12,8 @@ module ARM7TMDI (
     input logic clk,
     input logic reset,
     input logic irq,
-    GBA_Bus_if.Master_side bus
+    GBA_Bus_if.Master_side bus,
+    GBA_Interrupt_if.Handler_side interrupt_req_bus
 );
 
   control_t control_signals;
