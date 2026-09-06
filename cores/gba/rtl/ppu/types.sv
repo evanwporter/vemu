@@ -141,9 +141,7 @@ package gba_ppu_types_pkg;
 
   /// Registers belonging to an affine background (BG2 or BG3).
   typedef struct packed {
-    bg_control_t control;
-    bg_offset_t hofs;
-    bg_offset_t vofs;
+    text_bg_regs_t text;
     bg_affine_parameter_t pa;
     bg_affine_parameter_t pb;
     bg_affine_parameter_t pc;

@@ -2,8 +2,7 @@ import gba_ppu_types_pkg::*;
 import gba_types_pkg::*;
 
 /// Computes the screen-relative coordinates and tile map address for one text
-/// background. Keep this independent of VRAM so the same coordinates can be
-/// used for both the map lookup and the pixel/tile lookup.
+/// background. 
 module BackgroundCalculation (
     input logic [8:0] scan_x,
     input logic [8:0] scan_y,

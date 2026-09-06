@@ -1,6 +1,5 @@
 import gba_mmu_addresses_pkg::*;
 import gba_types_pkg::*;
-// import gba_ppu_vram_types_pkgs::*;
 import gba_mmu_types_pkg::*;
 import gba_ppu_types_pkg::*;
 
@@ -17,8 +16,6 @@ module GBA_PPU (
   // the decoded, background-grouped view used by the renderer.
   logic [PPU_IO_len*8-1:0] regs_raw;
   ppu_regs_t regs;
-
-  // VRAM_t vram;
 
   GBA_Memory #(
       .START_ADDR(VRAM_start),
@@ -85,48 +82,48 @@ module GBA_PPU (
   end
 
   always_comb begin
-    regs                        = '0;
+    regs                             = '0;
 
-    regs.display.dispcnt        = regs_raw[16'h00*8+:16];
-    regs.display.reserved_02_03 = regs_raw[16'h02*8+:16];
-    regs.display.dispstat       = regs_raw[16'h04*8+:16];
-    regs.display.vcount         = regs_raw[16'h06*8+:16];
+    regs.display.dispcnt             = regs_raw[16'h00*8+:16];
+    regs.display.reserved_02_03      = regs_raw[16'h02*8+:16];
+    regs.display.dispstat            = regs_raw[16'h04*8+:16];
+    regs.display.vcount              = regs_raw[16'h06*8+:16];
 
-    regs.background.bg0.control = regs_raw[16'h08*8+:16];
-    regs.background.bg1.control = regs_raw[16'h0A*8+:16];
-    regs.background.bg2.control = regs_raw[16'h0C*8+:16];
-    regs.background.bg3.control = regs_raw[16'h0E*8+:16];
-    regs.background.bg0.hofs    = regs_raw[16'h10*8+:16];
-    regs.background.bg0.vofs    = regs_raw[16'h12*8+:16];
-    regs.background.bg1.hofs    = regs_raw[16'h14*8+:16];
-    regs.background.bg1.vofs    = regs_raw[16'h16*8+:16];
-    regs.background.bg2.hofs    = regs_raw[16'h18*8+:16];
-    regs.background.bg2.vofs    = regs_raw[16'h1A*8+:16];
-    regs.background.bg3.hofs    = regs_raw[16'h1C*8+:16];
-    regs.background.bg3.vofs    = regs_raw[16'h1E*8+:16];
-    regs.background.bg2.pa      = regs_raw[16'h20*8+:16];
-    regs.background.bg2.pb      = regs_raw[16'h22*8+:16];
-    regs.background.bg2.pc      = regs_raw[16'h24*8+:16];
-    regs.background.bg2.pd      = regs_raw[16'h26*8+:16];
-    regs.background.bg2.x       = regs_raw[16'h28*8+:32];
-    regs.background.bg2.y       = regs_raw[16'h2C*8+:32];
-    regs.background.bg3.pa      = regs_raw[16'h30*8+:16];
-    regs.background.bg3.pb      = regs_raw[16'h32*8+:16];
-    regs.background.bg3.pc      = regs_raw[16'h34*8+:16];
-    regs.background.bg3.pd      = regs_raw[16'h36*8+:16];
-    regs.background.bg3.x       = regs_raw[16'h38*8+:32];
-    regs.background.bg3.y       = regs_raw[16'h3C*8+:32];
+    regs.background.bg0.control      = regs_raw[16'h08*8+:16];
+    regs.background.bg1.control      = regs_raw[16'h0A*8+:16];
+    regs.background.bg2.text.control = regs_raw[16'h0C*8+:16];
+    regs.background.bg3.text.control = regs_raw[16'h0E*8+:16];
+    regs.background.bg0.hofs         = regs_raw[16'h10*8+:16];
+    regs.background.bg0.vofs         = regs_raw[16'h12*8+:16];
+    regs.background.bg1.hofs         = regs_raw[16'h14*8+:16];
+    regs.background.bg1.vofs         = regs_raw[16'h16*8+:16];
+    regs.background.bg2.text.hofs    = regs_raw[16'h18*8+:16];
+    regs.background.bg2.text.vofs    = regs_raw[16'h1A*8+:16];
+    regs.background.bg3.text.hofs    = regs_raw[16'h1C*8+:16];
+    regs.background.bg3.text.vofs    = regs_raw[16'h1E*8+:16];
+    regs.background.bg2.pa           = regs_raw[16'h20*8+:16];
+    regs.background.bg2.pb           = regs_raw[16'h22*8+:16];
+    regs.background.bg2.pc           = regs_raw[16'h24*8+:16];
+    regs.background.bg2.pd           = regs_raw[16'h26*8+:16];
+    regs.background.bg2.x            = regs_raw[16'h28*8+:32];
+    regs.background.bg2.y            = regs_raw[16'h2C*8+:32];
+    regs.background.bg3.pa           = regs_raw[16'h30*8+:16];
+    regs.background.bg3.pb           = regs_raw[16'h32*8+:16];
+    regs.background.bg3.pc           = regs_raw[16'h34*8+:16];
+    regs.background.bg3.pd           = regs_raw[16'h36*8+:16];
+    regs.background.bg3.x            = regs_raw[16'h38*8+:32];
+    regs.background.bg3.y            = regs_raw[16'h3C*8+:32];
 
-    regs.win0h                  = regs_raw[16'h40*8+:16];
-    regs.win1h                  = regs_raw[16'h42*8+:16];
-    regs.win0v                  = regs_raw[16'h44*8+:16];
-    regs.win1v                  = regs_raw[16'h46*8+:16];
-    regs.winin                  = regs_raw[16'h48*8+:16];
-    regs.winout                 = regs_raw[16'h4A*8+:16];
-    regs.mosaic                 = regs_raw[16'h4C*8+:32];
-    regs.bldcnt                 = regs_raw[16'h50*8+:16];
-    regs.bldalpha               = regs_raw[16'h52*8+:16];
-    regs.bldy                   = regs_raw[16'h54*8+:32];
+    regs.win0h                       = regs_raw[16'h40*8+:16];
+    regs.win1h                       = regs_raw[16'h42*8+:16];
+    regs.win0v                       = regs_raw[16'h44*8+:16];
+    regs.win1v                       = regs_raw[16'h46*8+:16];
+    regs.winin                       = regs_raw[16'h48*8+:16];
+    regs.winout                      = regs_raw[16'h4A*8+:16];
+    regs.mosaic                      = regs_raw[16'h4C*8+:32];
+    regs.bldcnt                      = regs_raw[16'h50*8+:16];
+    regs.bldalpha                    = regs_raw[16'h52*8+:16];
+    regs.bldy                        = regs_raw[16'h54*8+:32];
   end
 
   /// Vertical Scan Coordinate. Iterates from 0 to 227.
@@ -179,44 +176,78 @@ module GBA_PPU (
   assign interrupt_bus.hblank_req = (scan_x == 240 && cycle == 0);
 
 
+  //-------------------------------
+  // Mode 0
+  //-------------------------------
   pixel_t bg_line[4][240];
-  obj_pixel_t obj_line[240];
-  logic obj_window_line[240];
-  logic [14:0] final_line[240];
-  pixel_t bg0_pixel;
-  logic [14:0] bg0_color;
-  word_t bg0_tile_map_address;
-  logic [15:0] bg0_tile_map_address_value;
-  word_t bg0_tile_address;
-  logic [7:0] bg0_tile_address_value;
-  logic [7:0] bg0_palette_index;
-  logic [14:0] bg0_palette_value;
+  pixel_t bg_pixel[4];
+  logic [15:0] bg_tile_map_address_value[4];
+  logic [7:0] bg_tile_address_value[4];
+  logic [7:0] bg_palette_index[4];
+  logic [14:0] bg_palette_value[4];
+  word_t bg_tile_map_address[4];
+  word_t bg_tile_address[4];
+  text_bg_regs_t bg_regs[4];
 
-  assign bg0_tile_map_address_value = {
-    VRAM.mem[bg0_tile_map_address+1], VRAM.mem[bg0_tile_map_address]
-  };
-  assign bg0_tile_address_value = VRAM.mem[bg0_tile_address];
-  assign bg0_palette_value = {palette[bg0_palette_index*2+1][6:0], palette[bg0_palette_index*2]};
+  always_comb begin
+    bg_regs[0] = regs.background.bg0;
+    bg_regs[1] = regs.background.bg1;
+    bg_regs[2] = regs.background.bg2.text;
+    bg_regs[3] = regs.background.bg3.text;
+  end
 
-  BackgroundCalculation bg0_calculation (
-      .scan_x(scan_x),
-      .scan_y(scan_y),
-      .regs(regs.background.bg0),
-      .tile_map_address_value(bg0_tile_map_address_value),
-      .tile_address_value(bg0_tile_address_value),
-      .palette_value(bg0_palette_value),
-      .tile_map_address(bg0_tile_map_address),
-      .tile_address(bg0_tile_address),
-      .palette_index(bg0_palette_index),
-      .pixel(bg0_pixel)
-  );
+  genvar bg;
+  generate
+    for (bg = 0; bg < 4; bg++) begin : generate_bg
+
+      assign bg_tile_map_address_value[bg] = {
+        VRAM.mem[bg_tile_map_address[bg]+1], VRAM.mem[bg_tile_map_address[bg]]
+      };
+
+      assign bg_tile_address_value[bg] = VRAM.mem[bg_tile_address[bg]];
+
+      assign bg_palette_value[bg] = {
+        palette[bg_palette_index[bg]*2+1][6:0], palette[bg_palette_index[bg]*2]
+      };
+
+      BackgroundCalculation background_calculation (
+          .scan_x(scan_x),
+          .scan_y(scan_y),
+          .regs(bg_regs[bg]),
+          .tile_map_address_value(bg_tile_map_address_value[bg]),
+          .tile_address_value(bg_tile_address_value[bg]),
+          .palette_value(bg_palette_value[bg]),
+          .tile_map_address(bg_tile_map_address[bg]),
+          .tile_address(bg_tile_address[bg]),
+          .palette_index(bg_palette_index[bg]),
+          .pixel(bg_pixel[bg])
+      );
+    end : generate_bg
+  endgenerate
 
   always_ff @(posedge clk) begin
-    if (regs.display.dispcnt.bg_mode == BG_MODE_0 && regs.display.dispcnt.bg0_display &&
-        scan_x < 240 && scan_y < 160) begin
-      bg_line[0][scan_x[7:0]] <= bg0_pixel;
-      final_line[scan_x[7:0]] <= bg0_color;
+    if (regs.display.dispcnt.bg_mode == BG_MODE_0 && scan_x < 240 && scan_y < 160) begin
+      if (regs.display.dispcnt.bg0_display) bg_line[0][scan_x[7:0]] <= bg_pixel[0];
+      if (regs.display.dispcnt.bg1_display) bg_line[1][scan_x[7:0]] <= bg_pixel[1];
+      if (regs.display.dispcnt.bg2_display) bg_line[2][scan_x[7:0]] <= bg_pixel[2];
+      if (regs.display.dispcnt.bg3_display) bg_line[3][scan_x[7:0]] <= bg_pixel[3];
     end
   end
 
+  pixel_t composed_pixel;
+
+  Compositor compositor (
+      .bg_pixel(bg_pixel),
+      .bg_regs(bg_regs),
+      .dispcnt(regs.display.dispcnt),
+      .composed_pixel(composed_pixel)
+  );
+
+  GBA_Framebuffer framebuffer (
+      .clk(clk),
+      .reset(reset),
+      .scan_x(scan_x),
+      .scan_y(scan_y),
+      .composed_pixel(composed_pixel)
+  );
 endmodule : GBA_PPU
