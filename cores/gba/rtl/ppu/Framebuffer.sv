@@ -9,7 +9,7 @@ module GBA_Framebuffer (
 );
 
   (* maybe_unused *)
-  pixel_t [239:0][159:0] framebuffer;
+  pixel_t [239:0][159:0] framebuffer  /*verilator public_flat_rw*/;
 
   always_ff @(posedge clk) begin
     if (reset) begin

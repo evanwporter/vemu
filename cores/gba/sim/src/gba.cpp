@@ -1,4 +1,5 @@
 #include "gba.hpp"
+#include "gpu.hpp"
 #include "verilated_vcd_c.h"
 #include "ygba/video.h"
 
@@ -82,10 +83,7 @@ bool GameboyAdvanceHarness::setup(const std::filesystem::path& rom_path) {
     set_initial_state();
 
     auto* root = top->rootp;
-    video_bind(root->GameboyAdvance__DOT__ppu__DOT__regs.data(),
-        &root->GameboyAdvance__DOT__Palette__DOT__mem[0],
-        &root->GameboyAdvance__DOT__ppu__DOT__VRAM__DOT__mem[0],
-        &root->GameboyAdvance__DOT__OAM__DOT__mem[0]);
+    video_bind(root->GameboyAdvance__DOT__ppu__DOT__regs.data(), &root->GameboyAdvance__DOT__Palette__DOT__mem[0], &root->GameboyAdvance__DOT__ppu__DOT__VRAM__DOT__mem[0], &root->GameboyAdvance__DOT__OAM__DOT__mem[0]);
 
     tick();
 
@@ -370,6 +368,9 @@ bool GameboyAdvanceHarness::run() {
 
         for (int i = 0; i < cycles_per_frame && running; ++i)
             tick();
+
+        if (options.renderer == Renderer::Ppu)
+            render_ppu_frame(*this, screen_pixels);
 
         SDL_UpdateTexture(texture, nullptr, screen_pixels, width * sizeof(u32));
         SDL_RenderClear(renderer);

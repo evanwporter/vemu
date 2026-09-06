@@ -2,6 +2,4 @@
 
 #include "gba.hpp"
 
-void render_frame(GameboyAdvanceHarness& gba, u32 framebuffer[160][240]);
-
-void run_with_display(GameboyAdvanceHarness& gba);
+void render_ppu_frame(GameboyAdvanceHarness& gba, u32 framebuffer[160][240]);

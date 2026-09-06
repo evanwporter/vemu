@@ -6,7 +6,7 @@
 
 int main(int argc, char* argv[]) {
     if (argc < 2) {
-        std::cerr << "Usage: gba <rom.gba> [--wave] [--log-level none|error|warn|info|trace]\n";
+        std::cerr << "Usage: gba <rom.gba> [--wave] [--renderer ygba|ppu] [--log-level none|error|warn|info|trace]\n";
         return 1;
     }
 
@@ -17,6 +17,16 @@ int main(int argc, char* argv[]) {
         const std::string_view arg = argv[i];
         if (arg == "--wave") {
             options.waveform = true;
+        } else if (arg == "--renderer" && i + 1 < argc) {
+            const std::string_view renderer = argv[++i];
+            if (renderer == "ygba")
+                options.renderer = GameboyAdvanceHarness::Renderer::Ygba;
+            else if (renderer == "ppu")
+                options.renderer = GameboyAdvanceHarness::Renderer::Ppu;
+            else {
+                std::cerr << "Unknown renderer: " << renderer << "\n";
+                return 1;
+            }
         } else if (arg == "--log-level" && i + 1 < argc) {
             const std::string_view level = argv[++i];
             if (level == "none")

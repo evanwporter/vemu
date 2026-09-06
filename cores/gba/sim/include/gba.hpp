@@ -16,7 +16,7 @@
 #include <verilated_vcd_c.h>
 
 struct ArmTraceState {
-    std::array<u32, 16> r {}; // r0-r15
+    std::array<u32, 16> r { }; // r0-r15
     u32 cpsr = 0;
     u32 spsr = 0;
 };
@@ -56,10 +56,16 @@ public:
         Trace,
     };
 
+    enum class Renderer {
+        Ygba,
+        Ppu,
+    };
+
     struct Options {
         bool skip_boot_rom = false;
         bool waveform = false;
         LogLevel log_level = LogLevel::None;
+        Renderer renderer = Renderer::Ygba;
         std::filesystem::path wave_path = "wave.vcd";
 
         Options() = default;

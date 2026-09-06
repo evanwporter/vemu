@@ -173,7 +173,7 @@ module GBA_MMU (
       cpu_bus.rdata = gamepak_sram_bus.rdata;
 
     end else begin
-      $warning("Read from unmapped address: %h", effective_addr);
+      // $warning("Read from unmapped address: %h", effective_addr);
       cpu_bus.rdata = 32'hFF;
     end
   end
@@ -185,18 +185,18 @@ module GBA_MMU (
         `LOG_TRACE(("[MMU][READ ] BIOS        addr=%h data=%h", effective_addr, bios_bus.rdata))
 
       else if (wram_board_selected)
-        `LOG_TRACE(("[MMU][READ ] WRAM_BOARD  addr=%h data=%h", effective_addr, wram_board_bus.rdata))
+        `LOG_TRACE(
+            ("[MMU][READ ] WRAM_BOARD  addr=%h data=%h", effective_addr, wram_board_bus.rdata))
 
       else if (wram_chip_selected)
-        `LOG_TRACE(("[MMU][READ ] WRAM_CHIP   addr=%h data=%h", effective_addr, wram_chip_bus.rdata))
+        `LOG_TRACE(
+            ("[MMU][READ ] WRAM_CHIP   addr=%h data=%h", effective_addr, wram_chip_bus.rdata))
 
       else if (ppu_io_selected)
         `LOG_TRACE(("[MMU][READ ] PPU_IO      addr=%h data=%h", effective_addr, ppu_io_bus.rdata))
 
       else if (io_selected)
-        `LOG_TRACE((
-            "[MMU][READ ] GENERIC_IO  addr=%h data=%h", effective_addr, io_bus.rdata
-        ))
+        `LOG_TRACE(("[MMU][READ ] GENERIC_IO  addr=%h data=%h", effective_addr, io_bus.rdata))
 
       else if (palette_selected)
         `LOG_TRACE(("[MMU][READ ] PALETTE     addr=%h data=%h", effective_addr, palette_bus.rdata))
@@ -208,18 +208,20 @@ module GBA_MMU (
         `LOG_TRACE(("[MMU][READ ] OAM         addr=%h data=%h", effective_addr, oam_bus.rdata))
 
       else if (gamepak_ws0_selected)
-        `LOG_TRACE(("[MMU][READ ] GAMEPAK_WS0 addr=%h data=%h", effective_addr, gamepak_ws0_bus.rdata))
+        `LOG_TRACE(
+            ("[MMU][READ ] GAMEPAK_WS0 addr=%h data=%h", effective_addr, gamepak_ws0_bus.rdata))
 
       else if (gamepak_ws1_selected)
-        `LOG_TRACE(("[MMU][READ ] GAMEPAK_WS1 addr=%h data=%h", effective_addr, gamepak_ws1_bus.rdata))
+        `LOG_TRACE(
+            ("[MMU][READ ] GAMEPAK_WS1 addr=%h data=%h", effective_addr, gamepak_ws1_bus.rdata))
 
       else if (gamepak_ws2_selected)
-        `LOG_TRACE(("[MMU][READ ] GAMEPAK_WS2 addr=%h data=%h", effective_addr, gamepak_ws2_bus.rdata))
+        `LOG_TRACE(
+            ("[MMU][READ ] GAMEPAK_WS2 addr=%h data=%h", effective_addr, gamepak_ws2_bus.rdata))
 
       else if (gamepak_sram_selected)
-        `LOG_TRACE((
-            "[MMU][READ ] SRAM        addr=%h data=%h", effective_addr, gamepak_sram_bus.rdata
-        ))
+        `LOG_TRACE(
+            ("[MMU][READ ] SRAM        addr=%h data=%h", effective_addr, gamepak_sram_bus.rdata))
 
       else `LOG_TRACE(("[MMU][READ ] UNKNOWN     addr=%h data=%h", effective_addr, cpu_bus.rdata))
     end

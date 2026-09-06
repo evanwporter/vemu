@@ -5,6 +5,6 @@ gba_add_rtl(
     INTERFACES
     SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/util.sv
-        ${CMAKE_CURRENT_SOURCE_DIR}/PPU.sv
         ${CMAKE_CURRENT_SOURCE_DIR}/Compositor.sv
-        ${CMAKE_CURRENT_SOURCE_DIR}/Framebuffer.sv)
+        ${CMAKE_CURRENT_SOURCE_DIR}/Framebuffer.sv
+        ${CMAKE_CURRENT_SOURCE_DIR}/PPU.sv)
